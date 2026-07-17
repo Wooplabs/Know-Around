@@ -893,8 +893,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         await signInWithEmailAndPassword(auth, email, pass);
         return true;
       } catch (err: any) {
-        Alert.alert('Login Error', err.message || 'Authentication failed.');
-        return false;
+        throw err;
       }
     } else {
       if (email && pass.length >= 4) {
@@ -927,8 +926,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
         return true;
       } catch (err: any) {
-        Alert.alert('Registration Error', err.message || 'Failed to create account.');
-        return false;
+        throw err;
       }
     } else {
       if (name && email && pass.length >= 4) {

@@ -128,10 +128,19 @@ export default function AuthScreen() {
         const success = await login(email, password);
         if (!success) {
           triggerShake();
+          setPasswordError('Incorrect password');
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       triggerShake();
+      const errorCode = err.code || '';
+      if (errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
+        setPasswordError('Incorrect password');
+      } else if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-email') {
+        setEmailError('Incorrect email address');
+      } else {
+        setPasswordError(err.message || 'Authentication failed');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -152,24 +161,21 @@ export default function AuthScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Header Branding */}
-          <View style={styles.header}>
-            <Text style={styles.brandTitle}>Know Around</Text>
-            <Text style={styles.brandSubtitle}>Neighborhood OS for India</Text>
-          </View>
-
           {/* Form Content */}
           <Animated.View style={[styles.formContainer, { transform: [{ translateX: shakeAnim }] }]}>
-            <Text style={styles.title}>{isSignUp ? 'Create Account' : 'Welcome Back'}</Text>
+            <Text style={styles.title}>{isSignUp ? 'Sign Up' : 'Sign In'}</Text>
             <Text style={styles.subtitle}>
               {isSignUp 
-                ? 'Join your local neighborhood network and connect.' 
-                : 'Sign in to see what is happening around you.'}
+                ? 'Join your local neighborhood network' 
+                : 'Sign in to see what is happening around you'}
             </Text>
 
             {isSignUp && (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Full Name</Text>
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>Full Name</Text>
+                  {!!nameError && <Text style={styles.errorTextInline}>{nameError}</Text>}
+                </View>
                 <TextInput
                   value={name}
                   onChangeText={(text) => {
@@ -186,12 +192,14 @@ export default function AuthScreen() {
                     !!nameError && styles.inputError
                   ]}
                 />
-                {!!nameError && <Text style={styles.errorText}>{nameError}</Text>}
               </View>
             )}
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email Address</Text>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Email Address</Text>
+                {!!emailError && <Text style={styles.errorTextInline}>{emailError}</Text>}
+              </View>
               <TextInput
                 value={email}
                 onChangeText={(text) => {
@@ -210,11 +218,13 @@ export default function AuthScreen() {
                   !!emailError && styles.inputError
                 ]}
               />
-              {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Password</Text>
+                {!!passwordError && <Text style={styles.errorTextInline}>{passwordError}</Text>}
+              </View>
               <TextInput
                 value={password}
                 onChangeText={(text) => {
@@ -232,7 +242,6 @@ export default function AuthScreen() {
                   !!passwordError && styles.inputError
                 ]}
               />
-              {!!passwordError && <Text style={styles.errorText}>{passwordError}</Text>}
 
               {/* Password Strength Indicator */}
               {isSignUp && password.length > 0 && (
@@ -342,11 +351,21 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 20,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   label: {
     fontSize: 13,
     fontWeight: '700',
     color: '#40444C',
-    marginBottom: 8,
+  },
+  errorTextInline: {
+    color: '#D32F2F',
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 'auto',
   },
   input: {
     backgroundColor: '#FCFDFF',
