@@ -73,7 +73,6 @@ export default function HomeScreen() {
       {/* Top Header */}
       <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
         <View>
-          <Text style={[styles.brandTitle, darkMode && styles.brandTitleDark]}>Know Around</Text>
           <Pressable style={styles.locationSelector}>
             <LocationIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={13} />
             <Text style={[styles.locationText, darkMode && styles.locationTextDark]}>{activeLocation.split(',')[0]}</Text>
