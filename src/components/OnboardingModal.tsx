@@ -154,7 +154,8 @@ export default function OnboardingModal() {
     <View style={styles.fullscreenOverlay}>
       <SafeAreaContainer>
         {step < 3 ? (
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <View style={{ flex: 1 }}>
+            <ScrollView style={styles.scrollView} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
             
             {/* Progress Indicators */}
             <View style={styles.progressHeader}>
@@ -216,10 +217,6 @@ export default function OnboardingModal() {
                     </Text>
                   </Pressable>
                 </View>
-
-                <Pressable style={styles.primaryBtn} onPress={handleNextStep}>
-                  <Text style={styles.primaryBtnText}>Continue</Text>
-                </Pressable>
               </View>
             )}
 
@@ -352,33 +349,39 @@ export default function OnboardingModal() {
                   />
                 </View>
 
-                <Pressable style={styles.primaryBtn} onPress={handleNextStep}>
-                  <Text style={styles.primaryBtnText}>Complete Setup</Text>
-                </Pressable>
               </View>
             )}
 
           </ScrollView>
-        ) : (
-          /* STEP 3: "You are all set!" Success Screen */
-          <View style={styles.successContainer}>
-            <View style={styles.successPulseOuter}>
-              <View style={styles.successPulseInner}>
-                <Ionicons name="checkmark" size={60} color="#ffffff" />
-              </View>
-            </View>
-            <Text style={styles.successTitle}>You are all set!</Text>
-            <Text style={styles.successDescription}>
-              Creating your {selectedRole === 'professional' ? 'Business' : 'Personal'} account. Just a moment while we load your neighborhood...
-            </Text>
-            <View style={styles.loadingBar}>
-              <View style={styles.loadingBarProgress} />
+
+          <View style={styles.bottomCtaContainer}>
+            <Pressable style={styles.primaryBtn} onPress={handleNextStep}>
+              <Text style={styles.primaryBtnText}>
+                {step === 1 ? 'Continue' : 'Complete Setup'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        /* STEP 3: "You are all set!" Success Screen */
+        <View style={styles.successContainer}>
+          <View style={styles.successPulseOuter}>
+            <View style={styles.successPulseInner}>
+              <Ionicons name="checkmark" size={60} color="#ffffff" />
             </View>
           </View>
-        )}
-      </SafeAreaContainer>
-    </View>
-  );
+          <Text style={styles.successTitle}>You are all set!</Text>
+          <Text style={styles.successDescription}>
+            Creating your {selectedRole === 'professional' ? 'Business' : 'Personal'} account. Just a moment while we load your neighborhood...
+          </Text>
+          <View style={styles.loadingBar}>
+            <View style={styles.loadingBarProgress} />
+          </View>
+        </View>
+      )}
+    </SafeAreaContainer>
+  </View>
+);
 }
 
 // Wrapper for safe area on iOS
@@ -396,6 +399,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     zIndex: 99999,
   },
+  bottomCtaContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#F0F2F5',
+  },
   scrollView: {
     flex: 1,
     backgroundColor: '#ffffff',
@@ -403,7 +414,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 24,
     paddingVertical: 20,
-    paddingBottom: 60,
+    paddingBottom: 120,
   },
   progressHeader: {
     flexDirection: 'row',
