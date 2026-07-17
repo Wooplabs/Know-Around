@@ -20,6 +20,101 @@ type ItemType = {
   openStatus?: string;
 };
 
+// Module-level helper functions
+const handleCall = (phone: string) => {
+  const url = `tel:${phone}`;
+  Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to make phone call.'));
+};
+
+const handleWhatsApp = (num: string) => {
+  const url = `https://wa.me/91${num}`;
+  Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open WhatsApp.'));
+};
+
+const handleNavigate = (loc: string) => {
+  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc + ', Pondicherry')}`;
+  Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open maps.'));
+};
+
+// Unified Spacing Directory Card component
+function DirectoryCard({ item }: { item: ItemType }) {
+  const { darkMode } = useKnowAround();
+
+  const renderStarsRow = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        stars.push(<Ionicons key={i} name="star" size={11} color="#FFB300" />);
+      } else if (i === fullStars + 1 && hasHalfStar) {
+        stars.push(<Ionicons key={i} name="star-half" size={11} color="#FFB300" />);
+      } else {
+        stars.push(<Ionicons key={i} name="star-outline" size={11} color="#D0D4DC" />);
+      }
+    }
+    return <View style={styles.starsRow}>{stars}</View>;
+  };
+
+  const isOpen = item.openStatus === 'Open' || item.availability === 'Available';
+
+  return (
+    <View style={[styles.card, darkMode && styles.cardDark]}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardHeaderLeft}>
+          <View style={styles.nameRow}>
+            <Text style={[styles.name, darkMode && styles.textWhite]}>{item.name}</Text>
+            {item.verified && (
+              <RoundTickIcon color="#1C873C" size={16} style={styles.verifiedIcon} />
+            )}
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={[styles.categoryBadge, darkMode && styles.textGrey]}>{item.category}</Text>
+            <Text style={styles.metaDivider}>&middot;</Text>
+            <Text style={styles.distanceBadge}>{item.distance} km</Text>
+            
+            <Text style={styles.metaDivider}>&middot;</Text>
+            <View style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}>
+              <Text style={[styles.statusBadgeText, isOpen ? styles.statusOpenText : styles.statusClosedText]}>
+                {item.openStatus || item.availability}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.ratingBox}>
+          {renderStarsRow(item.rating)}
+          <Text style={[styles.ratingText, darkMode && styles.textGrey]}>({item.rating})</Text>
+        </View>
+      </View>
+
+      <Text style={[styles.locationDetail, darkMode && styles.textGrey]}>
+        <Ionicons name="location-outline" size={12} color="#8A9099" /> {item.location}
+      </Text>
+
+      {/* Quick action buttons */}
+      <View style={styles.actions}>
+        <Pressable style={[styles.actionBtn, styles.callBtn]} onPress={() => handleCall(item.phone)}>
+          <Ionicons name="call" size={16} color="#ffffff" />
+          <Text style={styles.actionBtnText}>Call</Text>
+        </Pressable>
+
+        {item.isProfessional && item.whatsapp && (
+          <Pressable style={[styles.actionBtn, styles.whatsappBtn]} onPress={() => handleWhatsApp(item.whatsapp!)}>
+            <Ionicons name="logo-whatsapp" size={16} color="#ffffff" />
+            <Text style={styles.actionBtnText}>WhatsApp</Text>
+          </Pressable>
+        )}
+
+        <Pressable style={[styles.actionBtn, styles.navBtn, darkMode && styles.navBtnDark]} onPress={() => handleNavigate(item.location)}>
+          <Ionicons name="navigate-outline" size={16} color={darkMode ? "#ffffff" : "#4A5568"} />
+          <Text style={[styles.actionBtnText, { color: darkMode ? '#ffffff' : '#4A5568' }]}>Directions</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 export default function DirectoryScreen() {
   const { professionals, directory, activeLocation, currentUser, logout, darkMode, setDarkMode } = useKnowAround();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -76,21 +171,6 @@ export default function DirectoryScreen() {
     });
 
     return list;
-  };
-
-  const handleCall = (phone: string) => {
-    const url = `tel:${phone}`;
-    Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to make phone call.'));
-  };
-
-  const handleWhatsApp = (num: string) => {
-    const url = `https://wa.me/91${num}`;
-    Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open WhatsApp.'));
-  };
-
-  const handleNavigate = (loc: string) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc + ', Pondicherry')}`;
-    Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open maps.'));
   };
 
   // Filter List
@@ -226,6 +306,7 @@ export default function DirectoryScreen() {
     </SafeAreaView>
   );
 }
+
 
 // Subcategory Horizontal Helper
 function ScrollViewHorizontal({ categories, selected, onSelect }: { categories: any[]; selected: string | null; onSelect: (name: string) => void }) {
@@ -372,8 +453,9 @@ const styles = StyleSheet.create({
     color: '#1C873C',
   },
   listContent: {
-    padding: 16,
-    gap: 12,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    paddingBottom: 100,
   },
   empty: {
     alignItems: 'center',
@@ -387,13 +469,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 16,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    paddingHorizontal: 24,
+    paddingVertical: 18,
+    borderBottomWidth: 1.2,
+    borderBottomColor: '#ECEFF1',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -690,6 +769,16 @@ const styles = StyleSheet.create({
     borderBottomColor: '#2D2D2D',
   },
   filterPillDark: {
+    backgroundColor: '#2D2D2D',
+  },
+  cardDark: {
+    backgroundColor: '#121212',
+    borderBottomColor: '#2C2C2C',
+  },
+  textGrey: {
+    color: '#8A9099',
+  },
+  navBtnDark: {
     backgroundColor: '#2D2D2D',
   },
 });

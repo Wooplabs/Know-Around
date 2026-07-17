@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
   },
   metaRow: {
     flexDirection: 'row',
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     color: '#1A1C1E',
     lineHeight: 24,
     marginBottom: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
   },
   postImage: {
     width: '100%',
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
   },
   leftActions: {
     flexDirection: 'row',
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   commentsInner: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
   },
   divider: {
     height: 1,

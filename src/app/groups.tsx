@@ -402,28 +402,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    paddingVertical: 0,
     paddingBottom: 100, // Cushion for bottom bar
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: '#0C0D0E',
-    marginBottom: 16,
+    marginTop: 20,
+    marginBottom: 12,
+    paddingHorizontal: 24,
   },
   groupCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
+    borderRadius: 0,
+    paddingHorizontal: 24,
+    paddingVertical: 18,
+    marginBottom: 0,
+    borderBottomWidth: 1,
     borderColor: '#ECEFF1',
-    // Soft shadow
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
   },
   cardDark: {
     backgroundColor: '#121212',
