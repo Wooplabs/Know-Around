@@ -63,7 +63,7 @@ export default function AuthScreen() {
     const hasSpecial = /[^A-Za-z0-9]/.test(pass);
     
     if (pass.length >= 8 && hasNumber && (hasUpper || hasSpecial)) {
-      return { score: 3, label: 'Strong', color: '#3AA832', desc: 'Perfect security!' };
+      return { score: 3, label: 'Strong', color: '#1C873C', desc: 'Perfect security!' };
     }
     return { score: 2, label: 'Medium', color: '#ED8936', desc: 'Add capital letters or numbers' };
   };
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#37474F',
+    color: '#1C873C',
     letterSpacing: -0.5,
   },
   brandSubtitle: {
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     transitionDuration: '0.2s',
   },
   inputFocused: {
-    borderColor: '#37474F',
+    borderColor: '#1C873C',
     backgroundColor: '#ffffff',
   },
   inputError: {
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   btn: {
-    backgroundColor: '#37474F',
+    backgroundColor: '#1C873C',
     borderRadius: 28,
     paddingVertical: 15,
     alignItems: 'center',
@@ -452,6 +452,6 @@ const styles = StyleSheet.create({
   toggleLinkText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#3AA832',
+    color: '#1C873C',
   },
 });

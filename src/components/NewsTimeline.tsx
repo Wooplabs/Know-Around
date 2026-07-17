@@ -104,8 +104,8 @@ const styles = StyleSheet.create({
     borderColor: '#E0E4EC',
   },
   selectedDateCard: {
-    backgroundColor: '#3AA832',
-    borderColor: '#3AA832',
+    backgroundColor: '#1C873C',
+    borderColor: '#1C873C',
   },
   dayText: {
     fontSize: 10,

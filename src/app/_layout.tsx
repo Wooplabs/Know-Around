@@ -23,6 +23,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             
             let label = 'Home';
             if (route.name === 'search') label = 'Search';
+            else if (route.name === 'groups') label = 'Groups';
             else if (route.name === 'directory') label = 'Connect';
 
             const isFocused = state.index === index;
@@ -40,8 +41,8 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             };
 
             const color = isFocused 
-              ? '#3AA832' 
-              : (darkMode ? '#B0BEC5' : '#37474F');
+              ? '#1C873C' 
+              : (darkMode ? '#B0BEC5' : '#60646C');
 
             // Custom icon selector for premium look
             const renderIcon = () => {
@@ -49,6 +50,8 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                 return <HomeIcon color={color} size={24} />;
               } else if (route.name === 'search') {
                 return <MapIcon color={color} size={24} />;
+              } else if (route.name === 'groups') {
+                return <Ionicons name="people-sharp" color={color} size={24} />;
               } else {
                 return <ChatsIcon color={color} size={24} />;
               }
@@ -94,6 +97,7 @@ function MainLayout() {
       >
         <Tabs.Screen name="index" />
         <Tabs.Screen name="search" />
+        <Tabs.Screen name="groups" />
         <Tabs.Screen name="directory" />
       </Tabs>
       <OnboardingModal />
@@ -129,14 +133,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   floatingTabBar: {
-    width: 236, // Fixed width to prevent stretching and match mockup proportions
+    width: 290, // Adjusted width for 4 items
     flexDirection: 'row',
     backgroundColor: '#ffffff',
     borderRadius: 34, // Perfect round pill curvature
     height: 68,       // Increased height to match design
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 34, // Pulls left/right icons inwards for closer spacing
+    paddingHorizontal: 20, // Adjusted padding for even spacing
     
     // Smooth spread shadow
     shadowColor: '#000000',
@@ -159,12 +163,12 @@ const styles = StyleSheet.create({
     width: 68,        // Match capsule height
     height: 68,       // Match capsule height
     borderRadius: 34, // Full curve like round
-    backgroundColor: '#37474F', // Blue Grey color
+    backgroundColor: '#1C873C', // Forest Green
     alignItems: 'center',
     justifyContent: 'center',
     
     // Soft shadow matching FAB color
-    shadowColor: '#37474F',
+    shadowColor: '#1C873C',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 12,

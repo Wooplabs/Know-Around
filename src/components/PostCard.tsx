@@ -51,7 +51,7 @@ export default function PostCard({ post, darkMode }: PostCardProps) {
           <View style={styles.nameRow}>
             <Text style={[styles.name, darkMode && styles.nameDark]} numberOfLines={1}>{post.author}</Text>
             {post.verified && (
-              <RoundTickIcon color="#3AA832" size={15} style={styles.verifiedIcon} />
+              <RoundTickIcon color="#1C873C" size={15} style={styles.verifiedIcon} />
             )}
           </View>
           <View style={styles.metaRow}>
@@ -195,7 +195,7 @@ export default function PostCard({ post, darkMode }: PostCardProps) {
               style={[styles.commentInput, darkMode && styles.commentInputDark]}
             />
             <Pressable style={styles.sendButton} onPress={handleSendComment}>
-              <Ionicons name="send" size={16} color="#3AA832" />
+              <Ionicons name="send" size={16} color="#1C873C" />
             </Pressable>
           </View>
         </View>
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   expandCommentsText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#3AA832',
+    color: '#1C873C',
   },
   threadContainer: {
     position: 'relative',

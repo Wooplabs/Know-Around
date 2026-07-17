@@ -30,7 +30,7 @@ export default function ProfessionalCard({ professional }: ProfessionalCardProps
         <View style={styles.nameRow}>
           <Text style={styles.name}>{professional.name}</Text>
           {professional.verified && (
-            <RoundTickIcon color="#3AA832" size={15} style={styles.verifiedIcon} />
+            <RoundTickIcon color="#1C873C" size={15} style={styles.verifiedIcon} />
           )}
         </View>
         
@@ -48,7 +48,7 @@ export default function ProfessionalCard({ professional }: ProfessionalCardProps
       </View>
 
       <Pressable style={styles.callButton} onPress={handleCall}>
-        <Ionicons name="call" size={18} color="#3AA832" />
+        <Ionicons name="call" size={18} color="#1C873C" />
       </Pressable>
     </View>
   );

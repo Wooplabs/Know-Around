@@ -136,7 +136,7 @@ export default function OnboardingModal() {
                   ]}
                   onPress={() => setSelectedRole('user')}
                 >
-                  <Ionicons name="people" size={32} color={selectedRole === 'user' ? '#3AA832' : '#60646C'} />
+                  <Ionicons name="people" size={32} color={selectedRole === 'user' ? '#1C873C' : '#60646C'} />
                   <Text style={[styles.roleCardTitle, selectedRole === 'user' && styles.selectedRoleText]}>
                     Neighbor Account
                   </Text>
@@ -152,7 +152,7 @@ export default function OnboardingModal() {
                   ]}
                   onPress={() => setSelectedRole('professional')}
                 >
-                  <Ionicons name="briefcase" size={32} color={selectedRole === 'professional' ? '#3AA832' : '#60646C'} />
+                  <Ionicons name="briefcase" size={32} color={selectedRole === 'professional' ? '#1C873C' : '#60646C'} />
                   <Text style={[styles.roleCardTitle, selectedRole === 'professional' && styles.selectedRoleText]}>
                     Business Account
                   </Text>
@@ -296,7 +296,7 @@ export default function OnboardingModal() {
           {/* STEP 3: Confirmation Summary */}
           {step === 3 && (
             <View style={styles.stepContent}>
-              <Ionicons name="checkmark-circle" size={64} color="#3AA832" style={styles.successIcon} />
+              <Ionicons name="checkmark-circle" size={64} color="#1C873C" style={styles.successIcon} />
               <Text style={styles.formTitle}>Verification Pending</Text>
               <Text style={styles.welcomeDescription}>
                 Your address setup is complete. You can enter the neighborhood immediately. Profile verification will be reviewed.
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
   },
   progressBarActiveSegment: {
-    backgroundColor: '#3AA832',
+    backgroundColor: '#1C873C',
   },
   backBtn: {
     flexDirection: 'row',
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#3AA832',
+    color: '#1C873C',
     textAlign: 'center',
     marginBottom: 4,
   },
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedRoleCard: {
-    borderColor: '#3AA832',
+    borderColor: '#1C873C',
     backgroundColor: '#EAF6EA',
   },
   roleCardTitle: {
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   selectedRoleText: {
-    color: '#3AA832',
+    color: '#1C873C',
   },
   roleCardDesc: {
     fontSize: 12,
@@ -459,12 +459,12 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   primaryBtn: {
-    backgroundColor: '#3AA832',
+    backgroundColor: '#1C873C',
     borderRadius: 22,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 20,
-    shadowColor: '#3AA832',
+    shadowColor: '#1C873C',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     color: '#60646C',
   },
   activePickerPillText: {
-    color: '#3AA832',
+    color: '#1C873C',
   },
   successIcon: {
     alignSelf: 'center',

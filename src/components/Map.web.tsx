@@ -167,7 +167,7 @@ export default function Map({ markers, onMapClick, onMarkerClick }: MapProps) {
   if (!leafletLoaded) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3AA832" />
+        <ActivityIndicator size="large" color="#1C873C" />
         <Text style={styles.loadingText}>Loading Map...</Text>
       </View>
     );

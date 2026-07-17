@@ -185,11 +185,11 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
             if (searchRadius) {
               searchRadiusCircle = L.circle([lat, lng], {
                 radius: searchRadius * 1000, // convert km to meters
-                color: '#3AA832',
+                color: '#1C873C',
                 weight: 1.5,
                 opacity: 0.4,
                 dashArray: '4, 4',
-                fillColor: '#3AA832',
+                fillColor: '#1C873C',
                 fillOpacity: 0.03
               }).addTo(map);
             }
@@ -298,7 +298,7 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
         startInLoadingState={true}
         renderLoading={() => (
           <View style={styles.loading}>
-            <ActivityIndicator size="large" color="#3AA832" />
+            <ActivityIndicator size="large" color="#1C873C" />
           </View>
         )}
       />

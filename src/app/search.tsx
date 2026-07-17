@@ -350,7 +350,7 @@ export default function SearchScreen() {
       <View style={styles.floatingHeader}>
         {/* Locality badge */}
         <View style={[styles.localityBadge, darkMode && styles.localityBadgeDark]}>
-          <Ionicons name="location" size={12} color="#3AA832" />
+          <Ionicons name="location" size={12} color="#1C873C" />
           <Text style={[styles.localityText, darkMode && styles.localityTextDark]}>{activeLocation.split(',')[0]}</Text>
         </View>
 
@@ -419,7 +419,7 @@ export default function SearchScreen() {
               <View style={styles.detailMetaBox}>
                 <View style={styles.nameRow}>
                   <Text style={styles.detailName}>{selectedItem.name}</Text>
-                  {selectedItem.verified && <RoundTickIcon color="#3AA832" size={16} />}
+                  {selectedItem.verified && <RoundTickIcon color="#1C873C" size={16} />}
                 </View>
                 <Text style={styles.detailCategory}>{selectedItem.profession} &middot; Rated {selectedItem.rating} ★ ({selectedItem.reviewsCount} reviews)</Text>
                 <Text style={styles.detailLocation}>📍 {selectedItem.location} &middot; {selectedItem.distance} km away</Text>
@@ -434,7 +434,7 @@ export default function SearchScreen() {
             <View style={styles.mapsActionsBar}>
               <Pressable style={styles.mapsActionItem} onPress={() => handleCall(selectedItem.phone)}>
                 <View style={[styles.mapsActionCircle, styles.circleCall]}>
-                  <Ionicons name="call" size={18} color="#3AA832" />
+                  <Ionicons name="call" size={18} color="#1C873C" />
                 </View>
                 <Text style={styles.mapsActionLabel}>Call</Text>
               </Pressable>
@@ -468,7 +468,7 @@ export default function SearchScreen() {
             {/* Header for Directory Business */}
             <View style={styles.detailHeaderBox}>
               <View style={styles.detailAvatarContainer}>
-                <Ionicons name="basket-outline" size={24} color="#3AA832" />
+                <Ionicons name="basket-outline" size={24} color="#1C873C" />
               </View>
               <View style={styles.detailMetaBox}>
                 <Text style={styles.detailName}>{selectedItem.name}</Text>
@@ -485,7 +485,7 @@ export default function SearchScreen() {
             <View style={styles.mapsActionsBar}>
               <Pressable style={styles.mapsActionItem} onPress={() => handleCall(selectedItem.phone)}>
                 <View style={[styles.mapsActionCircle, styles.circleCall]}>
-                  <Ionicons name="call" size={18} color="#3AA832" />
+                  <Ionicons name="call" size={18} color="#1C873C" />
                 </View>
                 <Text style={styles.mapsActionLabel}>Call</Text>
               </Pressable>
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   permissionBtn: {
-    backgroundColor: '#3AA832',
+    backgroundColor: '#1C873C',
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
   localityText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#3AA832',
+    color: '#1C873C',
     marginLeft: 3,
     textTransform: 'uppercase',
   },
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   activeLayerBtn: {
-    backgroundColor: '#3AA832',
+    backgroundColor: '#1C873C',
   },
   layerBtnText: {
     fontSize: 12,
@@ -849,7 +849,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#3AA832',
+    color: '#1C873C',
     textTransform: 'uppercase',
   },
   detailCategory: {
@@ -981,7 +981,7 @@ const styles = StyleSheet.create({
   },
   activeSeverityBtn: {
     borderWidth: 2,
-    borderColor: '#3AA832',
+    borderColor: '#1C873C',
   },
   severityBtnText: {
     fontSize: 12,
@@ -989,7 +989,7 @@ const styles = StyleSheet.create({
     color: '#4A5568',
   },
   submitBtn: {
-    backgroundColor: '#3AA832',
+    backgroundColor: '#1C873C',
     borderRadius: 22,
     paddingVertical: 14,
     alignItems: 'center',

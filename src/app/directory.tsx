@@ -110,7 +110,7 @@ export default function DirectoryScreen() {
         <View style={styles.headerTitleRow}>
           <Text style={styles.title}>Local Directory</Text>
           <View style={styles.locationBadge}>
-            <Ionicons name="location-sharp" size={14} color="#3AA832" />
+            <Ionicons name="location-sharp" size={14} color="#1C873C" />
             <Text style={styles.locationText}>{activeLocation.split(',')[0]}</Text>
           </View>
         </View>
@@ -189,7 +189,7 @@ export default function DirectoryScreen() {
                   <View style={styles.nameRow}>
                     <Text style={styles.name}>{item.name}</Text>
                     {item.verified && (
-                      <RoundTickIcon color="#3AA832" size={16} style={styles.verifiedIcon} />
+                      <RoundTickIcon color="#1C873C" size={16} style={styles.verifiedIcon} />
                     )}
                   </View>
                   <View style={styles.metaRow}>
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#3AA832',
+    color: '#1C873C',
     marginLeft: 4,
   },
   searchBar: {
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   activeCatPill: {
-    backgroundColor: '#3AA832',
+    backgroundColor: '#1C873C',
   },
   catText: {
     fontSize: 13,
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   activeFilterPill: {
     backgroundColor: '#EAF6EA',
-    borderColor: '#3AA832',
+    borderColor: '#1C873C',
   },
   filterPillText: {
     fontSize: 12,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     color: '#60646C',
   },
   activeFilterPillText: {
-    color: '#3AA832',
+    color: '#1C873C',
   },
   listContent: {
     padding: 16,
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   statusOpenText: {
-    color: '#3AA832',
+    color: '#1C873C',
   },
   statusClosedText: {
     color: '#E53935',
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   callBtn: {
-    backgroundColor: '#3AA832',
+    backgroundColor: '#1C873C',
   },
   whatsappBtn: {
     backgroundColor: '#25D366',

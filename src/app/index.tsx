@@ -202,7 +202,7 @@ export default function HomeScreen() {
                   <View style={styles.alertAuthorRow}>
                     <Text style={[styles.alertAuthorName, darkMode && styles.alertAuthorNameDark]}>{topDangerAlert.author || 'Municipal Guard'}</Text>
                     {topDangerAlert.verified && (
-                      <RoundTickIcon color="#3AA832" size={13} style={{ marginLeft: 3 }} />
+                      <RoundTickIcon color="#1C873C" size={13} style={{ marginLeft: 3 }} />
                     )}
                   </View>
                   <Text style={[styles.alertMetaText, darkMode && styles.alertMetaTextDark]}>{topDangerAlert.location} &middot; {topDangerAlert.time}</Text>
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#3AA832',
+    color: '#1C873C',
     letterSpacing: -0.5,
   },
   locationSelector: {
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     color: '#60646C',
   },
   activeFilterPillText: {
-    color: '#3AA832',
+    color: '#1C873C',
   },
   scrollView: {
     flex: 1,
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   postCategoryBadge: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#3AA832',
+    color: '#1C873C',
     backgroundColor: '#EAF6EA',
     borderRadius: 10,
     paddingHorizontal: 8,
@@ -500,10 +500,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#3AA832',
+    backgroundColor: '#1C873C',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3AA832',
+    shadowColor: '#1C873C',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
   composerLocalityPillText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#3AA832',
+    color: '#1C873C',
   },
   composerCloseButton: {
     padding: 8,
@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAF6EA',
   },
   postButton: {
-    backgroundColor: '#3AA832',
+    backgroundColor: '#1C873C',
     borderRadius: 22,
     paddingVertical: 14,
     width: '100%',

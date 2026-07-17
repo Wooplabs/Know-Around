@@ -59,7 +59,7 @@ export default function PostComposerModal() {
               
               {/* Locality Lock Badge */}
               <View style={styles.composerLocalityPill}>
-                <Ionicons name="location" size={10} color="#3AA832" />
+                <Ionicons name="location" size={10} color="#1C873C" />
                 <Text style={styles.composerLocalityPillText}>{activeLocation.split(',')[0]}</Text>
               </View>
             </View>
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   composerLocalityPillText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#3AA832',
+    color: '#1C873C',
   },
   composerCloseButton: {
     padding: 8,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAF6EA',
   },
   postButton: {
-    backgroundColor: '#3AA832',
+    backgroundColor: '#1C873C',
     borderRadius: 22,
     paddingVertical: 14,
     width: '100%',

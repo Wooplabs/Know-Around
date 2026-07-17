@@ -18,6 +18,26 @@ import {
 import { Alert } from 'react-native';
 
 // Types
+export interface Group {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  image: string;
+  membersCount: number;
+  members: string[];
+}
+
+export interface GroupPost {
+  id: string;
+  groupId: string;
+  authorName: string;
+  authorEmail: string;
+  avatarUrl?: string;
+  content: string;
+  createdAt: string;
+}
+
 export interface Comment {
   id: string;
   author: string;
@@ -147,6 +167,10 @@ interface KnowAroundContextProps {
   setUserLocation: (loc: { latitude: number; longitude: number; accuracy: number | null } | null) => void;
   darkMode: boolean;
   setDarkMode: (val: boolean) => void;
+  groups: Group[];
+  groupPosts: GroupPost[];
+  joinGroup: (groupId: string) => Promise<void>;
+  postToGroup: (groupId: string, content: string) => Promise<void>;
 }
 
 const KnowAroundContext = createContext<KnowAroundContextProps | undefined>(undefined);
@@ -607,6 +631,75 @@ const SEED_JOBS: JobVacancy[] = [
   }
 ];
 
+const SEED_GROUPS: Group[] = [
+  {
+    id: 'pet_owners',
+    name: 'Pet Owners Association',
+    description: 'For pet parents in White Town. Schedule dog walks, find vets, and share pet tips!',
+    category: 'Pets',
+    image: '🐾',
+    membersCount: 12,
+    members: []
+  },
+  {
+    id: 'gardening_club',
+    name: 'White Town Gardening Club',
+    description: 'Discuss terrace gardening, soil mixing, seed swaps, and organic vegetable growth.',
+    category: 'Hobbies',
+    image: '🌱',
+    membersCount: 8,
+    members: []
+  },
+  {
+    id: 'safety_watch',
+    name: 'Neighborhood Watch & Safety',
+    description: 'Stay alert and keep the community secure. Safety discussions and suspicious reports.',
+    category: 'Safety',
+    image: '🛡️',
+    membersCount: 25,
+    members: []
+  },
+  {
+    id: 'book_club',
+    name: 'Literary Circle',
+    description: 'Monthly book readings, exchanges, and discussions on classics and modern bestsellers.',
+    category: 'Education',
+    image: '📚',
+    membersCount: 6,
+    members: []
+  },
+  {
+    id: 'parenting_circle',
+    name: 'White Town Parents Group',
+    description: 'Connecting parents for playdates, school recommendations, and kids activity planning.',
+    category: 'Family',
+    image: '👶',
+    membersCount: 15,
+    members: []
+  }
+];
+
+const SEED_GROUP_POSTS: GroupPost[] = [
+  {
+    id: 'gp1',
+    groupId: 'pet_owners',
+    authorName: 'Ramesh Kumar',
+    authorEmail: 'ramesh@gmail.com',
+    avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+    content: 'Anyone know a good dog walker near French Quarter? My Golden Retriever needs daily walks.',
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
+  },
+  {
+    id: 'gp2',
+    groupId: 'gardening_club',
+    authorName: 'Sita Ram',
+    authorEmail: 'sita@gmail.com',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
+    content: 'Our cherry tomatoes are finally ripening! Highly recommend adding coco peat to Pondy soil.',
+    createdAt: new Date(Date.now() - 3600000 * 12).toISOString()
+  }
+];
+
 export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [activeLocation, setActiveLocation] = useState('White Town, PY');
@@ -621,6 +714,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [composerVisible, setComposerVisible] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number; accuracy: number | null } | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [groups, setGroups] = useState<Group[]>(SEED_GROUPS);
+  const [groupPosts, setGroupPosts] = useState<GroupPost[]>(SEED_GROUP_POSTS);
 
   const [selectedCategory, setSelectedCategory] = useState<'professionals' | 'alerts' | 'jobs' | 'directory' | 'all'>('professionals');
   const [selectedProfession, setSelectedProfession] = useState('Electricians');
@@ -640,6 +735,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const savedLoc = window.localStorage.getItem('native_location');
         const savedAddr = window.localStorage.getItem('native_address');
         const savedPros = window.localStorage.getItem('native_professionals');
+        const savedGroups = window.localStorage.getItem('native_groups');
+        const savedGPosts = window.localStorage.getItem('native_group_posts');
         
         if (savedUser) setUser(JSON.parse(savedUser));
         if (savedFeeds) setFeeds(JSON.parse(savedFeeds));
@@ -650,6 +747,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (savedLoc) setActiveLocation(savedLoc);
         if (savedAddr) setUserAddress(JSON.parse(savedAddr));
         if (savedPros) setProfessionals(JSON.parse(savedPros));
+        if (savedGroups) setGroups(JSON.parse(savedGroups));
+        if (savedGPosts) setGroupPosts(JSON.parse(savedGPosts));
       }
     } catch (e) {
       // Ignore
@@ -735,10 +834,45 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     });
 
+    // Subscribe to groups
+    const unsubGroups = onSnapshot(collection(db, 'groups'), async (snapshot) => {
+      const list: Group[] = [];
+      snapshot.forEach((docSnap) => {
+        list.push({ id: docSnap.id, ...docSnap.data() } as Group);
+      });
+      if (snapshot.empty) {
+        for (const grp of SEED_GROUPS) {
+          await addDoc(collection(db, 'groups'), grp);
+        }
+      } else {
+        setGroups(list);
+        saveState('native_groups', list);
+      }
+    });
+
+    // Subscribe to group posts
+    const unsubGroupPosts = onSnapshot(collection(db, 'group_posts'), async (snapshot) => {
+      const list: GroupPost[] = [];
+      snapshot.forEach((docSnap) => {
+        list.push({ id: docSnap.id, ...docSnap.data() } as GroupPost);
+      });
+      if (snapshot.empty) {
+        for (const gp of SEED_GROUP_POSTS) {
+          await addDoc(collection(db, 'group_posts'), gp);
+        }
+      } else {
+        list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        setGroupPosts(list);
+        saveState('native_group_posts', list);
+      }
+    });
+
     return () => {
       unsubFeeds();
       unsubAlerts();
       unsubPros();
+      unsubGroups();
+      unsubGroupPosts();
     };
   }, []);
 
@@ -1041,6 +1175,80 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
+  const joinGroup = async (groupId: string) => {
+    const userEmail = user?.email || 'neighbor@gmail.com';
+    if (isFirebaseConfigured && db) {
+      try {
+        const q = collection(db, 'groups');
+        const unsub = onSnapshot(q, async (snap) => {
+          let foundDocId = '';
+          let currentMembers: string[] = [];
+          snap.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.id === groupId) {
+              foundDocId = docSnap.id;
+              currentMembers = data.members || [];
+            }
+          });
+          
+          if (foundDocId) {
+            unsub();
+            if (!currentMembers.includes(userEmail)) {
+              const updatedMembers = [...currentMembers, userEmail];
+              await updateDoc(doc(db, 'groups', foundDocId), {
+                members: updatedMembers,
+                membersCount: updatedMembers.length
+              });
+            }
+          }
+        });
+      } catch (err) {
+        console.error('Firestore joinGroup error:', err);
+      }
+    } else {
+      const updated = groups.map(g => {
+        if (g.id === groupId) {
+          const membersList = g.members || [];
+          if (!membersList.includes(userEmail)) {
+            const newMembers = [...membersList, userEmail];
+            return {
+              ...g,
+              members: newMembers,
+              membersCount: newMembers.length
+            };
+          }
+        }
+        return g;
+      });
+      setGroups(updated);
+      saveState('native_groups', updated);
+    }
+  };
+
+  const postToGroup = async (groupId: string, content: string) => {
+    const newPost: GroupPost = {
+      id: `gpost_${Date.now()}`,
+      groupId,
+      authorName: user?.name || 'You (Neighbor)',
+      authorEmail: user?.email || 'neighbor@gmail.com',
+      avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+      content,
+      createdAt: new Date().toISOString()
+    };
+
+    if (isFirebaseConfigured && db) {
+      try {
+        await addDoc(collection(db, 'group_posts'), newPost);
+      } catch (err) {
+        console.error('Firestore postToGroup error:', err);
+      }
+    } else {
+      const updated = [newPost, ...groupPosts];
+      setGroupPosts(updated);
+      saveState('native_group_posts', updated);
+    }
+  };
+
   const getDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; // Earth's radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1149,7 +1357,11 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         userLocation,
         setUserLocation,
         darkMode,
-        setDarkMode
+        setDarkMode,
+        groups,
+        groupPosts,
+        joinGroup,
+        postToGroup
       }}
     >
       {children}
