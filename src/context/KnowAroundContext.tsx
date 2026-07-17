@@ -769,9 +769,9 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setUser(loggedInUser);
         saveState('native_user', loggedInUser);
         
-        // Load saved onboarding status safely supporting web & mobile
+        // Load saved onboarding status safely supporting web & mobile. Show only if explicitly set to false (i.e. signup)
         const savedOnboarding = getLocalStorageItem('native_onboarding');
-        setOnboardingCompleted(savedOnboarding === 'true');
+        setOnboardingCompleted(savedOnboarding !== 'false');
       } else {
         setUser(null);
         saveState('native_user', null);
@@ -902,6 +902,9 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const login = async (email: string, pass: string): Promise<boolean> => {
+    setOnboardingCompleted(true);
+    saveState('native_onboarding', true);
+
     if (isFirebaseConfigured && auth) {
       try {
         await signInWithEmailAndPassword(auth, email, pass);
@@ -915,8 +918,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const newUser = { name: mockName.charAt(0).toUpperCase() + mockName.slice(1), email };
         setUser(newUser);
         saveState('native_user', newUser);
-        const savedOnboarding = getLocalStorageItem('native_onboarding');
-        setOnboardingCompleted(savedOnboarding === 'true');
+        setOnboardingCompleted(true);
+        saveState('native_onboarding', true);
         return true;
       }
       return false;
@@ -927,8 +930,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const newUser = { name: 'Google Neighbor', email: 'google.neighbor@gmail.com' };
     setUser(newUser);
     saveState('native_user', newUser);
-    const savedOnboarding = getLocalStorageItem('native_onboarding');
-    setOnboardingCompleted(savedOnboarding === 'true');
+    setOnboardingCompleted(true);
+    saveState('native_onboarding', true);
   };
 
   const register = async (name: string, email: string, pass: string): Promise<boolean> => {
