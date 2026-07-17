@@ -456,10 +456,10 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     // Premium soft shadow styling
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.025,
+    shadowRadius: 16,
+    elevation: 3,
   },
   cardDark: {
     backgroundColor: '#1E1E1E',
