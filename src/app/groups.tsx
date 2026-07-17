@@ -373,7 +373,7 @@ const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser,
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F7F9FA',
+    backgroundColor: '#F4F6F8',
   },
   safeAreaDark: {
     backgroundColor: '#000000',
@@ -434,29 +434,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingVertical: 0,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 100, // Cushion for bottom bar
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: '#0C0D0E',
-    marginTop: 20,
-    marginBottom: 12,
-    paddingHorizontal: 24,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   groupCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 0,
-    paddingHorizontal: 24,
+    borderRadius: 16,
+    paddingHorizontal: 20,
     paddingVertical: 18,
-    marginBottom: 0,
-    borderBottomWidth: 1,
-    borderColor: '#ECEFF1',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    // Premium soft shadow styling
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardDark: {
-    backgroundColor: '#121212',
-    borderColor: '#2C2C2C',
+    backgroundColor: '#1E1E1E',
+    borderColor: '#2D2D2D',
+    shadowOpacity: 0,
   },
   groupCardHeader: {
     flexDirection: 'row',
