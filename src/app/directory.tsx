@@ -219,18 +219,13 @@ export default function DirectoryScreen() {
 
       {/* List items */}
       <FlatList
-        data={getFilteredItems()}
+        data={filteredList}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <DirectoryCard item={item} />}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
-  );
-}
-}}
-      />
-    </View>
   );
 }
 
