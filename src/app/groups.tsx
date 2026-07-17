@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     paddingTop: 16,
     paddingBottom: 100, // Cushion for bottom bar
   },
@@ -454,12 +454,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    // Premium soft shadow styling
+    // Premium high-spread, low-opacity shadow
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.025,
+    shadowOpacity: 0.02,
     shadowRadius: 16,
-    elevation: 3,
+    elevation: 1,
   },
   cardDark: {
     backgroundColor: '#1E1E1E',
