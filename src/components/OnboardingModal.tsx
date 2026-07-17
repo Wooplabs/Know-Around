@@ -192,7 +192,16 @@ export default function OnboardingModal() {
                     ]}
                     onPress={() => setSelectedRole('user')}
                   >
-                    <Ionicons name="person-circle-outline" size={42} color={selectedRole === 'user' ? '#1C873C' : '#60646C'} />
+                    <View style={styles.roleCardHeader}>
+                      <View style={[styles.iconBadge, selectedRole === 'user' && styles.selectedIconBadge]}>
+                        <Ionicons name="person" size={20} color={selectedRole === 'user' ? '#ffffff' : '#60646C'} />
+                      </View>
+                      {selectedRole === 'user' && (
+                        <View style={styles.checkBadge}>
+                          <Ionicons name="checkmark-circle" size={22} color="#1C873C" />
+                        </View>
+                      )}
+                    </View>
                     <Text style={[styles.roleCardTitle, selectedRole === 'user' && styles.selectedRoleText]}>
                       Personal Account
                     </Text>
@@ -208,7 +217,16 @@ export default function OnboardingModal() {
                     ]}
                     onPress={() => setSelectedRole('professional')}
                   >
-                    <Ionicons name="briefcase-outline" size={42} color={selectedRole === 'professional' ? '#1C873C' : '#60646C'} />
+                    <View style={styles.roleCardHeader}>
+                      <View style={[styles.iconBadge, selectedRole === 'professional' && styles.selectedIconBadge]}>
+                        <Ionicons name="business" size={20} color={selectedRole === 'professional' ? '#ffffff' : '#60646C'} />
+                      </View>
+                      {selectedRole === 'professional' && (
+                        <View style={styles.checkBadge}>
+                          <Ionicons name="checkmark-circle" size={22} color="#1C873C" />
+                        </View>
+                      )}
+                    </View>
                     <Text style={[styles.roleCardTitle, selectedRole === 'professional' && styles.selectedRoleText]}>
                       Business Account
                     </Text>
@@ -401,7 +419,7 @@ const styles = StyleSheet.create({
   },
   bottomCtaContainer: {
     paddingHorizontal: 24,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
@@ -419,13 +437,13 @@ const styles = StyleSheet.create({
   progressHeader: {
     flexDirection: 'row',
     gap: 8,
-    marginVertical: 16,
+    marginVertical: 18,
   },
   progressBarSegment: {
     flex: 1,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E2E8F0',
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F1F5F9',
   },
   progressBarActiveSegment: {
     backgroundColor: '#1C873C',
@@ -433,8 +451,8 @@ const styles = StyleSheet.create({
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 16,
+    gap: 6,
+    marginBottom: 20,
     alignSelf: 'flex-start',
   },
   backBtnText: {
@@ -446,18 +464,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   welcomeTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '900',
-    color: '#1C873C',
+    color: '#1A202C',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   welcomeSubtitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#1A202C',
+    fontWeight: '500',
+    color: '#60646C',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 28,
+    lineHeight: 20,
   },
   roleContainer: {
     flexDirection: 'column',
@@ -465,44 +485,71 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   roleCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     padding: 20,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    alignItems: 'flex-start',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    elevation: 1,
   },
   selectedRoleCard: {
     borderColor: '#1C873C',
-    backgroundColor: '#EAF6EA',
+    backgroundColor: '#F4FAF6',
+    shadowColor: '#1C873C',
+    shadowOpacity: 0.05,
+  },
+  roleCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+  },
+  iconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedIconBadge: {
+    backgroundColor: '#1C873C',
+  },
+  checkBadge: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   roleCardTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: '#1A202C',
-    marginTop: 10,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   selectedRoleText: {
-    color: '#1C873C',
+    color: '#1A202C',
   },
   roleCardDesc: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: '#60646C',
-    textAlign: 'center',
-    lineHeight: 16,
+    textAlign: 'left',
+    lineHeight: 18,
   },
   primaryBtn: {
     backgroundColor: '#1C873C',
-    borderRadius: 22,
-    paddingVertical: 14,
+    borderRadius: 28,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 20,
     shadowColor: '#1C873C',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 4,
   },
   primaryBtnText: {
     color: '#ffffff',
@@ -510,36 +557,41 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   formTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '900',
     color: '#1A202C',
     textAlign: 'center',
     marginBottom: 6,
+    letterSpacing: -0.3,
   },
   formSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#60646C',
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 20,
+    lineHeight: 20,
+    marginBottom: 24,
   },
   businessForm: {
     marginBottom: 8,
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#40444C',
+    color: '#4A5568',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
     marginBottom: 6,
-    marginTop: 12,
+    marginTop: 14,
   },
   input: {
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#FCFDFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
     borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 14,
-    color: '#333333',
+    color: '#1A202C',
     marginBottom: 12,
   },
   sectionDivider: {
@@ -605,41 +657,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   successPulseOuter: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#EAF6EA',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#F0F9F4',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
   },
   successPulseInner: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: '#1C873C',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#1C873C',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
     elevation: 6,
   },
   successTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '900',
-    color: '#1C873C',
+    color: '#1A202C',
     textAlign: 'center',
     marginBottom: 12,
   },
   successDescription: {
-    fontSize: 15,
-    color: '#60646C',
+    fontSize: 14,
+    color: '#4A5568',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 32,
-    paddingHorizontal: 16,
+    marginBottom: 36,
+    paddingHorizontal: 24,
   },
   loadingBar: {
     width: '80%',
