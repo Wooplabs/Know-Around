@@ -40,11 +40,11 @@ const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser,
         {/* Uniform Top Header (Group Details) */}
         <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
           <View style={styles.headerLeftDetail}>
-            <Pressable onPress={() => setSelectedGroup(null)} style={styles.backBtn}>
+            <Pressable onPress={() => setSelectedGroup(null)} style={[styles.backBtn, darkMode && styles.backBtnDark]}>
               <Ionicons name="arrow-back" size={24} color={darkMode ? '#ffffff' : '#0C0D0E'} />
             </Pressable>
             <Text style={[styles.headerTitle, darkMode && styles.textWhite]} numberOfLines={1}>
-              {selectedGroup.name}
+              Group Feed
             </Text>
           </View>
           <View style={styles.headerRight}>
@@ -352,8 +352,8 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 16 : 32,
-    paddingBottom: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1.2,
     borderBottomColor: '#ECEFF1',
@@ -363,9 +363,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#2C2C2C',
   },
   brandTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '900',
-    color: '#1C873C',
+    color: '#0C0D0E',
     letterSpacing: -0.5,
   },
   brandSubtitle: {
@@ -388,8 +388,16 @@ const styles = StyleSheet.create({
     borderBottomColor: '#2C2C2C',
   },
   backBtn: {
-    marginRight: 16,
-    padding: 4,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#F5F6F8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  backBtnDark: {
+    backgroundColor: '#2D2D2D',
   },
   headerTitle: {
     fontSize: 18,
@@ -702,14 +710,14 @@ const styles = StyleSheet.create({
   },
   topHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 42 : 12,
-    paddingBottom: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 16 : 32,
+    paddingBottom: 16,
     backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomWidth: 1.2,
+    borderBottomColor: '#ECEFF1',
   },
   topHeaderDark: {
     backgroundColor: '#1E1E1E',

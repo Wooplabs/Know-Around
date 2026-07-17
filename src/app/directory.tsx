@@ -22,6 +22,7 @@ type ItemType = {
 
 export default function DirectoryScreen() {
   const { professionals, directory, activeLocation, currentUser, logout, darkMode, setDarkMode } = useKnowAround();
+  const [menuVisible, setMenuVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [distanceFilter, setDistanceFilter] = useState<number>(5);
@@ -225,6 +226,11 @@ export default function DirectoryScreen() {
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
+  );
+}
+}}
+      />
+    </View>
   );
 }
 
@@ -513,14 +519,14 @@ const styles = StyleSheet.create({
   },
   topHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 42 : 12,
-    paddingBottom: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 16 : 32,
+    paddingBottom: 16,
     backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomWidth: 1.2,
+    borderBottomColor: '#ECEFF1',
   },
   topHeaderDark: {
     backgroundColor: '#1E1E1E',
@@ -530,6 +536,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 0,
+  },
+  locationText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#0C0D0E',
+    marginLeft: 4,
+    marginRight: 4,
   },
   locationTextDark: {
     color: '#E2E8F0',
@@ -658,10 +671,10 @@ const styles = StyleSheet.create({
   },
   subHeader: {
     backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomWidth: 1.2,
+    borderBottomColor: '#ECEFF1',
   },
   subHeaderDark: {
     backgroundColor: '#121212',
@@ -670,7 +683,7 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#1A202C',
+    color: '#0C0D0E',
     marginBottom: 10,
   },
   textWhite: {
