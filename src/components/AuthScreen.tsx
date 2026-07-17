@@ -134,10 +134,13 @@ export default function AuthScreen() {
     } catch (err: any) {
       triggerShake();
       const errorCode = err.code || '';
+      const errorMessage = err.message || '';
       if (errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
         setPasswordError('Incorrect password');
       } else if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-email') {
         setEmailError('Incorrect email address');
+      } else if (errorCode === 'auth/email-already-in-use' || errorMessage.includes('email-already-in-use')) {
+        setEmailError('Email already exists. Sign In');
       } else {
         setPasswordError(err.message || 'Authentication failed');
       }
