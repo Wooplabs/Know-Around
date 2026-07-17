@@ -700,6 +700,28 @@ const SEED_GROUP_POSTS: GroupPost[] = [
   }
 ];
 
+// Load state helper safely supporting both web & mobile environments
+const getLocalStorageItem = (key: string): string | null => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return null;
+};
+
+const getLocalStorageJSON = (key: string): any => {
+  const val = getLocalStorageItem(key);
+  if (val === null) return null;
+  try {
+    return JSON.parse(val);
+  } catch (e) {
+    return val;
+  }
+};
+
 export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [activeLocation, setActiveLocation] = useState('White Town, PY');
@@ -770,8 +792,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         saveState('native_user', loggedInUser);
         
         // Load saved onboarding status safely supporting web & mobile. Show only if explicitly set to false (i.e. signup)
-        const savedOnboarding = getLocalStorageItem('native_onboarding');
-        setOnboardingCompleted(savedOnboarding !== 'false');
+        const savedOnboarding = getLocalStorageJSON('native_onboarding');
+        setOnboardingCompleted(savedOnboarding !== false);
       } else {
         setUser(null);
         saveState('native_user', null);
@@ -877,18 +899,6 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       unsubGroupPosts();
     };
   }, []);
-
-  // Load state helper safely supporting both web & mobile environments
-  const getLocalStorageItem = (key: string): string | null => {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        return window.localStorage.getItem(key);
-      }
-    } catch (e) {
-      // Ignore
-    }
-    return null;
-  };
 
   // Save state helper
   const saveState = (key: string, data: any) => {
