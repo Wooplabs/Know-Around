@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -12,10 +12,12 @@ import {
   KeyboardAvoidingView,
   Animated,
   LayoutAnimation,
-  UIManager
+  UIManager,
+  Alert
 } from 'react-native';
 import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
+import BottomSheet from './BottomSheet';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -44,13 +46,13 @@ export default function AuthScreen() {
 
   const triggerShake = () => {
     Animated.sequence([
-      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useKnowAroundDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useKnowAroundDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useKnowAroundDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useKnowAroundDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 5, duration: 50, useKnowAroundDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -5, duration: 50, useKnowAroundDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useKnowAroundDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 5, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -5, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
     ]).start();
   };
 
@@ -114,8 +116,62 @@ export default function AuthScreen() {
     return isValid;
   };
 
+  // OTP States
+  const [showOtpSheet, setShowOtpSheet] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpInput, setOtpInput] = useState(['', '', '', '', '', '']);
+  const [otpError, setOtpError] = useState('');
+  const [resendTimer, setResendTimer] = useState(30);
+  const otpRefs = useRef<Array<any>>([]);
+
+  // Resend countdown
+  useEffect(() => {
+    let interval: any;
+    if (showOtpSheet && resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [showOtpSheet, resendTimer]);
+
+  const generateAndSendOtp = () => {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setOtpCode(code);
+    setOtpInput(['', '', '', '', '', '']);
+    setOtpError('');
+    setResendTimer(30);
+    setShowOtpSheet(true);
+
+    // Development alert simulation for developer convenience
+    Alert.alert(
+      '📧 Verification Code Sent',
+      `We sent a 6-digit OTP to ${email}.\n\nFor testing, your OTP is: ${code}`,
+      [{ text: 'OK' }]
+    );
+  };
+
   const handleSubmit = async () => {
     if (!validate()) return;
+    generateAndSendOtp();
+  };
+
+  const handleVerifyOtp = async () => {
+    const codeString = otpInput.join('');
+    if (codeString.length < 6) {
+      setOtpError('Please enter the full 6-digit code');
+      triggerShake();
+      return;
+    }
+
+    if (codeString !== otpCode) {
+      setOtpError('Invalid code. Please check and try again.');
+      triggerShake();
+      return;
+    }
+
+    // Code matches, close sheet and perform login/registration!
+    setShowOtpSheet(false);
     setIsSubmitting(true);
 
     try {
@@ -302,6 +358,63 @@ export default function AuthScreen() {
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Email OTP Verification Bottom Sheet */}
+      <BottomSheet visible={showOtpSheet} onClose={() => setShowOtpSheet(false)}>
+        <View style={styles.otpSheetContent}>
+          <Text style={styles.otpTitle}>Verify Your Email</Text>
+          <Text style={styles.otpSubtitle}>Enter the 6-digit code we sent to your email address.</Text>
+          
+          <View style={styles.otpInputRow}>
+            {otpInput.map((digit, idx) => (
+              <TextInput
+                key={idx}
+                ref={(el) => (otpRefs.current[idx] = el)}
+                value={digit}
+                onChangeText={(text) => {
+                  const cleanedText = text.replace(/[^0-9]/g, '');
+                  const newOtp = [...otpInput];
+                  newOtp[idx] = cleanedText;
+                  setOtpInput(newOtp);
+
+                  // Auto focus next input
+                  if (cleanedText && idx < 5) {
+                    otpRefs.current[idx + 1]?.focus();
+                  }
+                }}
+                onKeyPress={(e) => {
+                  if (e.nativeEvent.key === 'Backspace' && !otpInput[idx] && idx > 0) {
+                    otpRefs.current[idx - 1]?.focus();
+                  }
+                }}
+                maxLength={1}
+                keyboardType="number-pad"
+                style={[
+                  styles.otpInputBox,
+                  !!otpError && styles.otpInputBoxError
+                ]}
+              />
+            ))}
+          </View>
+
+          {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
+
+          <Pressable style={styles.otpVerifyBtn} onPress={handleVerifyOtp}>
+            <Text style={styles.otpVerifyBtnText}>Verify & Login</Text>
+          </Pressable>
+
+          <View style={styles.otpResendRow}>
+            <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
+            {resendTimer > 0 ? (
+              <Text style={styles.otpTimerText}>Resend in {resendTimer}s</Text>
+            ) : (
+              <Pressable onPress={generateAndSendOtp}>
+                <Text style={styles.otpResendLink}>Resend Code</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -473,6 +586,86 @@ const styles = StyleSheet.create({
   },
   toggleLinkText: {
     fontSize: 14,
+    fontWeight: '700',
+    color: '#1C873C',
+  },
+  otpSheetContent: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  otpTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1A1C1E',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  otpSubtitle: {
+    fontSize: 13,
+    color: '#60646C',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  otpInputRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 20,
+  },
+  otpInputBox: {
+    width: 44,
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    backgroundColor: '#FCFDFF',
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1C1E',
+  },
+  otpInputBoxError: {
+    borderColor: '#D32F2F',
+    backgroundColor: '#FFF5F5',
+  },
+  otpErrorText: {
+    color: '#D32F2F',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  otpVerifyBtn: {
+    backgroundColor: '#1C873C',
+    borderRadius: 24,
+    paddingVertical: 14,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  otpVerifyBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  otpResendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  otpResendLabel: {
+    fontSize: 13,
+    color: '#60646C',
+  },
+  otpTimerText: {
+    fontSize: 13,
+    color: '#A0A4AC',
+    fontWeight: '600',
+  },
+  otpResendLink: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#1C873C',
   },
