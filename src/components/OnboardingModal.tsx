@@ -382,7 +382,7 @@ export default function OnboardingModal() {
 // Wrapper for safe area on iOS
 function SafeAreaContainer({ children }: { children: React.ReactNode }) {
   return (
-    <View style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 44 : 0, backgroundColor: '#F5F6F8' }}>
+    <View style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 44 : 0, backgroundColor: '#ffffff' }}>
       {children}
     </View>
   );
@@ -391,10 +391,11 @@ function SafeAreaContainer({ children }: { children: React.ReactNode }) {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: '#F5F6F8',
+    backgroundColor: '#ffffff',
   },
   container: {
-    padding: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
     paddingBottom: 60,
   },
   progressHeader: {
@@ -425,13 +426,6 @@ const styles = StyleSheet.create({
   },
   stepContent: {
     backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 20,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 20,
-    elevation: 3,
   },
   welcomeTitle: {
     fontSize: 24,

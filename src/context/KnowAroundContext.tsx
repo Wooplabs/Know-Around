@@ -769,8 +769,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setUser(loggedInUser);
         saveState('native_user', loggedInUser);
         
-        // Load saved onboarding status rather than forcing true
-        const savedOnboarding = typeof window !== 'undefined' ? window.localStorage.getItem('native_onboarding') : null;
+        // Load saved onboarding status safely supporting web & mobile
+        const savedOnboarding = getLocalStorageItem('native_onboarding');
         setOnboardingCompleted(savedOnboarding === 'true');
       } else {
         setUser(null);
@@ -878,6 +878,18 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
   }, []);
 
+  // Load state helper safely supporting both web & mobile environments
+  const getLocalStorageItem = (key: string): string | null => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem(key);
+      }
+    } catch (e) {
+      // Ignore
+    }
+    return null;
+  };
+
   // Save state helper
   const saveState = (key: string, data: any) => {
     try {
@@ -903,7 +915,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const newUser = { name: mockName.charAt(0).toUpperCase() + mockName.slice(1), email };
         setUser(newUser);
         saveState('native_user', newUser);
-        const savedOnboarding = typeof window !== 'undefined' ? window.localStorage.getItem('native_onboarding') : null;
+        const savedOnboarding = getLocalStorageItem('native_onboarding');
         setOnboardingCompleted(savedOnboarding === 'true');
         return true;
       }
@@ -915,7 +927,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const newUser = { name: 'Google Neighbor', email: 'google.neighbor@gmail.com' };
     setUser(newUser);
     saveState('native_user', newUser);
-    const savedOnboarding = typeof window !== 'undefined' ? window.localStorage.getItem('native_onboarding') : null;
+    const savedOnboarding = getLocalStorageItem('native_onboarding');
     setOnboardingCompleted(savedOnboarding === 'true');
   };
 
