@@ -160,7 +160,7 @@ interface KnowAroundContextProps {
   addComment: (postId: string, text: string) => void;
   addAlert: (title: string, description: string, level: 'warning' | 'danger' | 'info', lat: number, lng: number) => void;
   applyJob: (jobId: string) => void;
-  registerBusiness: (business: { name: string; profession: string; phone: string; street: string; place: string }) => Promise<void>;
+  registerBusiness: (business: { name: string; profession: string; phone: string; street: string; place: string; lat?: number; lng?: number }) => Promise<void>;
   composerVisible: boolean;
   setComposerVisible: (val: boolean) => void;
   userLocation: { latitude: number; longitude: number; accuracy: number | null } | null;
@@ -1139,7 +1139,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   // Register a new Professional (Business Account onboarding) dynamically!
-  const registerBusiness = async (business: { name: string; profession: string; phone: string; street: string; place: string }) => {
+  const registerBusiness = async (business: { name: string; profession: string; phone: string; street: string; place: string; lat?: number; lng?: number }) => {
     const newProData = {
       name: business.name,
       avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200',
@@ -1152,8 +1152,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       whatsapp: business.phone,
       verified: true,
       availability: 'Available',
-      lat: userLocation ? userLocation.latitude + (Math.random() - 0.5) * 0.01 : 11.9340 + (Math.random() - 0.5) * 0.01,
-      lng: userLocation ? userLocation.longitude + (Math.random() - 0.5) * 0.01 : 79.8300 + (Math.random() - 0.5) * 0.01
+      lat: business.lat || (userLocation ? userLocation.latitude : 11.9340),
+      lng: business.lng || (userLocation ? userLocation.longitude : 79.8300)
     };
 
     if (isFirebaseConfigured && db) {
