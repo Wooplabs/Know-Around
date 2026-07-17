@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 18,
-    marginBottom: 16,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     // Premium soft shadow styling
