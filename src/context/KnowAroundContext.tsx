@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { isFirebaseConfigured, auth, db } from '../services/firebase';
 import { 
   collection, 
@@ -777,6 +777,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, []);
 
+  const authInitialLoad = useRef(true);
+
   // Firebase Real-time listeners & Auth synchronizers
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return;
@@ -791,12 +793,17 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setUser(loggedInUser);
         saveState('native_user', loggedInUser);
         
-        // Load saved onboarding status safely supporting web & mobile. Show only if explicitly set to false (i.e. signup)
-        const savedOnboarding = getLocalStorageJSON('native_onboarding');
-        setOnboardingCompleted(savedOnboarding !== false);
+        // Only evaluate onboarding Completed state from localstorage on initial mount/session restore
+        // Active actions (Sign In vs Sign Up) will manage the React state and localstorage directly
+        if (authInitialLoad.current) {
+          const savedOnboarding = getLocalStorageJSON('native_onboarding');
+          setOnboardingCompleted(savedOnboarding !== false);
+          authInitialLoad.current = false;
+        }
       } else {
         setUser(null);
         saveState('native_user', null);
+        authInitialLoad.current = false;
       }
     });
 
