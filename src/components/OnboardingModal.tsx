@@ -148,8 +148,10 @@ export default function OnboardingModal() {
     type: 'professionals' as const
   }] : [];
 
+  if (onboardingCompleted) return null;
+
   return (
-    <Modal visible={!onboardingCompleted} animationType="slide" transparent={false}>
+    <View style={styles.fullscreenOverlay}>
       <SafeAreaContainer>
         {step < 3 ? (
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
@@ -375,7 +377,7 @@ export default function OnboardingModal() {
           </View>
         )}
       </SafeAreaContainer>
-    </Modal>
+    </View>
   );
 }
 
@@ -389,6 +391,11 @@ function SafeAreaContainer({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  fullscreenOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#ffffff',
+    zIndex: 99999,
+  },
   scrollView: {
     flex: 1,
     backgroundColor: '#ffffff',
