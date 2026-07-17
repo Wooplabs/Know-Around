@@ -768,8 +768,10 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         };
         setUser(loggedInUser);
         saveState('native_user', loggedInUser);
-        setOnboardingCompleted(true);
-        saveState('native_onboarding', true);
+        
+        // Load saved onboarding status rather than forcing true
+        const savedOnboarding = typeof window !== 'undefined' ? window.localStorage.getItem('native_onboarding') : null;
+        setOnboardingCompleted(savedOnboarding === 'true');
       } else {
         setUser(null);
         saveState('native_user', null);
@@ -901,8 +903,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const newUser = { name: mockName.charAt(0).toUpperCase() + mockName.slice(1), email };
         setUser(newUser);
         saveState('native_user', newUser);
-        setOnboardingCompleted(true);
-        saveState('native_onboarding', true);
+        const savedOnboarding = typeof window !== 'undefined' ? window.localStorage.getItem('native_onboarding') : null;
+        setOnboardingCompleted(savedOnboarding === 'true');
         return true;
       }
       return false;
@@ -913,11 +915,15 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const newUser = { name: 'Google Neighbor', email: 'google.neighbor@gmail.com' };
     setUser(newUser);
     saveState('native_user', newUser);
-    setOnboardingCompleted(true);
-    saveState('native_onboarding', true);
+    const savedOnboarding = typeof window !== 'undefined' ? window.localStorage.getItem('native_onboarding') : null;
+    setOnboardingCompleted(savedOnboarding === 'true');
   };
 
   const register = async (name: string, email: string, pass: string): Promise<boolean> => {
+    // New signup, force onboarding to run
+    setOnboardingCompleted(false);
+    saveState('native_onboarding', false);
+
     if (isFirebaseConfigured && auth) {
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
@@ -933,8 +939,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const newUser = { name, email };
         setUser(newUser);
         saveState('native_user', newUser);
-        setOnboardingCompleted(true);
-        saveState('native_onboarding', true);
+        setOnboardingCompleted(false);
+        saveState('native_onboarding', false);
         return true;
       }
       return false;
