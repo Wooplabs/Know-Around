@@ -10,6 +10,8 @@ const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser,
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [newPostContent, setNewPostContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSearchBar, setShowSearchBar] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const userEmail = user?.email || 'neighbor@gmail.com';
 
@@ -210,30 +212,60 @@ const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser,
     );
   }
 
+  // Filter Groups List
+  const filteredGroups = groups.filter((g) => 
+    g.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    g.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Group List Directory
   return (
     <SafeAreaView style={[styles.safeArea, darkMode && styles.safeAreaDark]}>
       {/* Uniform Top Header */}
       <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
         <View>
-          <Pressable style={styles.locationSelector}>
-            <LocationIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={18} />
-            <Text style={[styles.locationText, darkMode && styles.locationTextDark]}>{activeLocation.split(',')[0]}</Text>
-            <DownIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={15} style={styles.downChevron} />
-          </Pressable>
+          <Text style={[styles.topHeaderTitle, darkMode && styles.textWhite]}>Groups</Text>
         </View>
         <View style={styles.headerRight}>
-          <Pressable style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
-            <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
+          {/* Search Button */}
+          <Pressable 
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setShowSearchBar(!showSearchBar);
+            }}
+            style={[styles.iconButton, showSearchBar && styles.activeIconButton, darkMode && styles.iconButtonDark]}
+          >
+            <Ionicons name="search-outline" size={22} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
           </Pressable>
-          <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
-            <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
-            <View style={[styles.avatarBadge, darkMode && styles.avatarBadgeDark]}>
-              <Ionicons name="menu-outline" size={8} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-            </View>
+
+          {/* Dot/Kebab Menu Button */}
+          <Pressable onPress={() => setMenuVisible(true)} style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
+            <Ionicons name="ellipsis-vertical" size={22} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
           </Pressable>
         </View>
       </View>
+
+      {/* Interactive Search Bar */}
+      {showSearchBar && (
+        <View style={[styles.searchBarContainer, darkMode && styles.searchBarContainerDark]}>
+          <View style={[styles.searchBar, darkMode && styles.searchBarDark]}>
+            <Ionicons name="search" size={18} color="#60646C" />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search groups..."
+              placeholderTextColor="#8A9099"
+              style={[styles.searchInput, darkMode && styles.textWhite]}
+              autoFocus
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color="#8A9099" />
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* WhatsApp Dropdown Modal Menu */}
       <Modal
@@ -289,7 +321,7 @@ const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser,
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={[styles.sectionTitle, darkMode && styles.textWhite]}>Explore Neighborhood Groups</Text>
         
-        {groups.map((group) => {
+        {filteredGroups.map((group) => {
           const isMember = group.members?.includes(userEmail) || false;
           return (
             <Pressable
@@ -868,5 +900,42 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '900',
     color: '#1A202C',
+  },
+  topHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0C0D0E',
+  },
+  activeIconButton: {
+    backgroundColor: '#EAF6EA',
+  },
+  searchBarContainer: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderBottomWidth: 1.2,
+    borderBottomColor: '#ECEFF1',
+  },
+  searchBarContainerDark: {
+    backgroundColor: '#121212',
+    borderBottomColor: '#2D2D2D',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  searchBarDark: {
+    backgroundColor: '#2D2D2D',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1A202C',
+    marginLeft: 8,
+    padding: 0,
   },
 });
