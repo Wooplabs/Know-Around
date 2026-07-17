@@ -227,11 +227,6 @@ export default function DirectoryScreen() {
     </SafeAreaView>
   );
 }
-}}
-      />
-    </View>
-  );
-}
 
 // Subcategory Horizontal Helper
 function ScrollViewHorizontal({ categories, selected, onSelect }: { categories: any[]; selected: string | null; onSelect: (name: string) => void }) {
