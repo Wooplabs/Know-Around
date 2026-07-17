@@ -1,20 +1,12 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  TextInput,
-  ActivityIndicator,
-  SafeAreaView,
-  Platform
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator, SafeAreaView, Platform, Image, Modal, LayoutAnimation, UIManager, Alert } from 'react-native';
 import { useKnowAround, Group, GroupPost } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
+import { BellIcon, DownIcon, LocationIcon } from '@/components/CustomIcons';
 
 export default function GroupsScreen() {
-  const { groups, groupPosts, joinGroup, postToGroup, user, darkMode } = useKnowAround();
+  const [menuVisible, setMenuVisible] = useState(false);
+const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser, logout, setDarkMode, activeLocation } = useKnowAround();
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [newPostContent, setNewPostContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,15 +37,77 @@ export default function GroupsScreen() {
 
     return (
       <SafeAreaView style={[styles.safeArea, darkMode && styles.safeAreaDark]}>
-        {/* Header */}
-        <View style={[styles.detailHeader, darkMode && styles.detailHeaderDark]}>
-          <Pressable onPress={() => setSelectedGroup(null)} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color={darkMode ? '#ffffff' : '#0C0D0E'} />
-          </Pressable>
-          <Text style={[styles.headerTitle, darkMode && styles.textWhite]} numberOfLines={1}>
-            {selectedGroup.name}
-          </Text>
+        {/* Uniform Top Header (Group Details) */}
+        <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
+          <View style={styles.headerLeftDetail}>
+            <Pressable onPress={() => setSelectedGroup(null)} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={24} color={darkMode ? '#ffffff' : '#0C0D0E'} />
+            </Pressable>
+            <Text style={[styles.headerTitle, darkMode && styles.textWhite]} numberOfLines={1}>
+              {selectedGroup.name}
+            </Text>
+          </View>
+          <View style={styles.headerRight}>
+            <Pressable style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
+              <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
+            </Pressable>
+            <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
+              <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
+              <View style={[styles.avatarBadge, darkMode && styles.avatarBadgeDark]}>
+                <Ionicons name="menu-outline" size={8} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+              </View>
+            </Pressable>
+          </View>
         </View>
+
+        {/* WhatsApp Dropdown Modal Menu (Details View) */}
+        <Modal
+          transparent
+          visible={menuVisible}
+          onRequestClose={() => setMenuVisible(false)}
+          animationType="fade"
+        >
+          <Pressable style={styles.modalBackdrop} onPress={() => setMenuVisible(false)}>
+            <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
+              <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Account Settings", "Manage profile, active sessions, and notification priorities."); }}>
+                <Ionicons name="person-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+                <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Account Settings</Text>
+              </Pressable>
+
+              <Pressable 
+                style={styles.dropdownItem} 
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setDarkMode(!darkMode);
+                }}
+              >
+                <Ionicons name={darkMode ? "sunny-outline" : "moon-outline"} size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+                <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>{darkMode ? "Light Mode" : "Dark Mode"}</Text>
+                <View style={[styles.toggleTrack, darkMode && styles.toggleTrackActive]}>
+                  <View style={[styles.toggleThumb, darkMode && styles.toggleThumbActive]} />
+                </View>
+              </Pressable>
+
+              <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Neighborhood Info", "White Town Neighborhood OS v2.0.0"); }}>
+                <Ionicons name="information-circle-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+                <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Neighborhood Info</Text>
+              </Pressable>
+
+              <View style={[styles.dropdownDivider, darkMode && styles.dropdownDividerDark]} />
+
+              <Pressable 
+                style={[styles.dropdownItem, styles.dropdownItemDestructive]} 
+                onPress={() => {
+                  setMenuVisible(false);
+                  logout();
+                }}
+              >
+                <Ionicons name="log-out-outline" size={18} color="#E53935" />
+                <Text style={[styles.dropdownItemText, styles.destructiveText]}>Log Out</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Modal>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Group Banner Info */}
@@ -159,9 +213,80 @@ export default function GroupsScreen() {
   // Group List Directory
   return (
     <SafeAreaView style={[styles.safeArea, darkMode && styles.safeAreaDark]}>
-      {/* Page Header */}
-      <View style={[styles.headerContainer, darkMode && styles.headerContainerDark]}>
-        <Text style={[styles.brandTitle, darkMode && styles.textWhite]}>Community Groups</Text>
+      {/* Uniform Top Header */}
+      <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
+        <View>
+          <Pressable style={styles.locationSelector}>
+            <LocationIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={18} />
+            <Text style={[styles.locationText, darkMode && styles.locationTextDark]}>{activeLocation.split(',')[0]}</Text>
+            <DownIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={15} style={styles.downChevron} />
+          </Pressable>
+        </View>
+        <View style={styles.headerRight}>
+          <Pressable style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
+            <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
+          </Pressable>
+          <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
+            <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
+            <View style={[styles.avatarBadge, darkMode && styles.avatarBadgeDark]}>
+              <Ionicons name="menu-outline" size={8} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+            </View>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* WhatsApp Dropdown Modal Menu */}
+      <Modal
+        transparent
+        visible={menuVisible}
+        onRequestClose={() => setMenuVisible(false)}
+        animationType="fade"
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setMenuVisible(false)}>
+          <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
+            <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Account Settings", "Manage profile, active sessions, and notification priorities."); }}>
+              <Ionicons name="person-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+              <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Account Settings</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.dropdownItem} 
+              onPress={() => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setDarkMode(!darkMode);
+              }}
+            >
+              <Ionicons name={darkMode ? "sunny-outline" : "moon-outline"} size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+              <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>{darkMode ? "Light Mode" : "Dark Mode"}</Text>
+              <View style={[styles.toggleTrack, darkMode && styles.toggleTrackActive]}>
+                <View style={[styles.toggleThumb, darkMode && styles.toggleThumbActive]} />
+              </View>
+            </Pressable>
+
+            <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Neighborhood Info", "White Town Neighborhood OS v2.0.0"); }}>
+              <Ionicons name="information-circle-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+              <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Neighborhood Info</Text>
+            </Pressable>
+
+            <View style={[styles.dropdownDivider, darkMode && styles.dropdownDividerDark]} />
+
+            <Pressable 
+              style={[styles.dropdownItem, styles.dropdownItemDestructive]} 
+              onPress={() => {
+                setMenuVisible(false);
+                logout();
+              }}
+            >
+              <Ionicons name="log-out-outline" size={18} color="#E53935" />
+              <Text style={[styles.dropdownItemText, styles.destructiveText]}>Log Out</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Sub Header for Page Title / Description */}
+      <View style={[styles.subHeader, darkMode && styles.subHeaderDark]}>
+        <Text style={[styles.pageTitle, darkMode && styles.textWhite]}>Community Groups</Text>
         <Text style={styles.brandSubtitle}>Connect with neighbors sharing your interests</Text>
       </View>
 
@@ -567,5 +692,180 @@ const styles = StyleSheet.create({
   },
   inputDark: {
     color: '#ffffff',
+  },
+
+  headerLeftDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  topHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 42 : 12,
+    paddingBottom: 12,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F2F5',
+  },
+  topHeaderDark: {
+    backgroundColor: '#1E1E1E',
+    borderBottomColor: '#2D2D2D',
+  },
+  locationSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 0,
+  },
+  locationText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#0C0D0E',
+    marginLeft: 4,
+    marginRight: 4,
+  },
+  locationTextDark: {
+    color: '#E2E8F0',
+  },
+  downChevron: {
+    marginTop: 2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#F5F6F8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconButtonDark: {
+    backgroundColor: '#2D2D2D',
+  },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  userAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  avatarBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#E0E4EC',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarBadgeDark: {
+    backgroundColor: '#1E1E1E',
+    borderColor: '#2D2D2D',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  dropdownContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 100 : 75,
+    right: 16,
+    width: 200,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#F0F2F5',
+  },
+  dropdownContainerDark: {
+    backgroundColor: '#1E1E1E',
+    borderColor: '#2D2D2D',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 10,
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1C1E',
+    flex: 1,
+  },
+  dropdownItemTextDark: {
+    color: '#FFFFFF',
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: '#F0F2F5',
+    marginVertical: 4,
+  },
+  dropdownDividerDark: {
+    backgroundColor: '#2D2D2D',
+  },
+  dropdownItemDestructive: {
+    marginTop: 2,
+  },
+  destructiveText: {
+    color: '#E53935',
+  },
+  toggleTrack: {
+    width: 34,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#E2E8F0',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleTrackActive: {
+    backgroundColor: '#1C873C',
+  },
+  toggleThumb: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+  },
+  toggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  subHeader: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F2F5',
+  },
+  subHeaderDark: {
+    backgroundColor: '#121212',
+    borderBottomColor: '#2C2C2C',
+  },
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#1A202C',
   },
 });

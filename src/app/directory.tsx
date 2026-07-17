@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Linking, Alert, Image, SafeAreaView, Platform, Modal, LayoutAnimation, UIManager } from 'react-native';
 import { useKnowAround, Professional, DirectoryItem } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
-import { RoundTickIcon } from '@/components/CustomIcons';
+import { RoundTickIcon, BellIcon, DownIcon, LocationIcon } from '@/components/CustomIcons';
 import BottomSheet from '@/components/BottomSheet';
 
 type ItemType = {
@@ -21,7 +21,7 @@ type ItemType = {
 };
 
 export default function DirectoryScreen() {
-  const { professionals, directory, activeLocation } = useKnowAround();
+  const { professionals, directory, activeLocation, currentUser, logout, darkMode, setDarkMode } = useKnowAround();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [distanceFilter, setDistanceFilter] = useState<number>(5);
@@ -104,26 +104,91 @@ export default function DirectoryScreen() {
   });
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTitleRow}>
-          <Text style={styles.title}>Local Directory</Text>
-          <View style={styles.locationBadge}>
-            <Ionicons name="location-sharp" size={14} color="#1C873C" />
-            <Text style={styles.locationText}>{activeLocation.split(',')[0]}</Text>
-          </View>
+    <SafeAreaView style={[styles.container, darkMode && styles.containerDark]}>
+      {/* Uniform Top Header */}
+      <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
+        <View>
+          <Pressable style={styles.locationSelector}>
+            <LocationIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={18} />
+            <Text style={[styles.locationText, darkMode && styles.locationTextDark]}>{activeLocation.split(',')[0]}</Text>
+            <DownIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={15} style={styles.downChevron} />
+          </Pressable>
         </View>
+        <View style={styles.headerRight}>
+          <Pressable style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
+            <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
+          </Pressable>
+          <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
+            <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
+            <View style={[styles.avatarBadge, darkMode && styles.avatarBadgeDark]}>
+              <Ionicons name="menu-outline" size={8} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+            </View>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* WhatsApp Dropdown Modal Menu */}
+      <Modal
+        transparent
+        visible={menuVisible}
+        onRequestClose={() => setMenuVisible(false)}
+        animationType="fade"
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setMenuVisible(false)}>
+          <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
+            <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Account Settings", "Manage profile, active sessions, and notification priorities."); }}>
+              <Ionicons name="person-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+              <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Account Settings</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.dropdownItem} 
+              onPress={() => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setDarkMode(!darkMode);
+              }}
+            >
+              <Ionicons name={darkMode ? "sunny-outline" : "moon-outline"} size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+              <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>{darkMode ? "Light Mode" : "Dark Mode"}</Text>
+              <View style={[styles.toggleTrack, darkMode && styles.toggleTrackActive]}>
+                <View style={[styles.toggleThumb, darkMode && styles.toggleThumbActive]} />
+              </View>
+            </Pressable>
+
+            <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Neighborhood Info", "White Town Neighborhood OS v2.0.0"); }}>
+              <Ionicons name="information-circle-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+              <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Neighborhood Info</Text>
+            </Pressable>
+
+            <View style={[styles.dropdownDivider, darkMode && styles.dropdownDividerDark]} />
+
+            <Pressable 
+              style={[styles.dropdownItem, styles.dropdownItemDestructive]} 
+              onPress={() => {
+                setMenuVisible(false);
+                logout();
+              }}
+            >
+              <Ionicons name="log-out-outline" size={18} color="#E53935" />
+              <Text style={[styles.dropdownItemText, styles.destructiveText]}>Log Out</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Sub Header for Page Title / Search */}
+      <View style={[styles.subHeader, darkMode && styles.subHeaderDark]}>
+        <Text style={[styles.pageTitle, darkMode && styles.textWhite]}>Local Directory</Text>
         
         {/* Search Input */}
-        <View style={styles.searchBar}>
+        <View style={[styles.searchBar, darkMode && styles.searchBarDark]}>
           <Ionicons name="search" size={18} color="#60646C" />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search Plumber, ATM, Pharmacy..."
             placeholderTextColor="#8A9099"
-            style={styles.searchInput}
+            style={[styles.searchInput, darkMode && styles.textWhite]}
           />
         </View>
       </View>
@@ -134,13 +199,13 @@ export default function DirectoryScreen() {
       </View>
 
       {/* Proximity / Distance Slider Filter */}
-      <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Distance Range: {distanceFilter} km</Text>
+      <View style={[styles.filterSection, darkMode && styles.filterSectionDark]}>
+        <Text style={[styles.filterLabel, darkMode && styles.textWhite]}>Distance Range: {distanceFilter} km</Text>
         <View style={styles.filterPillRow}>
           {[2, 5, 10, 20].map((d) => (
             <Pressable
               key={d}
-              style={[styles.filterPill, distanceFilter === d && styles.activeFilterPill]}
+              style={[styles.filterPill, distanceFilter === d && styles.activeFilterPill, darkMode && styles.filterPillDark]}
               onPress={() => setDistanceFilter(d)}
             >
               <Text style={[styles.filterPillText, distanceFilter === d && styles.activeFilterPillText]}>
@@ -153,91 +218,16 @@ export default function DirectoryScreen() {
 
       {/* List items */}
       <FlatList
-        data={filteredList}
+        data={getFilteredItems()}
         keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <DirectoryCard item={item} />}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="alert-circle-outline" size={48} color="#A0A4AC" />
-            <Text style={styles.emptyText}>No local services found matching your filters.</Text>
-          </View>
-        }
-        renderItem={({ item }) => {
-          // Inline star builder
-          const renderStarsRow = (rating: number) => {
-            const stars = [];
-            const fullStars = Math.floor(rating);
-            const hasHalfStar = rating % 1 >= 0.5;
-            for (let i = 1; i <= 5; i++) {
-              if (i <= fullStars) {
-                stars.push(<Ionicons key={i} name="star" size={11} color="#FFB300" />);
-              } else if (i === fullStars + 1 && hasHalfStar) {
-                stars.push(<Ionicons key={i} name="star-half" size={11} color="#FFB300" />);
-              } else {
-                stars.push(<Ionicons key={i} name="star-outline" size={11} color="#D0D4DC" />);
-              }
-            }
-            return <View style={styles.starsRow}>{stars}</View>;
-          };
-
-          const isOpen = item.openStatus === 'Open' || item.availability === 'Available';
-
-          return (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardHeaderLeft}>
-                  <View style={styles.nameRow}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    {item.verified && (
-                      <RoundTickIcon color="#1C873C" size={16} style={styles.verifiedIcon} />
-                    )}
-                  </View>
-                  <View style={styles.metaRow}>
-                    <Text style={styles.categoryBadge}>{item.category}</Text>
-                    <Text style={styles.metaDivider}>&middot;</Text>
-                    <Text style={styles.distanceBadge}>{item.distance} km</Text>
-                    
-                    <Text style={styles.metaDivider}>&middot;</Text>
-                    <View style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}>
-                      <Text style={[styles.statusBadgeText, isOpen ? styles.statusOpenText : styles.statusClosedText]}>
-                        {item.openStatus || item.availability}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.ratingBox}>
-                  {renderStarsRow(item.rating)}
-                  <Text style={styles.ratingText}>({item.rating})</Text>
-                </View>
-              </View>
-
-            <Text style={styles.locationDetail}>
-              <Ionicons name="location-outline" size={12} color="#8A9099" /> {item.location}
-            </Text>
-
-            {/* Quick action buttons */}
-            <View style={styles.actions}>
-              <Pressable style={[styles.actionBtn, styles.callBtn]} onPress={() => handleCall(item.phone)}>
-                <Ionicons name="call" size={16} color="#ffffff" />
-                <Text style={styles.actionBtnText}>Call</Text>
-              </Pressable>
-
-              {item.isProfessional && item.whatsapp && (
-                <Pressable style={[styles.actionBtn, styles.whatsappBtn]} onPress={() => handleWhatsApp(item.whatsapp!)}>
-                  <Ionicons name="logo-whatsapp" size={16} color="#ffffff" />
-                  <Text style={styles.actionBtnText}>WhatsApp</Text>
-                </Pressable>
-              )}
-
-              <Pressable style={[styles.actionBtn, styles.navBtn]} onPress={() => handleNavigate(item.location)}>
-                <Ionicons name="navigate-outline" size={16} color="#4A5568" />
-                <Text style={[styles.actionBtnText, { color: '#4A5568' }]}>Directions</Text>
-              </Pressable>
-            </View>
-          </View>
-        );
-      }}
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
+  );
+}
+}}
       />
     </View>
   );
@@ -521,5 +511,184 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#ffffff',
+  },
+
+  containerDark: {
+    backgroundColor: '#000000',
+  },
+  topHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 42 : 12,
+    paddingBottom: 12,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F2F5',
+  },
+  topHeaderDark: {
+    backgroundColor: '#1E1E1E',
+    borderBottomColor: '#2D2D2D',
+  },
+  locationSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 0,
+  },
+  locationTextDark: {
+    color: '#E2E8F0',
+  },
+  downChevron: {
+    marginTop: 2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#F5F6F8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconButtonDark: {
+    backgroundColor: '#2D2D2D',
+  },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  userAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  avatarBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#E0E4EC',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarBadgeDark: {
+    backgroundColor: '#1E1E1E',
+    borderColor: '#2D2D2D',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  dropdownContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 100 : 75,
+    right: 16,
+    width: 200,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#F0F2F5',
+  },
+  dropdownContainerDark: {
+    backgroundColor: '#1E1E1E',
+    borderColor: '#2D2D2D',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 10,
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1C1E',
+    flex: 1,
+  },
+  dropdownItemTextDark: {
+    color: '#FFFFFF',
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: '#F0F2F5',
+    marginVertical: 4,
+  },
+  dropdownDividerDark: {
+    backgroundColor: '#2D2D2D',
+  },
+  dropdownItemDestructive: {
+    marginTop: 2,
+  },
+  destructiveText: {
+    color: '#E53935',
+  },
+  toggleTrack: {
+    width: 34,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#E2E8F0',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleTrackActive: {
+    backgroundColor: '#1C873C',
+  },
+  toggleThumb: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+  },
+  toggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  subHeader: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F2F5',
+  },
+  subHeaderDark: {
+    backgroundColor: '#121212',
+    borderBottomColor: '#2C2C2C',
+  },
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#1A202C',
+    marginBottom: 10,
+  },
+  textWhite: {
+    color: '#ffffff',
+  },
+  searchBarDark: {
+    backgroundColor: '#2D2D2D',
+  },
+  filterSectionDark: {
+    backgroundColor: '#1E1E1E',
+    borderBottomColor: '#2D2D2D',
+  },
+  filterPillDark: {
+    backgroundColor: '#2D2D2D',
   },
 });
