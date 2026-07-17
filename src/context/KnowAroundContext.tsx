@@ -1002,6 +1002,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     } catch (e) {}
     setProfessionals(SEED_PROFESSIONALS);
+  };
+
   const updateProfileDetails = (name: string, email?: string) => {
     if (user) {
       const updatedUser = { ...user, name, email: email || user.email };
