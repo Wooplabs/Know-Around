@@ -177,10 +177,8 @@ export default function DirectoryScreen() {
         </Pressable>
       </Modal>
 
-      {/* Sub Header for Page Title / Search */}
+      {/* Sub Header for Search */}
       <View style={[styles.subHeader, darkMode && styles.subHeaderDark]}>
-        <Text style={[styles.pageTitle, darkMode && styles.textWhite]}>Local Directory</Text>
-        
         {/* Search Input */}
         <View style={[styles.searchBar, darkMode && styles.searchBarDark]}>
           <Ionicons name="search" size={18} color="#60646C" />

@@ -284,11 +284,7 @@ const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser,
         </Pressable>
       </Modal>
 
-      {/* Sub Header for Page Title / Description */}
-      <View style={[styles.subHeader, darkMode && styles.subHeaderDark]}>
-        <Text style={[styles.pageTitle, darkMode && styles.textWhite]}>Community Groups</Text>
-        <Text style={styles.brandSubtitle}>Connect with neighbors sharing your interests</Text>
-      </View>
+
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={[styles.sectionTitle, darkMode && styles.textWhite]}>Explore Neighborhood Groups</Text>
