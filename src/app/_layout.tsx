@@ -11,6 +11,10 @@ import { HomeIcon, MapIcon, ChatsIcon } from '@/components/CustomIcons';
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const { setComposerVisible, darkMode } = useKnowAround();
 
+  // Hide the floating tab bar when settings is open
+  const isSettingsActive = state.routes[state.index]?.name === 'settings';
+  if (isSettingsActive) return null;
+
   return (
     <View style={styles.tabBarWrapper} pointerEvents="box-none">
       {/* Side-by-Side Floating Bar Container */}
@@ -19,6 +23,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         {/* Left White Tabs Capsule */}
         <View style={[styles.floatingTabBar, { backgroundColor: darkMode ? '#1C1C1E' : '#ffffff' }]}>
           {state.routes.map((route: any, index: number) => {
+            if (route.name === 'settings') return null;
             const { options } = descriptors[route.key];
             
             let label = 'Home';

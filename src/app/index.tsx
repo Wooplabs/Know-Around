@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Image, TextInput, ScrollView, SafeAreaView, Platform, LayoutAnimation, UIManager, Modal, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useKnowAround, Post } from '../context/KnowAroundContext';
 import PostCard from '../components/PostCard';
 import { BellIcon, DownIcon, PlusIcon, ImagesIcon, LocationIcon, RoundTickIcon } from '@/components/CustomIcons';
@@ -101,7 +102,7 @@ export default function HomeScreen() {
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setMenuVisible(false)}>
           <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
-            <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Account Settings", "Manage profile, active sessions, and notification priorities."); }}>
+            <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); router.push('/settings'); }}>
               <Ionicons name="person-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
               <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Account Settings</Text>
             </Pressable>

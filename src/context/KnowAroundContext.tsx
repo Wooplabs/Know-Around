@@ -133,6 +133,7 @@ interface KnowAroundContextProps {
   register: (name: string, email: string, pass: string) => Promise<boolean>;
   logout: () => Promise<void>;
   currentUser: { name: string; avatar: string; location: string };
+  updateProfileDetails: (name: string, email?: string) => void;
   activeLocation: string;
   setActiveLocation: (loc: string) => void;
   feeds: Post[];
@@ -1001,6 +1002,12 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     } catch (e) {}
     setProfessionals(SEED_PROFESSIONALS);
+  const updateProfileDetails = (name: string, email?: string) => {
+    if (user) {
+      const updatedUser = { ...user, name, email: email || user.email };
+      setUser(updatedUser);
+      saveState('native_user', updatedUser);
+    }
   };
 
   const addPost = async (content: string, category: 'News' | 'Alert' | 'Event' | 'Community Update', image?: string) => {
@@ -1348,6 +1355,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         register,
         logout,
         currentUser,
+        updateProfileDetails,
         activeLocation,
         setActiveLocation: (loc) => {
           setActiveLocation(loc);
