@@ -74,14 +74,14 @@ export default function HomeScreen() {
       <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
         <View>
           <Pressable style={styles.locationSelector}>
-            <LocationIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={13} />
+            <LocationIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={18} />
             <Text style={[styles.locationText, darkMode && styles.locationTextDark]}>{activeLocation.split(',')[0]}</Text>
-            <DownIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={12} style={styles.downChevron} />
+            <DownIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={15} style={styles.downChevron} />
           </Pressable>
         </View>
         <View style={styles.headerRight}>
           <Pressable style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
-            <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={22} />
+            <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
           </Pressable>
           <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
             <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
@@ -270,17 +270,17 @@ const styles = StyleSheet.create({
   locationSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: 0,
   },
   locationText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#60646C',
-    marginLeft: 3,
-    marginRight: 2,
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#0C0D0E',
+    marginLeft: 4,
+    marginRight: 4,
   },
   downChevron: {
-    marginTop: 1,
+    marginTop: 2,
   },
   headerRight: {
     flexDirection: 'row',
@@ -288,9 +288,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: '#F5F6F8',
     justifyContent: 'center',
     alignItems: 'center',
@@ -299,9 +299,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   userAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 2,
     borderColor: '#ffffff',
   },
