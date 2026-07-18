@@ -141,6 +141,8 @@ export interface KnowAroundContextProps {
   jobs: JobVacancy[];
   onboardingCompleted: boolean;
   setOnboardingCompleted: (val: boolean) => void;
+  justRegistered: boolean;
+  setJustRegistered: (val: boolean) => void;
   userRole: 'user' | 'professional' | null;
   setUserRole: (role: 'user' | 'professional' | null) => void;
   userAddress: { street: string; place: string; city: string; state: string; pin: string; phone: string } | null;
@@ -730,6 +732,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [alerts, setAlerts] = useState<AlertItem[]>(SEED_ALERTS);
   const [jobs, setJobs] = useState<JobVacancy[]>(SEED_JOBS);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const [justRegistered, setJustRegistered] = useState(false);
   const [userRole, setUserRole] = useState<'user' | 'professional' | null>(null);
   const [userAddress, setUserAddress] = useState<{ street: string; place: string; city: string; state: string; pin: string; phone: string } | null>(null);
   const [composerVisible, setComposerVisible] = useState(false);
@@ -920,6 +923,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const login = async (phone: string): Promise<boolean> => {
     setOnboardingCompleted(true);
     saveState('native_onboarding', true);
+    setJustRegistered(false);
 
     const formattedName = phone.replace(/[^0-9]/g, '').slice(-10) || 'Neighbor';
     const newUser = { name: `User ${formattedName}`, email: phone };
@@ -934,12 +938,14 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     saveState('native_user', newUser);
     setOnboardingCompleted(true);
     saveState('native_onboarding', true);
+    setJustRegistered(false);
   };
 
   const register = async (name: string, phone: string): Promise<boolean> => {
     // New signup, force onboarding to run
     setOnboardingCompleted(false);
     saveState('native_onboarding', false);
+    setJustRegistered(true);
 
     const newUser = { name: name || 'Neighbor', email: phone };
     setUser(newUser);
@@ -1340,6 +1346,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           setOnboardingCompleted(val);
           saveState('native_onboarding', val);
         },
+        justRegistered,
+        setJustRegistered,
         userRole,
         setUserRole: (role) => {
           setUserRole(role);
