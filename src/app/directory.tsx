@@ -26,9 +26,9 @@ const handleCall = (phone: string) => {
   Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to make phone call.'));
 };
 
-const handleWhatsApp = (num: string) => {
-  const url = `https://wa.me/91${num}`;
-  Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open WhatsApp.'));
+const handleMessage = (phone: string) => {
+  const url = `sms:${phone}`;
+  Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open Messaging app.'));
 };
 
 const handleNavigate = (loc: string) => {
@@ -99,10 +99,10 @@ function DirectoryCard({ item }: { item: ItemType }) {
           <Text style={styles.actionBtnText}>Call</Text>
         </Pressable>
 
-        {item.isProfessional && item.whatsapp && (
-          <Pressable style={[styles.actionBtn, styles.whatsappBtn]} onPress={() => handleWhatsApp(item.whatsapp!)}>
-            <Ionicons name="logo-whatsapp" size={16} color="#ffffff" />
-            <Text style={styles.actionBtnText}>WhatsApp</Text>
+        {item.isProfessional && item.phone && (
+          <Pressable style={[styles.actionBtn, styles.messageBtn]} onPress={() => handleMessage(item.phone)}>
+            <Ionicons name="chatbubble-ellipses" size={16} color="#ffffff" />
+            <Text style={styles.actionBtnText}>Message</Text>
           </Pressable>
         )}
 
@@ -593,8 +593,8 @@ const styles = StyleSheet.create({
   callBtn: {
     backgroundColor: '#1C873C',
   },
-  whatsappBtn: {
-    backgroundColor: '#25D366',
+  messageBtn: {
+    backgroundColor: '#208AEF',
   },
   navBtn: {
     backgroundColor: '#EDF2F7',
