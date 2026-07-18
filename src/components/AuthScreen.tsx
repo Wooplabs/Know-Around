@@ -24,25 +24,61 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+// Curated list of selectable countries with flags and codes
+const COUNTRIES = [
+  { name: 'India', code: '+91', flag: '🇮🇳' },
+  { name: 'United States', code: '+1', flag: '🇺🇸' },
+  { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
+  { name: 'United Arab Emirates', code: '+971', flag: '🇦🇪' },
+  { name: 'Australia', code: '+61', flag: '🇦🇺' },
+  { name: 'Canada', code: '+1', flag: '🇨🇦' },
+  { name: 'Singapore', code: '+65', flag: '🇸🇬' },
+  { name: 'Germany', code: '+49', flag: '🇩🇪' },
+  { name: 'France', code: '#33', flag: '🇫🇷' },
+  { name: 'Japan', code: '+81', flag: '🇯🇵' },
+];
+
 export default function AuthScreen() {
   const { login, register, googleLogin } = useKnowAround();
+  
+  // Auth flow states
   const [isSignUp, setIsSignUp] = useState(false);
+  const [authState, setAuthState] = useState<'input' | 'otp'>('input');
+  
+  // Input fields
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('archudhanajay369@gmail.com');
-  const [password, setPassword] = useState('123456');
+  const [phone, setPhone] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  
+  // Submission & Loader states
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Focus States
-  const [focusedField, setFocusedField] = useState<'name' | 'email' | 'password' | null>(null);
-
-  // Validation Errors
+  // Focus & Validation states
+  const [focusedField, setFocusedField] = useState<'name' | 'phone' | null>(null);
   const [nameError, setNameError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
 
-  // Animation values
+  // OTP states
+  const [otpCode, setOtpCode] = useState('');
+  const [otpInput, setOtpInput] = useState(['', '', '', '', '', '']);
+  const [otpError, setOtpError] = useState('');
+  const [resendTimer, setResendTimer] = useState(30);
+  
+  const otpRefs = useRef<Array<any>>([]);
   const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  // Resend OTP timer countdown
+  useEffect(() => {
+    let interval: any;
+    if (authState === 'otp' && resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [authState, resendTimer]);
 
   const triggerShake = () => {
     Animated.sequence([
@@ -56,57 +92,28 @@ export default function AuthScreen() {
     ]).start();
   };
 
-  const getPasswordStrength = (pass: string) => {
-    if (!pass) return { score: 0, label: '', color: '#E2E8F0', desc: 'Enter password' };
-    if (pass.length < 6) return { score: 1, label: 'Weak', color: '#D32F2F', desc: 'Must be at least 6 characters' };
-    
-    const hasNumber = /\d/.test(pass);
-    const hasUpper = /[A-Z]/.test(pass);
-    const hasSpecial = /[^A-Za-z0-9]/.test(pass);
-    
-    if (pass.length >= 8 && hasNumber && (hasUpper || hasSpecial)) {
-      return { score: 3, label: 'Strong', color: '#1C873C', desc: 'Perfect security!' };
-    }
-    return { score: 2, label: 'Medium', color: '#ED8936', desc: 'Add capital letters or numbers' };
-  };
-
-  const strength = getPasswordStrength(password);
-
   const toggleMode = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsSignUp(!isSignUp);
     setNameError('');
-    setEmailError('');
-    setPasswordError('');
+    setPhoneError('');
   };
 
-  const validate = (): boolean => {
+  const validateInput = (): boolean => {
     let isValid = true;
-    
-    // Clear errors
     setNameError('');
-    setEmailError('');
-    setPasswordError('');
+    setPhoneError('');
 
     if (isSignUp && !name.trim()) {
       setNameError('Full Name is required.');
       isValid = false;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim()) {
-      setEmailError('Email address is required.');
+    if (!phone.trim()) {
+      setPhoneError('Mobile number is required.');
       isValid = false;
-    } else if (!emailRegex.test(email.trim())) {
-      setEmailError('Please enter a valid email address.');
-      isValid = false;
-    }
-
-    if (!password) {
-      setPasswordError('Password is required.');
-      isValid = false;
-    } else if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters long.');
+    } else if (phone.length < 8) {
+      setPhoneError('Please enter a valid mobile number.');
       isValid = false;
     }
 
@@ -116,90 +123,53 @@ export default function AuthScreen() {
     return isValid;
   };
 
-  // OTP States
-  const [showOtpSheet, setShowOtpSheet] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpInput, setOtpInput] = useState(['', '', '', '', '', '']);
-  const [otpError, setOtpError] = useState('');
-  const [resendTimer, setResendTimer] = useState(30);
-  const otpRefs = useRef<Array<any>>([]);
-
-  // Resend countdown
-  useEffect(() => {
-    let interval: any;
-    if (showOtpSheet && resendTimer > 0) {
-      interval = setInterval(() => {
-        setResendTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [showOtpSheet, resendTimer]);
-
   const generateAndSendOtp = () => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setOtpCode(code);
     setOtpInput(['', '', '', '', '', '']);
     setOtpError('');
     setResendTimer(30);
-    setShowOtpSheet(true);
+    setAuthState('otp');
 
-    // Development alert simulation for developer convenience
+    // Simulate sending real OTP through Alert modal
     Alert.alert(
-      '📧 Verification Code Sent',
-      `We sent a 6-digit OTP to ${email}.\n\nFor testing, your OTP is: ${code}`,
+      '💬 SMS OTP Sent',
+      `We sent a 6-digit verification code to ${selectedCountry.code} ${phone}.\n\nFor testing, your OTP is: ${code}`,
       [{ text: 'OK' }]
     );
   };
 
-  const handleSubmit = async () => {
-    if (!validate()) return;
+  const handleSendOtpPress = () => {
+    if (!validateInput()) return;
     generateAndSendOtp();
   };
 
   const handleVerifyOtp = async () => {
-    const codeString = otpInput.join('');
-    if (codeString.length < 6) {
+    const enteredCode = otpInput.join('');
+    if (enteredCode.length < 6) {
       setOtpError('Please enter the full 6-digit code');
       triggerShake();
       return;
     }
 
-    if (codeString !== otpCode) {
-      setOtpError('Invalid code. Please check and try again.');
+    if (enteredCode !== otpCode) {
+      setOtpError('Invalid verification code. Please try again.');
       triggerShake();
       return;
     }
 
-    // Code matches, close sheet and perform login/registration!
-    setShowOtpSheet(false);
     setIsSubmitting(true);
+    const fullPhoneNumber = `${selectedCountry.code}${phone}`;
 
     try {
       if (isSignUp) {
-        const success = await register(name, email, password);
-        if (!success) {
-          triggerShake();
-        }
+        await register(name.trim(), fullPhoneNumber);
       } else {
-        const success = await login(email, password);
-        if (!success) {
-          triggerShake();
-          setPasswordError('Incorrect password');
-        }
+        await login(fullPhoneNumber);
       }
     } catch (err: any) {
       triggerShake();
-      const errorCode = err.code || '';
-      const errorMessage = err.message || '';
-      if (errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
-        setPasswordError('Incorrect password');
-      } else if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-email') {
-        setEmailError('Incorrect email address');
-      } else if (errorCode === 'auth/email-already-in-use' || errorMessage.includes('email-already-in-use')) {
-        setEmailError('Email already exists. Sign In');
-      } else {
-        setPasswordError(err.message || 'Authentication failed');
-      }
+      setOtpError(err.message || 'Authentication failed. Please check connection.');
     } finally {
       setIsSubmitting(false);
     }
@@ -220,199 +190,209 @@ export default function AuthScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Form Content */}
-          <Animated.View style={[styles.formContainer, { transform: [{ translateX: shakeAnim }] }]}>
-            <Text style={styles.title}>{isSignUp ? 'Sign Up' : 'Sign In'}</Text>
-            <Text style={styles.subtitle}>
-              {isSignUp 
-                ? 'Join your local neighborhood network' 
-                : 'Sign in to see what is happening around you'}
-            </Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.brandTitle}>KnowAround</Text>
+            <Text style={styles.brandSubtitle}>Neighborhood OS</Text>
+          </View>
 
-            {isSignUp && (
+          {authState === 'input' ? (
+            /* PHASE 1: ENTER MOBILE NUMBER FORM */
+            <Animated.View style={[styles.formContainer, { transform: [{ translateX: shakeAnim }] }]}>
+              <Text style={styles.title}>{isSignUp ? 'Create Account' : 'Welcome Back'}</Text>
+              <Text style={styles.subtitle}>
+                {isSignUp 
+                  ? 'Join your local neighborhood network with mobile authentication' 
+                  : 'Enter your phone number to sign in securely'}
+              </Text>
+
+              {isSignUp && (
+                <View style={styles.inputGroup}>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>Full Name</Text>
+                    {!!nameError && <Text style={styles.errorTextInline}>{nameError}</Text>}
+                  </View>
+                  <TextInput
+                    value={name}
+                    onChangeText={(text) => {
+                      setName(text);
+                      if (nameError) setNameError('');
+                    }}
+                    onFocus={() => setFocusedField('name')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="e.g. Rahul Sharma"
+                    placeholderTextColor="#A0A4AC"
+                    style={[
+                      styles.input,
+                      focusedField === 'name' && styles.inputFocused,
+                      !!nameError && styles.inputError
+                    ]}
+                  />
+                </View>
+              )}
+
               <View style={styles.inputGroup}>
                 <View style={styles.labelRow}>
-                  <Text style={styles.label}>Full Name</Text>
-                  {!!nameError && <Text style={styles.errorTextInline}>{nameError}</Text>}
+                  <Text style={styles.label}>Mobile Number</Text>
+                  {!!phoneError && <Text style={styles.errorTextInline}>{phoneError}</Text>}
                 </View>
-                <TextInput
-                  value={name}
-                  onChangeText={(text) => {
-                    setName(text);
-                    if (nameError) setNameError('');
-                  }}
-                  onFocus={() => setFocusedField('name')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="e.g. Rahul Sharma"
-                  placeholderTextColor="#A0A4AC"
-                  style={[
-                    styles.input,
-                    focusedField === 'name' && styles.inputFocused,
-                    !!nameError && styles.inputError
-                  ]}
-                />
+                <View style={styles.phoneInputRow}>
+                  <Pressable style={styles.countryCodeSelector} onPress={() => setShowCountryPicker(true)}>
+                    <Text style={styles.flagText}>{selectedCountry.flag}</Text>
+                    <Text style={styles.codeText}>{selectedCountry.code}</Text>
+                    <Ionicons name="chevron-down" size={14} color="#60646C" />
+                  </Pressable>
+                  
+                  <TextInput
+                    value={phone}
+                    onChangeText={(text) => {
+                      const cleaned = text.replace(/[^0-9]/g, '');
+                      setPhone(cleaned);
+                      if (phoneError) setPhoneError('');
+                    }}
+                    onFocus={() => setFocusedField('phone')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="98765 43210"
+                    placeholderTextColor="#A0A4AC"
+                    keyboardType="phone-pad"
+                    maxLength={15}
+                    style={[
+                      styles.phoneInput,
+                      focusedField === 'phone' && styles.inputFocused,
+                      !!phoneError && styles.inputError
+                    ]}
+                  />
+                </View>
               </View>
-            )}
 
-            <View style={styles.inputGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Email Address</Text>
-                {!!emailError && <Text style={styles.errorTextInline}>{emailError}</Text>}
+              <Pressable style={styles.btn} onPress={handleSendOtpPress} disabled={isSubmitting}>
+                <Text style={styles.btnText}>Send OTP</Text>
+              </Pressable>
+
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
               </View>
-              <TextInput
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (emailError) setEmailError('');
-                }}
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
-                placeholder="e.g. rahul@gmail.com"
-                placeholderTextColor="#A0A4AC"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={[
-                  styles.input,
-                  focusedField === 'email' && styles.inputFocused,
-                  !!emailError && styles.inputError
-                ]}
-              />
-            </View>
 
-            <View style={styles.inputGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Password</Text>
-                {!!passwordError && <Text style={styles.errorTextInline}>{passwordError}</Text>}
-              </View>
-              <TextInput
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (passwordError) setPasswordError('');
-                }}
-                onFocus={() => setFocusedField('password')}
-                onBlur={() => setFocusedField(null)}
-                placeholder="Min. 6 characters"
-                placeholderTextColor="#A0A4AC"
-                secureTextEntry
-                style={[
-                  styles.input,
-                  focusedField === 'password' && styles.inputFocused,
-                  !!passwordError && styles.inputError
-                ]}
-              />
-
-              {/* Password Strength Indicator */}
-              {isSignUp && password.length > 0 && (
-                <View style={styles.strengthContainer}>
-                  <View style={styles.strengthRow}>
-                    <Text style={styles.strengthLabel}>
-                      Strength: <Text style={{ color: strength.color, fontWeight: '800' }}>{strength.label}</Text>
+              {/* OAuth Fallback */}
+              <Pressable style={styles.googleBtn} onPress={handleGoogleLogin} disabled={loadingGoogle}>
+                {loadingGoogle ? (
+                  <ActivityIndicator size="small" color="#60646C" />
+                ) : (
+                  <>
+                    <Ionicons name="logo-google" size={18} color="#EA4335" />
+                    <Text style={styles.googleBtnText}>
+                      {isSignUp ? 'Sign up with Google' : 'Sign in with Google'}
                     </Text>
-                    <Text style={styles.strengthDesc}>{strength.desc}</Text>
-                  </View>
-                  <View style={styles.meterContainer}>
-                    <View style={[styles.meterSegment, { backgroundColor: strength.score >= 1 ? strength.color : '#E2E8F0' }]} />
-                    <View style={[styles.meterSegment, { backgroundColor: strength.score >= 2 ? strength.color : '#E2E8F0' }]} />
-                    <View style={[styles.meterSegment, { backgroundColor: strength.score >= 3 ? strength.color : '#E2E8F0' }]} />
-                  </View>
-                </View>
-              )}
-            </View>
+                  </>
+                )}
+              </Pressable>
 
-            <Pressable style={styles.btn} onPress={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Text style={styles.btnText}>{isSignUp ? 'Continue' : 'Sign In'}</Text>
-              )}
-            </Pressable>
-
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google Sign In Button */}
-            <Pressable style={styles.googleBtn} onPress={handleGoogleLogin} disabled={loadingGoogle}>
-              {loadingGoogle ? (
-                <ActivityIndicator size="small" color="#60646C" />
-              ) : (
-                <>
-                  <Ionicons name="logo-google" size={18} color="#EA4335" />
-                  <Text style={styles.googleBtnText}>
-                    {isSignUp ? 'Sign up with Google' : 'Sign in with Google'}
-                  </Text>
-                </>
-              )}
-            </Pressable>
-
-            <Pressable style={styles.toggleLink} onPress={toggleMode}>
-              <Text style={styles.toggleLinkText}>
-                {isSignUp 
-                  ? 'Already have an account? Sign In' 
-                  : "Don't have an account? Create one"}
+              <Pressable style={styles.toggleLink} onPress={toggleMode}>
+                <Text style={styles.toggleLinkText}>
+                  {isSignUp 
+                    ? 'Already have an account? Sign In' 
+                    : "Don't have an account? Create one"}
+                </Text>
+              </Pressable>
+            </Animated.View>
+          ) : (
+            /* PHASE 2: SMS OTP VERIFICATION SCREEN */
+            <Animated.View style={[styles.formContainer, { transform: [{ translateX: shakeAnim }] }]}>
+              <Text style={styles.title}>Verify Mobile</Text>
+              <Text style={styles.subtitle}>
+                We sent a 6-digit code to{' '}
+                <Text style={{ fontWeight: '700', color: '#1A1C1E' }}>
+                  {selectedCountry.flag} {selectedCountry.code} {phone}
+                </Text>. Enter it below to complete verification.
               </Text>
-            </Pressable>
-          </Animated.View>
+
+              <View style={styles.otpInputRow}>
+                {otpInput.map((digit, idx) => (
+                  <TextInput
+                    key={idx}
+                    ref={(el) => (otpRefs.current[idx] = el)}
+                    value={digit}
+                    onChangeText={(text) => {
+                      const cleanedText = text.replace(/[^0-9]/g, '');
+                      const newOtp = [...otpInput];
+                      newOtp[idx] = cleanedText;
+                      setOtpInput(newOtp);
+
+                      // Focus next cell
+                      if (cleanedText && idx < 5) {
+                        otpRefs.current[idx + 1]?.focus();
+                      }
+                    }}
+                    onKeyPress={(e) => {
+                      if (e.nativeEvent.key === 'Backspace' && !otpInput[idx] && idx > 0) {
+                        const newOtp = [...otpInput];
+                        newOtp[idx - 1] = '';
+                        setOtpInput(newOtp);
+                        otpRefs.current[idx - 1]?.focus();
+                      }
+                    }}
+                    maxLength={1}
+                    keyboardType="number-pad"
+                    textContentType="oneTimeCode"
+                    style={[
+                      styles.otpInputBox,
+                      !!otpError && styles.otpInputBoxError
+                    ]}
+                  />
+                ))}
+              </View>
+
+              {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
+
+              <Pressable style={styles.btn} onPress={handleVerifyOtp} disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.btnText}>Verify & Login</Text>
+                )}
+              </Pressable>
+
+              <View style={styles.otpResendRow}>
+                <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
+                {resendTimer > 0 ? (
+                  <Text style={styles.otpTimerText}>Resend in {resendTimer}s</Text>
+                ) : (
+                  <Pressable onPress={generateAndSendOtp}>
+                    <Text style={styles.otpResendLink}>Resend OTP</Text>
+                  </Pressable>
+                )}
+              </View>
+
+              <Pressable style={styles.changeNumberLink} onPress={() => setAuthState('input')}>
+                <Text style={styles.changeNumberLinkText}>Change Mobile Number</Text>
+              </Pressable>
+            </Animated.View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Email OTP Verification Bottom Sheet */}
-      <BottomSheet visible={showOtpSheet} onClose={() => setShowOtpSheet(false)}>
-        <View style={styles.otpSheetContent}>
-          <Text style={styles.otpTitle}>Verify Your Email</Text>
-          <Text style={styles.otpSubtitle}>Enter the 6-digit code we sent to your email address.</Text>
-          
-          <View style={styles.otpInputRow}>
-            {otpInput.map((digit, idx) => (
-              <TextInput
-                key={idx}
-                ref={(el) => (otpRefs.current[idx] = el)}
-                value={digit}
-                onChangeText={(text) => {
-                  const cleanedText = text.replace(/[^0-9]/g, '');
-                  const newOtp = [...otpInput];
-                  newOtp[idx] = cleanedText;
-                  setOtpInput(newOtp);
-
-                  // Auto focus next input
-                  if (cleanedText && idx < 5) {
-                    otpRefs.current[idx + 1]?.focus();
-                  }
+      {/* Selectable Country Picker Bottom Sheet */}
+      <BottomSheet visible={showCountryPicker} onClose={() => setShowCountryPicker(false)}>
+        <View style={styles.pickerContent}>
+          <Text style={styles.pickerTitle}>Select Country Code</Text>
+          <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
+            {COUNTRIES.map((c) => (
+              <Pressable 
+                key={c.code + c.name} 
+                style={styles.pickerItem} 
+                onPress={() => {
+                  setSelectedCountry(c);
+                  setShowCountryPicker(false);
                 }}
-                onKeyPress={(e) => {
-                  if (e.nativeEvent.key === 'Backspace' && !otpInput[idx] && idx > 0) {
-                    otpRefs.current[idx - 1]?.focus();
-                  }
-                }}
-                maxLength={1}
-                keyboardType="number-pad"
-                style={[
-                  styles.otpInputBox,
-                  !!otpError && styles.otpInputBoxError
-                ]}
-              />
-            ))}
-          </View>
-
-          {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
-
-          <Pressable style={styles.otpVerifyBtn} onPress={handleVerifyOtp}>
-            <Text style={styles.otpVerifyBtnText}>Verify & Login</Text>
-          </Pressable>
-
-          <View style={styles.otpResendRow}>
-            <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
-            {resendTimer > 0 ? (
-              <Text style={styles.otpTimerText}>Resend in {resendTimer}s</Text>
-            ) : (
-              <Pressable onPress={generateAndSendOtp}>
-                <Text style={styles.otpResendLink}>Resend Code</Text>
+              >
+                <Text style={styles.pickerFlag}>{c.flag}</Text>
+                <Text style={styles.pickerName}>{c.name}</Text>
+                <Text style={styles.pickerCode}>{c.code}</Text>
               </Pressable>
-            )}
-          </View>
+            ))}
+          </ScrollView>
         </View>
       </BottomSheet>
     </SafeAreaView>
@@ -492,8 +472,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 14,
     color: '#1A1C1E',
-    transitionProperty: 'border-color',
-    transitionDuration: '0.2s',
   },
   inputFocused: {
     borderColor: '#1C873C',
@@ -503,38 +481,40 @@ const styles = StyleSheet.create({
     borderColor: '#D32F2F',
     backgroundColor: '#FFF5F5',
   },
-  errorText: {
-    color: '#D32F2F',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  strengthContainer: {
-    marginTop: 10,
-    paddingHorizontal: 2,
-  },
-  strengthRow: {
+  phoneInputRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
+    gap: 10,
+    width: '100%',
   },
-  strengthLabel: {
-    fontSize: 11,
-    color: '#60646C',
-  },
-  strengthDesc: {
-    fontSize: 11,
-    color: '#A0A4AC',
-    fontWeight: '500',
-  },
-  meterContainer: {
+  countryCodeSelector: {
     flexDirection: 'row',
-    height: 5,
+    alignItems: 'center',
+    backgroundColor: '#FCFDFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    paddingHorizontal: 12,
     gap: 4,
+    height: 52,
   },
-  meterSegment: {
+  flagText: {
+    fontSize: 20,
+  },
+  codeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1C1E',
+  },
+  phoneInput: {
     flex: 1,
-    borderRadius: 2,
+    backgroundColor: '#FCFDFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 52,
+    fontSize: 14,
+    color: '#1A1C1E',
   },
   btn: {
     backgroundColor: '#1C873C',
@@ -589,30 +569,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1C873C',
   },
-  otpSheetContent: {
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  otpTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1A1C1E',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  otpSubtitle: {
-    fontSize: 13,
-    color: '#60646C',
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 24,
-    paddingHorizontal: 16,
-  },
   otpInputRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 20,
+    marginVertical: 24,
   },
   otpInputBox: {
     width: 44,
@@ -637,23 +598,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  otpVerifyBtn: {
-    backgroundColor: '#1C873C',
-    borderRadius: 24,
-    paddingVertical: 14,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  otpVerifyBtnText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
   otpResendRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 20,
   },
   otpResendLabel: {
     fontSize: 13,
@@ -666,6 +615,53 @@ const styles = StyleSheet.create({
   },
   otpResendLink: {
     fontSize: 13,
+    fontWeight: '700',
+    color: '#1C873C',
+  },
+  changeNumberLink: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  changeNumberLinkText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#60646C',
+    textDecorationLine: 'underline',
+  },
+  pickerContent: {
+    paddingVertical: 10,
+    width: '100%',
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A1C1E',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  pickerList: {
+    maxHeight: 280,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F2F5',
+  },
+  pickerFlag: {
+    fontSize: 24,
+    marginRight: 14,
+  },
+  pickerName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1C1E',
+    flex: 1,
+  },
+  pickerCode: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#1C873C',
   },

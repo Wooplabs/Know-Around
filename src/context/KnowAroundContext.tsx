@@ -10,8 +10,7 @@ import {
   increment 
 } from 'firebase/firestore';
 import { 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
+  signInWithPhoneNumber,
   signOut,
   updateProfile
 } from 'firebase/auth';
@@ -109,7 +108,6 @@ export interface AlertItem {
   lng: number;
   author?: string;
   avatar?: string;
-  verified?: boolean;
 }
 
 export interface JobVacancy {
@@ -126,11 +124,11 @@ export interface JobVacancy {
   applied?: boolean;
 }
 
-interface KnowAroundContextProps {
+export interface KnowAroundContextProps {
   user: { name: string; email: string } | null;
-  login: (email: string, pass: string) => Promise<boolean>;
+  login: (phone: string) => Promise<boolean>;
   googleLogin: () => void;
-  register: (name: string, email: string, pass: string) => Promise<boolean>;
+  register: (name: string, phone: string) => Promise<boolean>;
   logout: () => Promise<void>;
   currentUser: { name: string; avatar: string; location: string };
   updateProfileDetails: (name: string, email?: string) => void;
@@ -919,29 +917,15 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const login = async (email: string, pass: string): Promise<boolean> => {
+  const login = async (phone: string): Promise<boolean> => {
     setOnboardingCompleted(true);
     saveState('native_onboarding', true);
 
-    if (isFirebaseConfigured && auth) {
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        return true;
-      } catch (err: any) {
-        throw err;
-      }
-    } else {
-      if (email && pass.length >= 4) {
-        const mockName = email.split('@')[0];
-        const newUser = { name: mockName.charAt(0).toUpperCase() + mockName.slice(1), email };
-        setUser(newUser);
-        saveState('native_user', newUser);
-        setOnboardingCompleted(true);
-        saveState('native_onboarding', true);
-        return true;
-      }
-      return false;
-    }
+    const formattedName = phone.replace(/[^0-9]/g, '').slice(-10) || 'Neighbor';
+    const newUser = { name: `User ${formattedName}`, email: phone };
+    setUser(newUser);
+    saveState('native_user', newUser);
+    return true;
   };
 
   const googleLogin = () => {
@@ -952,32 +936,15 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     saveState('native_onboarding', true);
   };
 
-  const register = async (name: string, email: string, pass: string): Promise<boolean> => {
+  const register = async (name: string, phone: string): Promise<boolean> => {
     // New signup, force onboarding to run
     setOnboardingCompleted(false);
     saveState('native_onboarding', false);
 
-    if (isFirebaseConfigured && auth) {
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-        if (userCredential.user) {
-          await updateProfile(userCredential.user, { displayName: name });
-        }
-        return true;
-      } catch (err: any) {
-        throw err;
-      }
-    } else {
-      if (name && email && pass.length >= 4) {
-        const newUser = { name, email };
-        setUser(newUser);
-        saveState('native_user', newUser);
-        setOnboardingCompleted(false);
-        saveState('native_onboarding', false);
-        return true;
-      }
-      return false;
-    }
+    const newUser = { name: name || 'Neighbor', email: phone };
+    setUser(newUser);
+    saveState('native_user', newUser);
+    return true;
   };
 
   const logout = async () => {
