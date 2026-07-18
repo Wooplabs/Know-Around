@@ -128,13 +128,13 @@ export interface JobVacancy {
 }
 
 export interface KnowAroundContextProps {
-  user: { name: string; email: string } | null;
+  user: { name: string; email: string; phone?: string; avatar?: string } | null;
   login: (phone: string) => Promise<boolean>;
   googleLogin: () => void;
   register: (name: string, phone: string) => Promise<boolean>;
   logout: () => Promise<void>;
   currentUser: { name: string; avatar: string; location: string };
-  updateProfileDetails: (name: string, email?: string) => void;
+  updateProfileDetails: (name: string, email?: string, phone?: string, avatar?: string) => void;
   activeLocation: string;
   setActiveLocation: (loc: string) => void;
   feeds: Post[];
@@ -834,7 +834,7 @@ const getLocalStorageJSON = (key: string): any => {
 let feedsResetDone = false;
 
 export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; phone?: string; avatar?: string } | null>(null);
   const [activeLocation, setActiveLocation] = useState('White Town, PY');
   const [feeds, setFeeds] = useState<Post[]>(SEED_POSTS);
   const [professionals, setProfessionals] = useState<Professional[]>(SEED_PROFESSIONALS);
@@ -1069,8 +1069,12 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     saveState('native_onboarding', true);
     setJustRegistered(false);
 
-    const formattedName = phone.replace(/[^0-9]/g, '').slice(-10) || 'Neighbor';
-    const newUser = { name: `User ${formattedName}`, email: phone };
+    // Try to restore previously registered user details by phone
+    const existingUser = getLocalStorageJSON('native_user');
+    const phoneDigits = phone.replace(/[^0-9]/g, '');
+    const newUser = existingUser && existingUser.phone === phone
+      ? existingUser
+      : { name: `User ${phoneDigits.slice(-10)}`, email: phone, phone };
     setUser(newUser);
     saveState('native_user', newUser);
     return true;
@@ -1091,7 +1095,12 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     saveState('native_onboarding', false);
     setJustRegistered(true);
 
-    const newUser = { name: name || 'Neighbor', email: phone };
+    const newUser = {
+      name: name.trim() || 'Neighbor',
+      email: phone,
+      phone,
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'
+    };
     setUser(newUser);
     saveState('native_user', newUser);
     return true;
@@ -1121,9 +1130,15 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setProfessionals(SEED_PROFESSIONALS);
   };
 
-  const updateProfileDetails = (name: string, email?: string) => {
+  const updateProfileDetails = (name: string, email?: string, phone?: string, avatar?: string) => {
     if (user) {
-      const updatedUser = { ...user, name, email: email || user.email };
+      const updatedUser = {
+        ...user,
+        name,
+        email: email || user.email,
+        ...(phone !== undefined && { phone }),
+        ...(avatar !== undefined && { avatar })
+      };
       setUser(updatedUser);
       saveState('native_user', updatedUser);
     }
@@ -1460,9 +1475,9 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [alerts, userLocation]);
 
   const currentUser = {
-    name: user?.name || 'Ajay',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
-    location: activeLocation
+    name: user?.name || 'Neighbor',
+    avatar: user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+    location: userAddress ? `${userAddress.place ? userAddress.place + ', ' : ''}${userAddress.city || activeLocation}` : activeLocation
   };
 
   return (

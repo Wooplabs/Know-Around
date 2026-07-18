@@ -28,6 +28,8 @@ export default function MandatoryAddressModal() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [pin, setPin] = useState('');
+  // Pre-fill phone from signup registration
+  const [phone, setPhone] = useState(user?.phone || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [focusedField, setFocusedField] = useState<'street' | 'city' | 'state' | 'pin' | null>(null);
@@ -92,7 +94,7 @@ export default function MandatoryAddressModal() {
         city: city.trim(),
         state: state.trim(),
         pin: pin.trim(),
-        phone: user?.email || ''
+        phone: user?.phone || phone.trim() || ''
       });
       
       setIsSubmitting(false);

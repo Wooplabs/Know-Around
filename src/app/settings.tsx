@@ -44,7 +44,7 @@ export default function SettingsScreen() {
   const [city, setCity] = useState(userAddress?.city || '');
   const [state, setState] = useState(userAddress?.state || '');
   const [pin, setPin] = useState(userAddress?.pin || '');
-  const [phone, setPhone] = useState(userAddress?.phone || '');
+  const [phone, setPhone] = useState(user?.phone || userAddress?.phone || '');
 
   // Map coordinates
   const [selectedCoords, setSelectedCoords] = useState<{ latitude: number; longitude: number } | null>(
@@ -73,8 +73,8 @@ export default function SettingsScreen() {
       return;
     }
 
-    // Save profile details
-    updateProfileDetails(name.trim(), email.trim());
+    // Save profile details (including phone so it persists on profile)
+    updateProfileDetails(name.trim(), email.trim(), phone.trim());
 
     // Save address details
     setUserAddress({
@@ -158,12 +158,27 @@ export default function SettingsScreen() {
               </Pressable>
             </View>
             <Text style={[styles.profileName, darkMode && styles.profileNameDark]}>{name || 'Neighbor'}</Text>
+            {(user?.phone) ? (
+              <View style={styles.profileMetaRow}>
+                <Ionicons name="call-outline" size={13} color="#1C873C" />
+                <Text style={styles.profileMetaText}>{user.phone}</Text>
+              </View>
+            ) : null}
+            {(userAddress?.city) ? (
+              <View style={styles.profileMetaRow}>
+                <Ionicons name="location-outline" size={13} color="#1C873C" />
+                <Text style={styles.profileMetaText}>
+                  {[userAddress.place, userAddress.city, userAddress.state].filter(Boolean).join(', ')}
+                </Text>
+              </View>
+            ) : null}
             <View style={styles.roleBadge}>
               <Text style={styles.roleBadgeText}>
                 {userRole === 'professional' ? 'Business Profile' : 'Personal Profile'}
               </Text>
             </View>
           </View>
+
 
           {/* Section: Profile Info */}
           <Text style={styles.sectionHeader}>Profile Info</Text>
@@ -177,17 +192,31 @@ export default function SettingsScreen() {
               style={[styles.input, darkMode && styles.inputDark]}
             />
 
+            <Text style={styles.fieldLabel}>Mobile Number</Text>
+            <View style={styles.phoneDisplayRow}>
+              <Ionicons name="call-outline" size={16} color="#1C873C" style={{ marginRight: 8 }} />
+              <TextInput
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="e.g. +91 9876543210"
+                placeholderTextColor="#A0A4AC"
+                keyboardType="phone-pad"
+                style={[styles.input, styles.phoneInput, darkMode && styles.inputDark]}
+              />
+            </View>
+
             <Text style={styles.fieldLabel}>Email Address</Text>
             <TextInput
               value={email}
               onChangeText={setEmail}
-              placeholder="Email Address"
+              placeholder="Email Address (optional)"
               placeholderTextColor="#A0A4AC"
               keyboardType="email-address"
               autoCapitalize="none"
               style={[styles.input, darkMode && styles.inputDark]}
             />
           </View>
+
 
           {/* Section: Address Details */}
           <Text style={styles.sectionHeader}>Address & Map Location</Text>
@@ -249,15 +278,6 @@ export default function SettingsScreen() {
               </View>
             </View>
 
-            <Text style={styles.fieldLabel}>Mobile / WhatsApp Number</Text>
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="WhatsApp mobile number"
-              placeholderTextColor="#A0A4AC"
-              keyboardType="phone-pad"
-              style={[styles.input, darkMode && styles.inputDark]}
-            />
 
             <Text style={styles.fieldLabel}>Interactive Pinpoint Map</Text>
             <Text style={styles.mapHelpText}>Tap to set your exact house marker on the map.</Text>
@@ -434,6 +454,17 @@ const styles = StyleSheet.create({
   profileNameDark: {
     color: '#ffffff',
   },
+  profileMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 3,
+  },
+  profileMetaText: {
+    fontSize: 12,
+    color: '#60646C',
+    fontWeight: '500',
+  },
   roleBadge: {
     backgroundColor: '#EAF7EE',
     paddingHorizontal: 12,
@@ -501,6 +532,15 @@ const styles = StyleSheet.create({
   },
   flexItem: {
     flex: 1,
+  },
+  phoneDisplayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  phoneInput: {
+    flex: 1,
+    marginBottom: 0,
   },
   mapHelpText: {
     fontSize: 11,
