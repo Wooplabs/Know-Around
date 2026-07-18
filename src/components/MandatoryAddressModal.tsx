@@ -120,7 +120,7 @@ export default function MandatoryAddressModal() {
         >
           <View style={styles.backdrop}>
             <KeyboardAvoidingView
-              behavior="padding"
+              behavior={focusedField ? 'padding' : undefined}
               style={styles.keyboardView}
             >
               <View style={styles.card}>
