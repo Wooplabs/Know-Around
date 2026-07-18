@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator, SafeAreaView, Platform, Image, Modal, LayoutAnimation, UIManager, Alert } from 'react-native';
 import { useKnowAround, Group, GroupPost } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { BellIcon, DownIcon, LocationIcon } from '@/components/CustomIcons';
 
 export default function GroupsScreen() {
@@ -37,32 +38,100 @@ const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser,
     const isMember = selectedGroup.members?.includes(userEmail) || false;
     const posts = groupPosts.filter(p => p.groupId === selectedGroup.id);
 
-
     return (
-      <View style={{ flex: 1, backgroundColor: darkMode ? '#121212' : '#ffffff' }}>
-        <SafeAreaView style={[styles.safeArea, darkMode && styles.safeAreaDark]}>
-          {/* Uniform Top Header (Group Details) */}
-          <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
-            <View style={styles.headerLeftDetail}>
-              <Pressable onPress={() => setSelectedGroup(null)} style={[styles.backBtn, darkMode && styles.backBtnDark]}>
-                <Ionicons name="arrow-back" size={24} color={darkMode ? '#ffffff' : '#0C0D0E'} />
+      <SafeAreaView style={[styles.safeArea, darkMode && styles.safeAreaDark]}>
+        {/* Uniform Top Header (Group Details) */}
+        <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
+          <View style={styles.headerLeftDetail}>
+            <Pressable onPress={() => setSelectedGroup(null)} style={[styles.backBtn, darkMode && styles.backBtnDark]}>
+              <Ionicons name="arrow-back" size={24} color={darkMode ? '#ffffff' : '#0C0D0E'} />
+            </Pressable>
+            <Text style={[styles.headerTitle, darkMode && styles.textWhite]} numberOfLines={1}>
+              Group Feed
+            </Text>
+          </View>
+          <View style={styles.headerRight}>
+            <Pressable style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
+              <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
+            </Pressable>
+            <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
+              <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
+              <View style={[styles.avatarBadge, darkMode && styles.avatarBadgeDark]}>
+                <Ionicons name="menu-outline" size={8} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+              </View>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* WhatsApp Dropdown Modal Menu (Details View) */}
+        <Modal
+          transparent
+          visible={menuVisible}
+          onRequestClose={() => setMenuVisible(false)}
+          animationType="fade"
+          statusBarTranslucent={true}
+        >
+          <Pressable style={styles.modalBackdrop} onPress={() => setMenuVisible(false)}>
+            <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
+              {/* Profile mini-card */}
+              <View style={[styles.dropdownProfileCard, darkMode && styles.dropdownProfileCardDark]}>
+                <Image source={{ uri: currentUser.avatar }} style={styles.dropdownAvatar} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.dropdownProfileName, darkMode && styles.dropdownProfileNameDark]} numberOfLines={1}>
+                    {currentUser.name}
+                  </Text>
+                  {user?.phone ? (
+                    <Text style={styles.dropdownProfilePhone} numberOfLines={1}>{user.phone}</Text>
+                  ) : null}
+                  {userAddress?.city ? (
+                    <Text style={styles.dropdownProfileAddress} numberOfLines={1}>
+                      {[userAddress.place, userAddress.city].filter(Boolean).join(', ')}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+              <View style={[styles.dropdownDivider, darkMode && styles.dropdownDividerDark]} />
+              <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); router.push('/settings'); }}>
+                <Ionicons name="person-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+                <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Account Settings</Text>
               </Pressable>
-              <Text style={[styles.headerTitle, darkMode && styles.textWhite]} numberOfLines={1}>
-                Group Feed
-              </Text>
-            </View>
-            <View style={styles.headerRight}>
-              <Pressable style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
-                <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
-              </Pressable>
-              <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
-                <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
-                <View style={[styles.avatarBadge, darkMode && styles.avatarBadgeDark]}>
-                  <Ionicons name="menu-outline" size={8} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+
+              <Pressable 
+                style={styles.dropdownItem} 
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setDarkMode(!darkMode);
+                }}
+              >
+                <Ionicons name={darkMode ? "sunny-outline" : "moon-outline"} size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+                <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>{darkMode ? "Light Mode" : "Dark Mode"}</Text>
+                <View style={[styles.toggleTrack, darkMode && styles.toggleTrackActive]}>
+                  <View style={[styles.toggleThumb, darkMode && styles.toggleThumbActive]} />
                 </View>
               </Pressable>
+
+              <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Neighborhood Info", "White Town Neighborhood OS v2.0.0"); }}>
+                <Ionicons name="information-circle-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+                <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Neighborhood Info</Text>
+              </Pressable>
+
+              <View style={[styles.dropdownDivider, darkMode && styles.dropdownDividerDark]} />
+
+              <Pressable 
+                style={[styles.dropdownItem, styles.dropdownItemDestructive]} 
+                onPress={() => {
+                  setMenuVisible(false);
+                  logout();
+                }}
+              >
+                <Ionicons name="log-out-outline" size={18} color="#E53935" />
+                <Text style={[styles.dropdownItemText, styles.destructiveText]}>Log Out</Text>
+              </Pressable>
             </View>
-          </View>
+          </Pressable>
+        </Modal>
+
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Group Banner Info */}
           <View style={[styles.groupBanner, darkMode && styles.cardDark]}>
             <Text style={styles.bannerEmoji}>{selectedGroup.image}</Text>
@@ -160,6 +229,63 @@ const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser,
           )}
         </ScrollView>
       </SafeAreaView>
+    );
+  }
+
+  // Filter Groups List
+  const filteredGroups = groups.filter((g) => 
+    g.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    g.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Group List Directory
+  return (
+    <SafeAreaView style={[styles.safeArea, darkMode && styles.safeAreaDark]}>
+      {/* Uniform Top Header */}
+      <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
+        <View>
+          <Text style={[styles.topHeaderTitle, darkMode && styles.textWhite]}>Groups</Text>
+        </View>
+        <View style={styles.headerRight}>
+          {/* Search Button */}
+          <Pressable 
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setShowSearchBar(!showSearchBar);
+            }}
+            style={[styles.iconButton, showSearchBar && styles.activeIconButton, darkMode && styles.iconButtonDark]}
+          >
+            <Ionicons name="search-outline" size={22} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+          </Pressable>
+
+          {/* Dot/Kebab Menu Button */}
+          <Pressable onPress={() => setMenuVisible(true)} style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
+            <Ionicons name="ellipsis-vertical" size={22} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Interactive Search Bar */}
+      {showSearchBar && (
+        <View style={[styles.searchBarContainer, darkMode && styles.searchBarContainerDark]}>
+          <View style={[styles.searchBar, darkMode && styles.searchBarDark]}>
+            <Ionicons name="search" size={18} color="#60646C" />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search groups..."
+              placeholderTextColor="#8A9099"
+              style={[styles.searchInput, darkMode && styles.textWhite]}
+              autoFocus
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color="#8A9099" />
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* WhatsApp Dropdown Modal Menu */}
       <Modal
@@ -228,65 +354,6 @@ const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser,
           </View>
         </Pressable>
       </Modal>
-    </View>
-    );
-  }
-
-  // Filter Groups List
-  const filteredGroups = groups.filter((g) => 
-    g.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    g.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-    return (
-    <View style={{ flex: 1, backgroundColor: darkMode ? '#121212' : '#ffffff' }}>
-      <SafeAreaView style={[styles.safeArea, darkMode && styles.safeAreaDark]}>
-        {/* Uniform Top Header */}
-        <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
-          <View>
-            <Text style={[styles.topHeaderTitle, darkMode && styles.textWhite]}>Groups</Text>
-          </View>
-          <View style={styles.headerRight}>
-            {/* Search Button */}
-            <Pressable 
-              onPress={() => {
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                setShowSearchBar(!showSearchBar);
-              }}
-              style={[styles.iconButton, showSearchBar && styles.activeIconButton, darkMode && styles.iconButtonDark]}
-            >
-              <Ionicons name="search-outline" size={22} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-            </Pressable>
-
-            {/* Dot/Kebab Menu Button */}
-            <Pressable onPress={() => setMenuVisible(true)} style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
-              <Ionicons name="ellipsis-vertical" size={22} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Interactive Search Bar */}
-        {showSearchBar && (
-          <View style={[styles.searchBarContainer, darkMode && styles.searchBarContainerDark]}>
-            <View style={[styles.searchBar, darkMode && styles.searchBarDark]}>
-              <Ionicons name="search" size={18} color="#60646C" />
-              <TextInput
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search groups..."
-                placeholderTextColor="#8A9099"
-                style={[styles.searchInput, darkMode && styles.textWhite]}
-                autoFocus
-              />
-              {searchQuery.length > 0 && (
-                <Pressable onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={18} color="#8A9099" />
-                </Pressable>
-              )}
-            </View>
-          </View>
-        )}
-
 
 
 
@@ -339,75 +406,6 @@ const { groups, groupPosts, joinGroup, postToGroup, user, darkMode, currentUser,
         })}
       </ScrollView>
     </SafeAreaView>
-
-    {/* WhatsApp Dropdown Modal Menu */}
-    <Modal
-      transparent
-      visible={menuVisible}
-      onRequestClose={() => setMenuVisible(false)}
-      animationType="fade"
-      statusBarTranslucent={true}
-    >
-      <Pressable style={styles.modalBackdrop} onPress={() => setMenuVisible(false)}>
-        <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
-          {/* Profile mini-card */}
-          <View style={[styles.dropdownProfileCard, darkMode && styles.dropdownProfileCardDark]}>
-            <Image source={{ uri: currentUser.avatar }} style={styles.dropdownAvatar} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.dropdownProfileName, darkMode && styles.dropdownProfileNameDark]} numberOfLines={1}>
-                {currentUser.name}
-              </Text>
-              {user?.phone ? (
-                <Text style={styles.dropdownProfilePhone} numberOfLines={1}>{user.phone}</Text>
-              ) : null}
-              {userAddress?.city ? (
-                <Text style={styles.dropdownProfileAddress} numberOfLines={1}>
-                  {[userAddress.place, userAddress.city].filter(Boolean).join(', ')}
-                </Text>
-              ) : null}
-            </View>
-          </View>
-          <View style={[styles.dropdownDivider, darkMode && styles.dropdownDividerDark]} />
-          <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); router.push('/settings'); }}>
-            <Ionicons name="person-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-            <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Account Settings</Text>
-          </Pressable>
-
-          <Pressable 
-            style={styles.dropdownItem} 
-            onPress={() => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              setDarkMode(!darkMode);
-            }}
-          >
-            <Ionicons name={darkMode ? "sunny-outline" : "moon-outline"} size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-            <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>{darkMode ? "Light Mode" : "Dark Mode"}</Text>
-            <View style={[styles.toggleTrack, darkMode && styles.toggleTrackActive]}>
-              <View style={[styles.toggleThumb, darkMode && styles.toggleThumbActive]} />
-            </View>
-          </Pressable>
-
-          <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Neighborhood Info", "White Town Neighborhood OS v2.0.0"); }}>
-            <Ionicons name="information-circle-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-            <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Neighborhood Info</Text>
-          </Pressable>
-
-          <View style={[styles.dropdownDivider, darkMode && styles.dropdownDividerDark]} />
-
-          <Pressable 
-            style={[styles.dropdownItem, styles.dropdownItemDestructive]} 
-            onPress={() => {
-              setMenuVisible(false);
-              logout();
-            }}
-          >
-            <Ionicons name="log-out-outline" size={18} color="#E53935" />
-            <Text style={[styles.dropdownItemText, styles.destructiveText]}>Log Out</Text>
-          </Pressable>
-        </View>
-      </Pressable>
-    </Modal>
-  </View>
   );
 }
 
