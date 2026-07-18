@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Linking, Alert, Image, SafeAreaView, Platform, Modal, LayoutAnimation, UIManager } from 'react-native';
 import { useKnowAround, Professional, DirectoryItem } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { RoundTickIcon, BellIcon, DownIcon, LocationIcon } from '@/components/CustomIcons';
 import BottomSheet from '@/components/BottomSheet';
 
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  locationText: {
+  locationBadgeText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#1C873C',
