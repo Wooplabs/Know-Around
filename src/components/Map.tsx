@@ -4,9 +4,6 @@ import { WebView } from 'react-native-webview';
 
 export interface MapRef {
   panTo: (lat: number, lng: number, zoom?: number) => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
-  setMapType: (type: 'street' | 'satellite' | 'dark') => void;
 }
 
 interface MapProps {
@@ -20,45 +17,36 @@ interface MapProps {
     details?: string;
   }>;
   userLocation?: { latitude: number; longitude: number; accuracy: number | null } | null;
+  searchCenter?: { latitude: number; longitude: number } | null;
   searchRadius?: number; // in km
   darkMode?: boolean;
+  mapStyle?: 'standard' | 'satellite' | 'terrain';
   onMapClick?: (lat: number, lng: number) => void;
   onMarkerClick?: (markerId: string) => void;
+  onRegionChangeComplete?: (region: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }) => void;
 }
 
-const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius, darkMode, onMapClick, onMarkerClick }, ref) => {
+const Map = forwardRef<MapRef, MapProps>(({ 
+  markers, 
+  userLocation, 
+  searchCenter,
+  searchRadius, 
+  darkMode, 
+  mapStyle = 'standard',
+  onMapClick, 
+  onMarkerClick,
+  onRegionChangeComplete 
+}, ref) => {
   const webViewRef = useRef<WebView>(null);
   const [isReady, setIsReady] = useState(false);
 
-  // Expose map controls to parent screens
+  // Expose panTo function to parent screens
   useImperativeHandle(ref, () => ({
     panTo: (lat: number, lng: number, zoom?: number) => {
       if (webViewRef.current) {
         webViewRef.current.postMessage(JSON.stringify({
           type: 'PAN_TO',
           payload: { lat, lng, zoom }
-        }));
-      }
-    },
-    zoomIn: () => {
-      if (webViewRef.current) {
-        webViewRef.current.postMessage(JSON.stringify({
-          type: 'ZOOM_IN'
-        }));
-      }
-    },
-    zoomOut: () => {
-      if (webViewRef.current) {
-        webViewRef.current.postMessage(JSON.stringify({
-          type: 'ZOOM_OUT'
-        }));
-      }
-    },
-    setMapType: (type: 'street' | 'satellite' | 'dark') => {
-      if (webViewRef.current) {
-        webViewRef.current.postMessage(JSON.stringify({
-          type: 'SET_MAP_TYPE',
-          payload: { type }
         }));
       }
     }
@@ -75,33 +63,35 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
     }
   }, [markers, isReady]);
 
-  // Synchronize user location & search radius to WebView when ready
+  // Synchronize user location, search center, search radius to WebView when ready
   useEffect(() => {
-    if (webViewRef.current && userLocation && isReady) {
+    if (webViewRef.current && isReady) {
       const message = {
-        type: 'SET_USER_LOCATION',
+        type: 'SET_MAP_METRICS',
         payload: {
-          lat: userLocation.latitude,
-          lng: userLocation.longitude,
-          accuracy: userLocation.accuracy,
-          searchRadius: searchRadius
+          userLat: userLocation?.latitude || null,
+          userLng: userLocation?.longitude || null,
+          accuracy: userLocation?.accuracy || null,
+          searchLat: searchCenter?.latitude || userLocation?.latitude || null,
+          searchLng: searchCenter?.longitude || userLocation?.longitude || null,
+          searchRadius: searchRadius || null
         }
       };
       webViewRef.current.postMessage(JSON.stringify(message));
     }
-  }, [userLocation, searchRadius, isReady]);
+  }, [userLocation, searchCenter, searchRadius, isReady]);
 
-  // Synchronize dark mode theme to WebView
+  // Synchronize style configurations to WebView
   useEffect(() => {
     if (webViewRef.current && isReady) {
       webViewRef.current.postMessage(JSON.stringify({
-        type: 'SET_DARK_MODE',
-        payload: { darkMode: !!darkMode }
+        type: 'UPDATE_STYLE',
+        payload: { darkMode: !!darkMode, mapStyle }
       }));
     }
-  }, [darkMode, isReady]);
+  }, [darkMode, mapStyle, isReady]);
 
-  // Static HTML Content to prevent WebView from constantly reloading
+  // Static HTML Content to prevent WebView from constantly reloading when coordinate variables change
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -131,28 +121,73 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
             padding: 4px;
           }
           .leaflet-popup-tip {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
           }
-          
-          /* Pulsing and Bouncing Animations */
-          @keyframes radar {
-            0% { transform: scale(0.6); opacity: 1; }
-            100% { transform: scale(1.6); opacity: 0; }
-          }
-          @keyframes bouncePin {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
-          }
-          .pulse-ring {
+          /* Custom Droplet Shaped Map Pins */
+          .marker-pin {
+            width: 32px;
+            height: 32px;
+            border-radius: 50% 50% 50% 0;
             position: absolute;
-            width: 36px;
-            height: 36px;
-            border-radius: 18px;
-            background-color: rgba(26, 115, 232, 0.25);
-            animation: radar 1.8s infinite ease-in-out;
+            transform: rotate(-45deg);
+            left: 50%;
+            top: 50%;
+            margin: -16px 0 0 -16px;
+            border: 2px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
           }
-          .animated-pin {
-            animation: bouncePin 2.2s infinite ease-in-out;
+          .marker-pin i {
+            transform: rotate(45deg);
+            color: white;
+            font-size: 13px;
+          }
+          .marker-active .marker-pin {
+            transform: rotate(-45deg) scale(1.2);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+            border-color: #ffffff;
+          }
+          /* Pulsing Ring for User Location */
+          .user-puck-container {
+            position: relative;
+            width: 24px;
+            height: 24px;
+          }
+          .user-puck-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 7px;
+            background-color: #1a73e8;
+            border: 2.5px solid white;
+            box-shadow: 0 2px 6px rgba(26,115,232,0.8);
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            z-index: 10;
+          }
+          .user-puck-pulse {
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+            background-color: rgba(26,115,232,0.35);
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: puckpulse 2s infinite ease-out;
+            z-index: 5;
+          }
+          @keyframes puckpulse {
+            0% {
+              transform: scale(0.5);
+              opacity: 0.8;
+            }
+            100% {
+              transform: scale(2.2);
+              opacity: 0;
+            }
           }
         </style>
       </head>
@@ -161,32 +196,38 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script>
           // Default map center (White Town)
-          var map = L.map('map', { zoomControl: false }).setView([11.9340, 79.8300], 14);
+          var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([11.9340, 79.8300], 14);
           
           var tileLayer = null;
-          var currentStyle = 'street';
-          
-          function setMapStyle(styleName) {
-            currentStyle = styleName;
+          var currentDarkMode = false;
+          var currentMapStyle = 'standard';
+
+          function updateMapStyle(isDark, styleType) {
+            if (isDark !== undefined) currentDarkMode = isDark;
+            if (styleType !== undefined) currentMapStyle = styleType;
+
             if (tileLayer) {
               map.removeLayer(tileLayer);
             }
-            
-            var url = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-            if (styleName === 'dark') {
-              url = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-            } else if (styleName === 'satellite') {
+
+            var url = '';
+            if (currentMapStyle === 'satellite') {
               url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+            } else if (currentMapStyle === 'terrain') {
+              url = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+            } else {
+              url = currentDarkMode 
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
             }
             
             tileLayer = L.tileLayer(url, {
-              maxZoom: 20,
-              attribution: '&copy; CARTO'
+              maxZoom: currentMapStyle === 'satellite' ? 18 : 20,
             }).addTo(map);
           }
           
           // Initialize map style
-          setMapStyle('street');
+          updateMapStyle(false, 'standard');
 
           var markersLayer = L.layerGroup().addTo(map);
 
@@ -204,126 +245,150 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
             }));
           });
 
+          // Listen to map movements (panning / zooming)
+          map.on('moveend', function() {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'MAP_MOVE_END',
+              payload: {
+                center: map.getCenter(),
+                bounds: map.getBounds(),
+                zoom: map.getZoom()
+              }
+            }));
+          });
+
           // Receive messages from React Native
           window.addEventListener('message', function(event) {
             try {
               var data = JSON.parse(event.data);
               if (data.type === 'SET_MARKERS') {
                 updateMarkers(data.payload);
-              } else if (data.type === 'SET_USER_LOCATION') {
-                updateUserLocation(data.payload.lat, data.payload.lng, data.payload.accuracy, data.payload.searchRadius);
+              } else if (data.type === 'SET_MAP_METRICS') {
+                updateMapMetrics(data.payload);
               } else if (data.type === 'PAN_TO') {
                 map.setView([data.payload.lat, data.payload.lng], data.payload.zoom || map.getZoom(), { animate: true });
-              } else if (data.type === 'SET_DARK_MODE') {
-                setMapStyle(data.payload.darkMode ? 'dark' : 'street');
-              } else if (data.type === 'ZOOM_IN') {
-                map.zoomIn();
-              } else if (data.type === 'ZOOM_OUT') {
-                map.zoomOut();
-              } else if (data.type === 'SET_MAP_TYPE') {
-                setMapStyle(data.payload.type);
+              } else if (data.type === 'UPDATE_STYLE') {
+                updateMapStyle(data.payload.darkMode, data.payload.mapStyle);
               }
             } catch (err) {
               console.error(err);
             }
           });
 
-          function updateUserLocation(lat, lng, accuracy, searchRadius) {
+          function updateMapMetrics(payload) {
             if (userLocationMarker) map.removeLayer(userLocationMarker);
             if (userAccuracyCircle) map.removeLayer(userAccuracyCircle);
             if (searchRadiusCircle) map.removeLayer(searchRadiusCircle);
 
             // 1. Draw subtle blue accuracy circle
-            if (accuracy) {
-              userAccuracyCircle = L.circle([lat, lng], {
-                radius: accuracy,
+            if (payload.userLat && payload.userLng && payload.accuracy) {
+              userAccuracyCircle = L.circle([payload.userLat, payload.userLng], {
+                radius: payload.accuracy,
                 color: '#1a73e8',
                 weight: 1,
-                opacity: 0.2,
+                opacity: 0.15,
                 fillColor: '#1a73e8',
-                fillOpacity: 0.1
+                fillOpacity: 0.06
               }).addTo(map);
             }
 
-            // 2. Draw subtle translucent green search radius boundary
-            if (searchRadius) {
-              searchRadiusCircle = L.circle([lat, lng], {
-                radius: searchRadius * 1000,
+            // 2. Draw user pulsing puck dot
+            if (payload.userLat && payload.userLng) {
+              var userIcon = L.divIcon({
+                className: 'custom-leaflet-marker',
+                html: '<div class="user-puck-container">' +
+                      '<div class="user-puck-pulse"></div>' +
+                      '<div class="user-puck-dot"></div>' +
+                      '</div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+              });
+              userLocationMarker = L.marker([payload.userLat, payload.userLng], { icon: userIcon }).addTo(map);
+            }
+
+            // 3. Draw dashed green search radius boundary centered on searchLat/searchLng
+            if (payload.searchLat && payload.searchLng && payload.searchRadius) {
+              searchRadiusCircle = L.circle([payload.searchLat, payload.searchLng], {
+                radius: payload.searchRadius * 1000, // convert km to meters
                 color: '#1C873C',
                 weight: 1.5,
-                opacity: 0.4,
+                opacity: 0.35,
                 dashArray: '5, 5',
                 fillColor: '#1C873C',
-                fillOpacity: 0.025
+                fillOpacity: 0.02
               }).addTo(map);
             }
 
-            // 3. Render pulsing location dot
-            var userIcon = L.divIcon({
-              className: 'custom-leaflet-marker',
-              html: '<div style="display:flex; justify-content:center; align-items:center; width:36px; height:36px;">' +
-                    '<div class="pulse-ring"></div>' +
-                    '<div style="width:16px; height:16px; border-radius:8px; background-color:#1a73e8; border:2.5px solid white; box-shadow: 0 2px 8px rgba(26,115,232,0.5);"></div>' +
-                    '</div>',
-              iconSize: [36, 36],
-              iconAnchor: [18, 18]
-            });
-
-            userLocationMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
-
             // 4. Centering map on user coordinates exactly once during startup
-            if (!hasCentered) {
-              map.setView([lat, lng], 14);
+            if (!hasCentered && payload.userLat && payload.userLng) {
+              map.setView([payload.userLat, payload.userLng], 14);
               hasCentered = true;
             }
           }
 
+          var activeMarker = null;
+
           function updateMarkers(markers) {
             markersLayer.clearLayers();
+            activeMarker = null;
             
             markers.forEach(function(marker) {
               if (marker.type === 'user') return;
 
-              var markerColor = '#1C873C'; // Default Brand Green
-              var iconHtml = '<i class="fa fa-map-marker-alt" style="color: white; font-size: 14px;"></i>';
+              var markerColor = '#1C873C'; // Brand Green
+              var iconHtml = '<i class="fa fa-user" style="color: white;"></i>';
 
               if (marker.type === 'alerts') {
-                markerColor = '#e53935'; // Red Alert
-                iconHtml = '<i class="fa fa-exclamation-triangle" style="color: white; font-size: 12px;"></i>';
+                markerColor = '#D32F2F'; // Brand Red
+                iconHtml = '<i class="fa fa-triangle-exclamation"></i>';
               } else if (marker.type === 'jobs') {
-                markerColor = '#ff9800'; // Orange Shop/Service
-                iconHtml = '<i class="fa fa-briefcase" style="color: white; font-size: 12px;"></i>';
+                markerColor = '#ED8936'; // Orange
+                iconHtml = '<i class="fa fa-briefcase"></i>';
               } else if (marker.type === 'professionals') {
-                if (marker.title.toLowerCase().indexOf('plumb') !== -1) {
-                  markerColor = '#1877F2';
-                  iconHtml = '<i class="fa fa-tint" style="color: white; font-size: 13px;"></i>';
-                } else if (marker.title.toLowerCase().indexOf('carp') !== -1) {
-                  markerColor = '#8D6E63';
-                  iconHtml = '<i class="fa fa-hammer" style="color: white; font-size: 12px;"></i>';
+                var titleLower = marker.title.toLowerCase();
+                if (titleLower.indexOf('plumb') !== -1) {
+                  markerColor = '#3182CE'; // Blue
+                  iconHtml = '<i class="fa fa-faucet"></i>';
+                } else if (titleLower.indexOf('carp') !== -1) {
+                  markerColor = '#8B5A2B'; // Wood Brown
+                  iconHtml = '<i class="fa fa-hammer"></i>';
+                } else if (titleLower.indexOf('elect') !== -1) {
+                  markerColor = '#D69E2E'; // Yellow Gold
+                  iconHtml = '<i class="fa fa-bolt"></i>';
+                } else if (titleLower.indexOf('paint') !== -1) {
+                  markerColor = '#E53E3E'; // Light Red
+                  iconHtml = '<i class="fa fa-paint-roller"></i>';
                 } else {
-                  markerColor = '#1C873C';
-                  iconHtml = '<i class="fa fa-bolt" style="color: white; font-size: 13px;"></i>';
+                  markerColor = '#1C873C'; // Default Brand Green
+                  iconHtml = '<i class="fa fa-screwdriver-wrench"></i>';
                 }
               }
 
-              // Curved pointed bottom pin design matching premium aesthetics
+              // Custom Droplet shaped DivIcon pointing to coordinates
               var customIcon = L.divIcon({
                 className: 'custom-leaflet-marker',
-                html: '<div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 34px; height: 40px;" class="animated-pin">' +
-                      '<div style="display:flex; justify-content:center; align-items:center; width:34px; height:34px; border-radius:17px; background-color:' + markerColor + '; border:2px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.3);">' + iconHtml + '</div>' +
-                      '<div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6.5px solid white; margin-top: -1.5px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.15));"></div>' +
-                      '</div>',
-                iconSize: [34, 40],
-                iconAnchor: [17, 40]
+                html: '<div class="marker-pin" style="background-color:' + markerColor + ';">' + iconHtml + '</div>',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32] // Anchor tip is bottom center of rotated container
               });
 
               var lMarker = L.marker([marker.lat, marker.lng], { icon: customIcon }).addTo(markersLayer);
               
               if (marker.title) {
-                lMarker.bindPopup('<strong style="font-size:13.5px;color:#1A1C1E;font-weight:800;">' + marker.title + '</strong>' + (marker.details ? '<p style="margin:4px 0 0;font-size:11.5px;color:#60646C;line-height:15px;opacity:0.9;">' + marker.details + '</p>' : ''));
+                lMarker.bindPopup('<strong style="font-size:14px;color:#1A1C1E;font-family:sans-serif;">' + marker.title + '</strong>' + 
+                                  (marker.details ? '<p style="margin:6px 0 0;font-size:12px;color:#60646C;line-height:16px;font-family:sans-serif;">' + marker.details + '</p>' : ''));
               }
 
               lMarker.on('click', function() {
+                var activeElements = document.getElementsByClassName('marker-active');
+                for (var i = 0; i < activeElements.length; i++) {
+                  activeElements[i].classList.remove('marker-active');
+                }
+                
+                if (lMarker._icon) {
+                  lMarker._icon.classList.add('marker-active');
+                }
+
                 window.ReactNativeWebView.postMessage(JSON.stringify({
                   type: 'MARKER_CLICK',
                   payload: { id: marker.id }
@@ -332,6 +397,7 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
             });
           }
 
+          // Notify React Native that the map is fully loaded and ready to receive messaging data
           window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
         </script>
       </body>
@@ -347,6 +413,13 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
         onMapClick(data.payload.lat, data.payload.lng);
       } else if (data.type === 'MARKER_CLICK' && onMarkerClick) {
         onMarkerClick(data.payload.id);
+      } else if (data.type === 'MAP_MOVE_END' && onRegionChangeComplete) {
+        onRegionChangeComplete({
+          latitude: data.payload.center.lat,
+          longitude: data.payload.center.lng,
+          latitudeDelta: data.payload.bounds._northEast.lat - data.payload.bounds._southWest.lat,
+          longitudeDelta: data.payload.bounds._northEast.lng - data.payload.bounds._southWest.lng,
+        });
       }
     } catch (e) {
       console.warn('Map webview message error:', e);

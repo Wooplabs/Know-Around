@@ -20,6 +20,7 @@ export default function SearchScreen() {
     userLocation,
     setUserLocation,
     distanceFilter,
+    setDistanceFilter,
     darkMode
   } = useKnowAround();
 
@@ -29,10 +30,25 @@ export default function SearchScreen() {
   const [hasCenteredOnUser, setHasCenteredOnUser] = useState(false);
   const locationSubscription = useRef<any>(null);
 
+  // Premium Map Customization States
+  const [mapStyle, setMapStyle] = useState<'standard' | 'satellite' | 'terrain'>('standard');
+  const [searchCenter, setSearchCenter] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [showSearchThisArea, setShowSearchThisArea] = useState(false);
+  const [mapViewportCenter, setMapViewportCenter] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  // Initialize searchCenter when userLocation becomes available
+  useEffect(() => {
+    if (userLocation && !searchCenter) {
+      setSearchCenter({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
+      });
+    }
+  }, [userLocation]);
+
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLayers, setSelectedLayers] = useState<string[]>(['professionals', 'alerts', 'directory']);
-  const [mapType, setMapType] = useState<'street' | 'satellite'>('street');
   
   // Custom Alert Pin Drop State
   const [clickCoords, setClickCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -45,15 +61,8 @@ export default function SearchScreen() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedItemType, setSelectedItemType] = useState<'professional' | 'alert' | 'job' | 'directory' | null>(null);
 
-  // High-fidelity search suggestion tags with emojis
-  const searchSuggestions = [
-    { label: 'Plumber', emoji: '🪠' },
-    { label: 'Electrician', emoji: '⚡' },
-    { label: 'ATM', emoji: '🏧' },
-    { label: 'Hospital', emoji: '🏥' },
-    { label: 'Supermarket', emoji: '🛒' },
-    { label: 'Pharmacy', emoji: '💊' }
-  ];
+  // Search Tag Suggestions
+  const searchSuggestions = ['Plumber', 'Electrician', 'ATM', 'Hospital', 'Supermarket', 'Pharmacy'];
 
   // Location permission setup, subscription, and target button actions
   useEffect(() => {
@@ -161,6 +170,53 @@ export default function SearchScreen() {
     }
   };
 
+  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  const handleRegionChangeComplete = (region: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }) => {
+    setMapViewportCenter({
+      latitude: region.latitude,
+      longitude: region.longitude
+    });
+
+    if (searchCenter) {
+      const dist = getDistance(
+        region.latitude,
+        region.longitude,
+        searchCenter.latitude,
+        searchCenter.longitude
+      );
+      // If panned > 0.4 km, show the button
+      if (dist > 0.4) {
+        setShowSearchThisArea(true);
+      } else {
+        setShowSearchThisArea(false);
+      }
+    }
+  };
+
+  const handleSearchThisArea = () => {
+    if (mapViewportCenter) {
+      setSearchCenter(mapViewportCenter);
+      setShowSearchThisArea(false);
+    }
+  };
+
+  const cycleMapStyle = () => {
+    if (mapStyle === 'standard') setMapStyle('satellite');
+    else if (mapStyle === 'satellite') setMapStyle('terrain');
+    else setMapStyle('standard');
+  };
+
   const handleCenterOnUser = async () => {
     if (permissionStatus !== 'granted') {
       await handleEnableLocation();
@@ -169,6 +225,11 @@ export default function SearchScreen() {
 
     if (userLocation) {
       mapRef.current?.panTo(userLocation.latitude, userLocation.longitude, 14);
+      setSearchCenter({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
+      });
+      setShowSearchThisArea(false);
     } else {
       try {
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
@@ -177,7 +238,12 @@ export default function SearchScreen() {
           longitude: loc.coords.longitude,
           accuracy: loc.coords.accuracy
         });
+        setSearchCenter({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude
+        });
         mapRef.current?.panTo(loc.coords.latitude, loc.coords.longitude, 14);
+        setShowSearchThisArea(false);
       } catch (err) {
         Alert.alert('Location Error', 'Unable to retrieve your current location.');
       }
@@ -205,6 +271,7 @@ export default function SearchScreen() {
       }
     ];
 
+    // Filter by search query
     const matchesSearch = (text: string) => {
       return !searchQuery || text.toLowerCase().includes(searchQuery.toLowerCase());
     };
@@ -241,7 +308,7 @@ export default function SearchScreen() {
       });
     }
 
-    // Directory Businesses
+    // Directory Businesses (mapped to 'jobs' icon color pin)
     if (selectedLayers.includes('directory')) {
       directory.forEach((d) => {
         if (matchesSearch(d.name) || matchesSearch(d.category)) {
@@ -260,22 +327,6 @@ export default function SearchScreen() {
     return list;
   };
 
-  // Calculate dynamic layer counts based on current search filter
-  const getLayerCount = (layerId: string) => {
-    const matchesSearch = (text: string) => {
-      return !searchQuery || text.toLowerCase().includes(searchQuery.toLowerCase());
-    };
-
-    if (layerId === 'professionals') {
-      return professionals.filter(p => matchesSearch(p.name) || matchesSearch(p.profession)).length;
-    } else if (layerId === 'directory') {
-      return directory.filter(d => matchesSearch(d.name) || matchesSearch(d.category)).length;
-    } else if (layerId === 'alerts') {
-      return alerts.filter(a => matchesSearch(a.title) || matchesSearch(a.description)).length;
-    }
-    return 0;
-  };
-
   // Tapping map to drop custom alert pin
   const handleMapClick = (lat: number, lng: number) => {
     setClickCoords({ lat, lng });
@@ -284,7 +335,7 @@ export default function SearchScreen() {
 
   const handleSaveAlert = () => {
     if (!newAlertTitle.trim() || !newAlertDesc.trim() || !clickCoords) {
-      Alert.alert('Required Fields', 'Please fill in alert details.');
+      alert('Please fill in alert details.');
       return;
     }
     addAlert(newAlertTitle, newAlertDesc, newAlertLevel, clickCoords.lat, clickCoords.lng);
@@ -344,51 +395,40 @@ export default function SearchScreen() {
           ref={mapRef}
           markers={getMarkers()}
           userLocation={userLocation}
+          searchCenter={searchCenter}
           searchRadius={parseFloat(distanceFilter)}
           darkMode={darkMode}
+          mapStyle={mapStyle}
           onMapClick={handleMapClick}
           onMarkerClick={handleMarkerClick}
+          onRegionChangeComplete={handleRegionChangeComplete}
         />
       </View>
 
-      {/* Map Type Switcher & Zoom Controls Stack (Right Floating Column) */}
-      <View style={styles.mapToolsContainer}>
-        {/* Toggle Satellite View */}
+      {/* Floating "Search this area" Button */}
+      {showSearchThisArea && (
         <Pressable 
-          style={[styles.toolCircle, darkMode && styles.toolCircleDark]} 
-          onPress={() => {
-            const nextType = mapType === 'street' ? 'satellite' : 'street';
-            setMapType(nextType);
-            mapRef.current?.setMapType(nextType);
-          }}
+          style={[styles.searchAreaButton, darkMode && styles.searchAreaButtonDark]} 
+          onPress={handleSearchThisArea}
         >
-          <Ionicons name={mapType === 'street' ? "earth" : "map"} size={20} color="#1C873C" />
+          <Ionicons name="refresh" size={14} color="#ffffff" style={{ marginRight: 6 }} />
+          <Text style={styles.searchAreaButtonText}>Search this area</Text>
         </Pressable>
+      )}
 
-        {/* Zoom In */}
-        <Pressable 
-          style={[styles.toolCircle, darkMode && styles.toolCircleDark]} 
-          onPress={() => mapRef.current?.zoomIn()}
-        >
-          <Ionicons name="add" size={22} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-        </Pressable>
+      {/* Floating My Location Button */}
+      <Pressable style={[styles.myLocationButton, darkMode && styles.myLocationButtonDark]} onPress={handleCenterOnUser}>
+        <Ionicons name="locate" size={24} color={permissionStatus === 'granted' ? '#1a73e8' : '#60646C'} />
+      </Pressable>
 
-        {/* Zoom Out */}
-        <Pressable 
-          style={[styles.toolCircle, darkMode && styles.toolCircleDark]} 
-          onPress={() => mapRef.current?.zoomOut()}
-        >
-          <Ionicons name="remove" size={22} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-        </Pressable>
-
-        {/* Locate User */}
-        <Pressable 
-          style={[styles.toolCircle, darkMode && styles.toolCircleDark]} 
-          onPress={handleCenterOnUser}
-        >
-          <Ionicons name="locate" size={20} color={permissionStatus === 'granted' ? '#1877F2' : '#60646C'} />
-        </Pressable>
-      </View>
+      {/* Floating Map Style Button */}
+      <Pressable style={[styles.mapStyleButton, darkMode && styles.mapStyleButtonDark]} onPress={cycleMapStyle}>
+        <Ionicons 
+          name={mapStyle === 'standard' ? 'map' : mapStyle === 'satellite' ? 'earth' : 'construct'} 
+          size={20} 
+          color="#60646C" 
+        />
+      </Pressable>
 
       {/* Location Access Disabled Card */}
       {permissionStatus === 'denied' && (
@@ -430,53 +470,69 @@ export default function SearchScreen() {
 
         {/* Suggestion tags under search bar */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsContainer}>
-          {searchSuggestions.map((tag) => {
-            const isActive = searchQuery === tag.label;
-            return (
-              <Pressable
-                key={tag.label}
-                style={[
-                  styles.tagPill, 
-                  darkMode && styles.tagPillDark,
-                  isActive && styles.activeTagPill
-                ]}
-                onPress={() => setSearchQuery(isActive ? '' : tag.label)}
-              >
-                <Text style={[
-                  styles.tagText, 
-                  darkMode && styles.tagTextDark,
-                  isActive && styles.activeTagText
-                ]}>
-                  {tag.emoji} {tag.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+          {searchSuggestions.map((tag) => (
+            <Pressable
+              key={tag}
+              style={[styles.tagPill, darkMode && styles.tagPillDark]}
+              onPress={() => setSearchQuery(tag)}
+            >
+              <Text style={[styles.tagText, darkMode && styles.tagTextDark]}>{tag}</Text>
+            </Pressable>
+          ))}
         </ScrollView>
       </View>
 
-      {/* Floating Layer Toggles (Map Control) */}
-      <View style={styles.layersContainer}>
-        {[
-          { id: 'professionals', label: 'Pros', icon: 'flash' },
-          { id: 'directory', label: 'Shops', icon: 'basket' },
-          { id: 'alerts', label: 'Alerts', icon: 'warning' },
-        ].map((layer) => {
-          const isActive = selectedLayers.includes(layer.id);
-          const count = getLayerCount(layer.id);
-          return (
-            <Pressable
-              key={layer.id}
-              style={[styles.layerBtn, darkMode && styles.layerBtnDark, isActive && styles.activeLayerBtn]}
-              onPress={() => toggleLayer(layer.id)}
-            >
-              <Ionicons name={layer.icon as any} size={15} color={isActive ? '#ffffff' : '#60646C'} />
-              <Text style={[styles.layerBtnText, darkMode && styles.layerBtnTextDark, isActive && styles.activeLayerBtnText]}>
-                {layer.label} ({count})
-              </Text>
-            </Pressable>
-          );
-        })}
+      {/* Floating Unified Map Controls Group (Layers + Distance Radius) */}
+      <View style={styles.bottomControlsContainer}>
+        {/* Distance Range Filter Selector */}
+        <View style={[styles.controlRow, darkMode && styles.controlRowDark]}>
+          <Text style={[styles.controlLabel, darkMode && styles.controlLabelDark]}>Radius</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.controlScroll}>
+            {['1 km', '2 km', '5 km', '10 km', '20 km'].map((dist) => {
+              const isActive = distanceFilter === dist;
+              return (
+                <Pressable
+                  key={dist}
+                  style={[
+                    styles.controlPill, 
+                    darkMode && styles.controlPillDark, 
+                    isActive && styles.activeControlPill
+                  ]}
+                  onPress={() => setDistanceFilter(dist)}
+                >
+                  <Text style={[
+                    styles.controlPillText, 
+                    darkMode && styles.controlPillTextDark, 
+                    isActive && styles.activeControlPillText
+                  ]}>
+                    {dist}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Categories Layer Toggles */}
+        <View style={styles.layersRow}>
+          {[
+            { id: 'professionals', label: 'Pros', icon: 'flash' },
+            { id: 'directory', label: 'Shops', icon: 'basket' },
+            { id: 'alerts', label: 'Alerts', icon: 'warning' },
+          ].map((layer) => {
+            const isActive = selectedLayers.includes(layer.id);
+            return (
+              <Pressable
+                key={layer.id}
+                style={[styles.layerBtn, darkMode && styles.layerBtnDark, isActive && styles.activeLayerBtn]}
+                onPress={() => toggleLayer(layer.id)}
+              >
+                <Ionicons name={layer.icon as any} size={14} color={isActive ? '#ffffff' : '#60646C'} />
+                <Text style={[styles.layerBtnText, darkMode && styles.layerBtnTextDark, isActive && styles.activeLayerBtnText]}>{layer.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       {/* Google Maps-style Marker details Bottom Sheet */}
@@ -494,20 +550,7 @@ export default function SearchScreen() {
                   <Text style={styles.detailName}>{selectedItem.name}</Text>
                   {selectedItem.verified && <RoundTickIcon color="#1C873C" size={16} />}
                 </View>
-                {/* Rating stars display */}
-                <View style={styles.ratingStarsBox}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Ionicons 
-                      key={star}
-                      name={star <= Math.round(selectedItem.rating) ? "star" : "star-outline"} 
-                      size={14} 
-                      color="#F1C40F" 
-                      style={{ marginRight: 2 }}
-                    />
-                  ))}
-                  <Text style={styles.ratingStarsText}>({selectedItem.reviewsCount} reviews)</Text>
-                </View>
-                <Text style={styles.detailCategory}>{selectedItem.profession} &middot; Rated {selectedItem.rating} ★</Text>
+                <Text style={styles.detailCategory}>{selectedItem.profession} &middot; Rated {selectedItem.rating} ★ ({selectedItem.reviewsCount} reviews)</Text>
                 <Text style={styles.detailLocation}>📍 {selectedItem.location} &middot; {selectedItem.distance} km away</Text>
               </View>
               
@@ -546,14 +589,6 @@ export default function SearchScreen() {
                 <Text style={styles.mapsActionLabel}>Share</Text>
               </Pressable>
             </View>
-
-            {/* Primary booking request action button */}
-            <Pressable 
-              style={styles.sheetPrimaryBtn} 
-              onPress={() => Alert.alert('Booking Requested', `Booking request sent to ${selectedItem.name}. They will contact you shortly.`)}
-            >
-              <Text style={styles.sheetPrimaryBtnText}>Request Service Booking</Text>
-            </Pressable>
           </View>
         )}
 
@@ -566,20 +601,7 @@ export default function SearchScreen() {
               </View>
               <View style={styles.detailMetaBox}>
                 <Text style={styles.detailName}>{selectedItem.name}</Text>
-                {/* Rating stars display */}
-                <View style={styles.ratingStarsBox}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Ionicons 
-                      key={star}
-                      name={star <= Math.round(selectedItem.rating) ? "star" : "star-outline"} 
-                      size={14} 
-                      color="#F1C40F" 
-                      style={{ marginRight: 2 }}
-                    />
-                  ))}
-                  <Text style={styles.ratingStarsText}>({selectedItem.rating} ★)</Text>
-                </View>
-                <Text style={styles.detailCategory}>{selectedItem.category}</Text>
+                <Text style={styles.detailCategory}>{selectedItem.category} &middot; Rated {selectedItem.rating} ★</Text>
                 <Text style={styles.detailLocation}>📍 {selectedItem.location} &middot; {selectedItem.distance} km away</Text>
               </View>
 
@@ -618,14 +640,6 @@ export default function SearchScreen() {
                 <Text style={styles.mapsActionLabel}>Share</Text>
               </Pressable>
             </View>
-
-            {/* Primary message inquiry action button */}
-            <Pressable 
-              style={styles.sheetPrimaryBtn} 
-              onPress={() => Alert.alert('Chat Initiated', `Opening chat channel with ${selectedItem.name} for pricing/orders.`)}
-            >
-              <Text style={styles.sheetPrimaryBtnText}>Message Shop / Place Order</Text>
-            </Pressable>
           </View>
         )}
 
@@ -678,17 +692,10 @@ export default function SearchScreen() {
               return (
                 <Pressable
                   key={lvl.id}
-                  style={[
-                    styles.severityBtn, 
-                    isSelected && styles.activeSeverityBtn, 
-                    { backgroundColor: lvl.color }
-                  ]}
+                  style={[styles.severityBtn, isSelected && styles.activeSeverityBtn, { backgroundColor: lvl.color }]}
                   onPress={() => setNewAlertLevel(lvl.id)}
                 >
-                  <Text style={[
-                    styles.severityBtnText,
-                    isSelected && { color: '#1C873C', fontWeight: '800' }
-                  ]}>{lvl.label}</Text>
+                  <Text style={styles.severityBtnText}>{lvl.label}</Text>
                 </Pressable>
               );
             })}
@@ -710,6 +717,10 @@ const styles = StyleSheet.create({
   },
   safeAreaDark: {
     backgroundColor: '#121212',
+  },
+  myLocationButtonDark: {
+    backgroundColor: '#1E1E1E',
+    borderColor: '#2D2D2D',
   },
   permissionDeniedCardDark: {
     backgroundColor: '#1E1E1E',
@@ -757,17 +768,13 @@ const styles = StyleSheet.create({
     flex: 1,
     ...StyleSheet.absoluteFillObject,
   },
-  mapToolsContainer: {
+  myLocationButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 200 : 180,
+    bottom: 96,
     right: 16,
-    zIndex: 10,
-    gap: 8,
-  },
-  toolCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -778,10 +785,124 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: '#EAF0F6',
+    zIndex: 20,
   },
-  toolCircleDark: {
+  myLocationButtonDark: {
     backgroundColor: '#1E1E1E',
     borderColor: '#2D2D2D',
+  },
+  mapStyleButton: {
+    position: 'absolute',
+    bottom: 156,
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#EAF0F6',
+    zIndex: 20,
+  },
+  mapStyleButtonDark: {
+    backgroundColor: '#1E1E1E',
+    borderColor: '#2D2D2D',
+  },
+  searchAreaButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 180 : 160,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C873C',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 25,
+  },
+  searchAreaButtonDark: {
+    backgroundColor: '#16652B',
+  },
+  searchAreaButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  bottomControlsContainer: {
+    position: 'absolute',
+    bottom: 84,
+    left: 16,
+    right: 76,
+    gap: 8,
+    zIndex: 10,
+  },
+  controlRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  controlRowDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  controlLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#60646C',
+    marginRight: 8,
+    textTransform: 'uppercase',
+  },
+  controlLabelDark: {
+    color: '#A0A4AC',
+  },
+  controlScroll: {
+    flexGrow: 0,
+  },
+  controlPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: '#F1F3F5',
+    marginRight: 6,
+  },
+  controlPillDark: {
+    backgroundColor: '#2D2D2D',
+  },
+  activeControlPill: {
+    backgroundColor: '#1C873C',
+  },
+  controlPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#60646C',
+  },
+  controlPillTextDark: {
+    color: '#A0A4AC',
+  },
+  activeControlPillText: {
+    color: '#ffffff',
+  },
+  layersRow: {
+    flexDirection: 'row',
+    gap: 6,
   },
   permissionDeniedCard: {
     position: 'absolute',
@@ -855,16 +976,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 18,
+    borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 12,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowRadius: 16,
     elevation: 5,
-    borderWidth: 1,
-    borderColor: '#F0F2F5',
   },
   searchInput: {
     flex: 1,
@@ -878,37 +997,19 @@ const styles = StyleSheet.create({
   },
   tagPill: {
     backgroundColor: '#ffffff',
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 6,
     marginRight: 6,
     shadowColor: '#000',
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 2,
-    borderWidth: 1.2,
-    borderColor: 'transparent',
-  },
-  activeTagPill: {
-    backgroundColor: '#EAF6EA',
-    borderColor: '#1C873C',
   },
   tagText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '700',
     color: '#60646C',
-  },
-  activeTagText: {
-    color: '#1C873C',
-  },
-  layersContainer: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 32 : 16,
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    zIndex: 10,
   },
   layerBtn: {
     flex: 1,
@@ -916,20 +1017,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 18,
+    borderRadius: 16,
     paddingVertical: 10,
-    marginHorizontal: 4,
-    gap: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
+    gap: 4,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
   },
   activeLayerBtn: {
     backgroundColor: '#1C873C',
   },
   layerBtnText: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '700',
     color: '#60646C',
   },
@@ -938,7 +1039,6 @@ const styles = StyleSheet.create({
   },
   detailContainer: {
     width: '100%',
-    paddingBottom: 8,
   },
   detailHeaderBox: {
     flexDirection: 'row',
@@ -946,17 +1046,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   detailAvatar: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    marginRight: 14,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
     backgroundColor: '#E2E8F0',
   },
   detailAvatarContainer: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    marginRight: 14,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
     backgroundColor: '#EAF6EA',
     justifyContent: 'center',
     alignItems: 'center',
@@ -974,21 +1074,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1A202C',
   },
-  ratingStarsBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  ratingStarsText: {
-    fontSize: 11.5,
-    color: '#8A9099',
-    marginLeft: 6,
-    fontWeight: '600',
-  },
   statusBadge: {
     borderRadius: 12,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     alignSelf: 'flex-start',
   },
   statusAvailable: {
@@ -998,8 +1087,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FCE8E6',
   },
   statusText: {
-    fontSize: 9.5,
-    fontWeight: '850',
+    fontSize: 10,
+    fontWeight: '800',
     color: '#1C873C',
     textTransform: 'uppercase',
   },
@@ -1007,12 +1096,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#60646C',
-    marginTop: 3,
+    marginTop: 2,
   },
   detailLocation: {
     fontSize: 12,
     color: '#8A9099',
-    marginTop: 3,
+    marginTop: 4,
   },
   mapsActionsBar: {
     flexDirection: 'row',
@@ -1021,7 +1110,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#F0F2F5',
     paddingTop: 16,
     marginTop: 8,
-    marginBottom: 16,
   },
   mapsActionItem: {
     alignItems: 'center',
@@ -1055,23 +1143,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#60646C',
-  },
-  sheetPrimaryBtn: {
-    backgroundColor: '#1C873C',
-    borderRadius: 24,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#1C873C',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  sheetPrimaryBtnText: {
-    color: '#ffffff',
-    fontSize: 14.5,
-    fontWeight: '700',
   },
   alertHeader: {
     flexDirection: 'row',
@@ -1147,10 +1218,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
   },
   activeSeverityBtn: {
+    borderWidth: 2,
     borderColor: '#1C873C',
   },
   severityBtnText: {
