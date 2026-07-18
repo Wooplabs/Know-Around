@@ -255,7 +255,7 @@ export default function AuthScreen() {
                     placeholder="98765 43210"
                     placeholderTextColor="#A0A4AC"
                     keyboardType="phone-pad"
-                    maxLength={15}
+                    maxLength={10}
                     style={[
                       styles.phoneInput,
                       focusedField === 'phone' && styles.inputFocused,
