@@ -93,16 +93,17 @@ export default function MandatoryAddressModal() {
             {/* Grab Handle Decoration */}
             <View style={styles.handle} />
 
+            <Text style={styles.title}>Set House Location</Text>
+            <Text style={styles.subtitle}>
+              Please configure your primary residential address location to explore nearby neighborhood feeds and groups.
+            </Text>
+
             <ScrollView 
               showsVerticalScrollIndicator={false}
+              style={styles.formScroll}
               contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="handled"
             >
-              <Text style={styles.title}>Set House Location</Text>
-              <Text style={styles.subtitle}>
-                Please configure your primary residential address location to explore nearby neighborhood feeds and groups.
-              </Text>
-
               {/* Street Address */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Street Address / House No.</Text>
@@ -173,15 +174,15 @@ export default function MandatoryAddressModal() {
                   />
                 </View>
               </View>
-
-              <Pressable style={styles.btn} onPress={handleSave} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Text style={styles.btnText}>Save & Set Location</Text>
-                )}
-              </Pressable>
             </ScrollView>
+
+            <Pressable style={styles.btn} onPress={handleSave} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text style={styles.btnText}>Save & Set Location</Text>
+              )}
+            </Pressable>
           </View>
         </KeyboardAvoidingView>
       </View>
@@ -218,7 +219,13 @@ const styles = StyleSheet.create({
     borderRadius: 2.5,
     backgroundColor: '#E2E8F0',
     alignSelf: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  formScroll: {
+    flexGrow: 0,
+    flexShrink: 1,
+    maxHeight: 220,
+    marginBottom: 12,
   },
   scrollContent: {
     flexGrow: 1,
@@ -227,7 +234,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: '#1A1C1E',
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: 'center',
   },
   subtitle: {
@@ -235,10 +242,10 @@ const styles = StyleSheet.create({
     color: '#60646C',
     lineHeight: 19,
     textAlign: 'center',
-    marginBottom: 28,
+    marginBottom: 16,
   },
   inputGroup: {
-    marginBottom: 18,
+    marginBottom: 14,
   },
   label: {
     fontSize: 12.5,
