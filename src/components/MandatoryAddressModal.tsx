@@ -87,7 +87,7 @@ export default function MandatoryAddressModal() {
     >
       <View style={styles.backdrop}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior="padding"
           style={styles.keyboardView}
         >
           <View style={styles.card}>
