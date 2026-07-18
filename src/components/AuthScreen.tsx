@@ -192,11 +192,7 @@ export default function AuthScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.brandTitle}>KnowAround</Text>
-            <Text style={styles.brandSubtitle}>Neighborhood OS</Text>
-          </View>
+
 
           {authState === 'input' ? (
             /* PHASE 1: ENTER MOBILE NUMBER FORM */
