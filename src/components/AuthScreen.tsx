@@ -13,11 +13,15 @@ import {
   Animated,
   LayoutAnimation,
   UIManager,
-  Alert
+  Alert,
+  StatusBar,
+  Dimensions
 } from 'react-native';
 import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
+
+const { height: screenHeight } = Dimensions.get('window');
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -34,7 +38,7 @@ const COUNTRIES = [
   { name: 'Canada', code: '+1', flag: '🇨🇦' },
   { name: 'Singapore', code: '+65', flag: '🇸🇬' },
   { name: 'Germany', code: '+49', flag: '🇩🇪' },
-  { name: 'France', code: '#33', flag: '🇫🇷' },
+  { name: 'France', code: '+33', flag: '🇫🇷' },
   { name: 'Japan', code: '+81', flag: '🇯🇵' },
 ];
 
@@ -185,193 +189,232 @@ export default function AuthScreen() {
     }, 1200);
   };
 
+  // Back button functionality
+  const handleBackPress = () => {
+    if (authState === 'otp') {
+      setAuthState('input');
+    } else {
+      toggleMode();
+    }
+  };
+
+  // Header Title & Description text resolving
+  const getHeaderTitle = () => {
+    if (authState === 'otp') return 'Verify Mobile';
+    return isSignUp ? 'Create an account' : 'Welcome back';
+  };
+
+  const getHeaderSubtitle = () => {
+    if (authState === 'otp') {
+      return `Enter the 4-digit code sent to ${selectedCountry.code} ${phone}.`;
+    }
+    return isSignUp 
+      ? 'Enter your name and mobile number to sign up.' 
+      : 'Enter your mobile number to log in.';
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {/* TOP HEADER SECTION (Premium Cosmic Black Theme with Green Glow) */}
+          <View style={styles.headerSection}>
+            <View style={styles.glowEffect} />
+            
+            {/* Back Button */}
+            <Pressable style={styles.backBtn} onPress={handleBackPress}>
+              <Ionicons name="chevron-back" size={20} color="#ffffff" />
+            </Pressable>
 
+            {/* Title & Tagline inside Dark Section */}
+            <Text style={styles.title}>{getHeaderTitle()}</Text>
+            <Text style={styles.subtitle}>{getHeaderSubtitle()}</Text>
+          </View>
 
-          {authState === 'input' ? (
-            /* PHASE 1: ENTER MOBILE NUMBER FORM */
-            <Animated.View style={[styles.formContainer, { transform: [{ translateX: shakeAnim }] }]}>
-              <Text style={styles.title}>{isSignUp ? 'Create Account' : 'Welcome Back'}</Text>
-              <Text style={styles.subtitle}>
-                {isSignUp 
-                  ? 'Join your local neighborhood network with mobile authentication' 
-                  : 'Enter your phone number to sign in securely'}
-              </Text>
+          {/* BOTTOM WHITE CARD (Inputs, Buttons and OAuth) */}
+          <Animated.View style={[styles.formCard, { transform: [{ translateX: shakeAnim }] }]}>
+            {authState === 'input' ? (
+              /* PHASE 1: ENTER PHONE & OPTIONAL NAME */
+              <View>
+                {isSignUp && (
+                  <View style={styles.inputGroup}>
+                    <View style={styles.labelRow}>
+                      <Text style={styles.label}>Name</Text>
+                      {!!nameError && <Text style={styles.errorTextInline}>{nameError}</Text>}
+                    </View>
+                    <TextInput
+                      value={name}
+                      onChangeText={(text) => {
+                        setName(text);
+                        if (nameError) setNameError('');
+                      }}
+                      onFocus={() => setFocusedField('name')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="Example name"
+                      placeholderTextColor="#A0A4AC"
+                      style={[
+                        styles.input,
+                        focusedField === 'name' && styles.inputFocused,
+                        !!nameError && styles.inputError
+                      ]}
+                    />
+                  </View>
+                )}
 
-              {isSignUp && (
                 <View style={styles.inputGroup}>
                   <View style={styles.labelRow}>
-                    <Text style={styles.label}>Full Name</Text>
-                    {!!nameError && <Text style={styles.errorTextInline}>{nameError}</Text>}
+                    <Text style={styles.label}>Mobile Number</Text>
+                    {!!phoneError && <Text style={styles.errorTextInline}>{phoneError}</Text>}
                   </View>
-                  <TextInput
-                    value={name}
-                    onChangeText={(text) => {
-                      setName(text);
-                      if (nameError) setNameError('');
-                    }}
-                    onFocus={() => setFocusedField('name')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="e.g. Rahul Sharma"
-                    placeholderTextColor="#A0A4AC"
-                    style={[
-                      styles.input,
-                      focusedField === 'name' && styles.inputFocused,
-                      !!nameError && styles.inputError
-                    ]}
-                  />
+                  <View style={styles.phoneInputRow}>
+                    <Pressable style={styles.countryCodeSelector} onPress={() => setShowCountryPicker(true)}>
+                      <Text style={styles.flagText}>{selectedCountry.flag}</Text>
+                      <Text style={styles.codeText}>{selectedCountry.code}</Text>
+                      <Ionicons name="chevron-down" size={12} color="#60646C" />
+                    </Pressable>
+                    
+                    <TextInput
+                      value={phone}
+                      onChangeText={(text) => {
+                        const cleaned = text.replace(/[^0-9]/g, '');
+                        let formatted = cleaned;
+                        if (cleaned.length > 5) {
+                          formatted = cleaned.slice(0, 5) + ' ' + cleaned.slice(5, 10);
+                        }
+                        setPhone(formatted);
+                        if (phoneError) setPhoneError('');
+                      }}
+                      onFocus={() => setFocusedField('phone')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="98765 43210"
+                      placeholderTextColor="#A0A4AC"
+                      keyboardType="phone-pad"
+                      maxLength={11}
+                      style={[
+                        styles.phoneInput,
+                        focusedField === 'phone' && styles.inputFocused,
+                        !!phoneError && styles.inputError
+                      ]}
+                    />
+                  </View>
                 </View>
-              )}
 
-              <View style={styles.inputGroup}>
-                <View style={styles.labelRow}>
-                  <Text style={styles.label}>Mobile Number</Text>
-                  {!!phoneError && <Text style={styles.errorTextInline}>{phoneError}</Text>}
+                {/* Main Action Button using Brand Green */}
+                <Pressable style={styles.btn} onPress={handleSendOtpPress} disabled={isSubmitting}>
+                  <Text style={styles.btnText}>{isSignUp ? 'Sign up' : 'Log in'}</Text>
+                </Pressable>
+
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>or</Text>
+                  <View style={styles.dividerLine} />
                 </View>
-                <View style={styles.phoneInputRow}>
-                  <Pressable style={styles.countryCodeSelector} onPress={() => setShowCountryPicker(true)}>
-                    <Text style={styles.flagText}>{selectedCountry.flag}</Text>
-                    <Text style={styles.codeText}>{selectedCountry.code}</Text>
-                    <Ionicons name="chevron-down" size={14} color="#60646C" />
-                  </Pressable>
-                  
-                  <TextInput
-                    value={phone}
-                    onChangeText={(text) => {
-                      const cleaned = text.replace(/[^0-9]/g, '');
-                      let formatted = cleaned;
-                      if (cleaned.length > 5) {
-                        formatted = cleaned.slice(0, 5) + ' ' + cleaned.slice(5, 10);
-                      }
-                      setPhone(formatted);
-                      if (phoneError) setPhoneError('');
-                    }}
-                    onFocus={() => setFocusedField('phone')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="98765 43210"
-                    placeholderTextColor="#A0A4AC"
-                    keyboardType="phone-pad"
-                    maxLength={11}
-                    style={[
-                      styles.phoneInput,
-                      focusedField === 'phone' && styles.inputFocused,
-                      !!phoneError && styles.inputError
-                    ]}
-                  />
-                </View>
-              </View>
 
-              <Pressable style={styles.btn} onPress={handleSendOtpPress} disabled={isSubmitting}>
-                <Text style={styles.btnText}>Send OTP</Text>
-              </Pressable>
+                {/* Continue with Google */}
+                <Pressable style={styles.socialBtn} onPress={handleGoogleLogin} disabled={loadingGoogle}>
+                  {loadingGoogle ? (
+                    <ActivityIndicator size="small" color="#60646C" />
+                  ) : (
+                    <>
+                      <Ionicons name="logo-google" size={18} color="#EA4335" style={styles.socialIcon} />
+                      <Text style={styles.socialBtnText}>Continue with Google</Text>
+                    </>
+                  )}
+                </Pressable>
 
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
-                <View style={styles.dividerLine} />
-              </View>
+                {/* Continue with Apple */}
+                <Pressable style={styles.socialBtn} disabled={isSubmitting}>
+                  <Ionicons name="logo-apple" size={18} color="#1A1C1E" style={styles.socialIcon} />
+                  <Text style={styles.socialBtnText}>Continue with Apple</Text>
+                </Pressable>
 
-              {/* OAuth Fallback */}
-              <Pressable style={styles.googleBtn} onPress={handleGoogleLogin} disabled={loadingGoogle}>
-                {loadingGoogle ? (
-                  <ActivityIndicator size="small" color="#60646C" />
-                ) : (
-                  <>
-                    <Ionicons name="logo-google" size={18} color="#EA4335" />
-                    <Text style={styles.googleBtnText}>
-                      {isSignUp ? 'Sign up with Google' : 'Sign in with Google'}
+                {/* Switch Mode Link */}
+                <Pressable style={styles.toggleLink} onPress={toggleMode}>
+                  <Text style={styles.toggleLinkNormalText}>
+                    {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+                    <Text style={styles.toggleLinkActiveText}>
+                      {isSignUp ? 'Sign in' : 'Sign up'}
                     </Text>
-                  </>
-                )}
-              </Pressable>
-
-              <Pressable style={styles.toggleLink} onPress={toggleMode}>
-                <Text style={styles.toggleLinkText}>
-                  {isSignUp 
-                    ? 'Already have an account? Sign In' 
-                    : "Don't have an account? Create one"}
-                </Text>
-              </Pressable>
-            </Animated.View>
-          ) : (
-            /* PHASE 2: SMS OTP VERIFICATION SCREEN */
-            <Animated.View style={[styles.formContainer, { transform: [{ translateX: shakeAnim }] }]}>
-              <Text style={styles.title}>Verify Mobile</Text>
-              <Text style={styles.subtitle}>
-                We sent a 4-digit code to{' '}
-                <Text style={{ fontWeight: '700', color: '#1A1C1E' }}>
-                  {selectedCountry.flag} {selectedCountry.code} {phone}
-                </Text>. Enter it below to complete verification.
-              </Text>
-
-              <View style={styles.otpInputRow}>
-                {otpInput.map((digit, idx) => (
-                  <TextInput
-                    key={idx}
-                    ref={(el) => (otpRefs.current[idx] = el)}
-                    value={digit}
-                    onChangeText={(text) => {
-                      const cleanedText = text.replace(/[^0-9]/g, '');
-                      const newOtp = [...otpInput];
-                      newOtp[idx] = cleanedText;
-                      setOtpInput(newOtp);
-
-                      // Focus next cell
-                      if (cleanedText && idx < 3) {
-                        otpRefs.current[idx + 1]?.focus();
-                      }
-                    }}
-                    onKeyPress={(e) => {
-                      if (e.nativeEvent.key === 'Backspace' && !otpInput[idx] && idx > 0) {
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              /* PHASE 2: SMS OTP VERIFICATION */
+              <View>
+                <View style={styles.otpInputRow}>
+                  {otpInput.map((digit, idx) => (
+                    <TextInput
+                      key={idx}
+                      ref={(el) => (otpRefs.current[idx] = el)}
+                      value={digit}
+                      onChangeText={(text) => {
+                        const cleanedText = text.replace(/[^0-9]/g, '');
                         const newOtp = [...otpInput];
-                        newOtp[idx - 1] = '';
+                        newOtp[idx] = cleanedText;
                         setOtpInput(newOtp);
-                        otpRefs.current[idx - 1]?.focus();
-                      }
-                    }}
-                    maxLength={1}
-                    keyboardType="number-pad"
-                    textContentType="oneTimeCode"
-                    style={[
-                      styles.otpInputBox,
-                      !!otpError && styles.otpInputBoxError
-                    ]}
-                  />
-                ))}
+
+                        // Focus next cell
+                        if (cleanedText && idx < 3) {
+                          otpRefs.current[idx + 1]?.focus();
+                        }
+                      }}
+                      onKeyPress={(e) => {
+                        if (e.nativeEvent.key === 'Backspace' && !otpInput[idx] && idx > 0) {
+                          const newOtp = [...otpInput];
+                          newOtp[idx - 1] = '';
+                          setOtpInput(newOtp);
+                          otpRefs.current[idx - 1]?.focus();
+                        }
+                      }}
+                      maxLength={1}
+                      keyboardType="number-pad"
+                      textContentType="oneTimeCode"
+                      style={[
+                        styles.otpInputBox,
+                        !!otpError && styles.otpInputBoxError
+                      ]}
+                    />
+                  ))}
+                </View>
+
+                {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
+
+                {/* Verify OTP Button */}
+                <Pressable style={styles.btn} onPress={handleVerifyOtp} disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.btnText}>Verify & Login</Text>
+                  )}
+                </Pressable>
+
+                <View style={styles.otpResendRow}>
+                  <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
+                  {resendTimer > 0 ? (
+                    <Text style={styles.otpTimerText}>Resend in {resendTimer}s</Text>
+                  ) : (
+                    <Pressable onPress={generateAndSendOtp}>
+                      <Text style={styles.otpResendLink}>Resend OTP</Text>
+                    </Pressable>
+                  )}
+                </View>
+
+                <Pressable style={styles.changeNumberLink} onPress={() => setAuthState('input')}>
+                  <Text style={styles.changeNumberLinkText}>Change Mobile Number</Text>
+                </Pressable>
               </View>
-
-              {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
-
-              <Pressable style={styles.btn} onPress={handleVerifyOtp} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Text style={styles.btnText}>Verify & Login</Text>
-                )}
-              </Pressable>
-
-              <View style={styles.otpResendRow}>
-                <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
-                {resendTimer > 0 ? (
-                  <Text style={styles.otpTimerText}>Resend in {resendTimer}s</Text>
-                ) : (
-                  <Pressable onPress={generateAndSendOtp}>
-                    <Text style={styles.otpResendLink}>Resend OTP</Text>
-                  </Pressable>
-                )}
-              </View>
-
-              <Pressable style={styles.changeNumberLink} onPress={() => setAuthState('input')}>
-                <Text style={styles.changeNumberLinkText}>Change Mobile Number</Text>
-              </Pressable>
-            </Animated.View>
-          )}
+            )}
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -397,56 +440,70 @@ export default function AuthScreen() {
           </ScrollView>
         </View>
       </BottomSheet>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#121417',
+  },
+  scroll: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 28,
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
-    paddingBottom: 40,
+  },
+  headerSection: {
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 54 : 32,
+    paddingBottom: 44,
+    backgroundColor: '#121417',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  glowEffect: {
+    position: 'absolute',
+    top: -120,
+    right: -120,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: '#1C873C',
+    opacity: 0.15,
+  },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
-  },
-  header: {
     alignItems: 'center',
-    marginBottom: 36,
-  },
-  brandTitle: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#1C873C',
-    letterSpacing: -0.5,
-  },
-  brandSubtitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#A0A4AC',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: 4,
-  },
-  formContainer: {
-    width: '100%',
+    marginBottom: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
-    color: '#1A1C1E',
-    marginBottom: 6,
-    textAlign: 'center',
+    color: '#ffffff',
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#60646C',
-    marginBottom: 28,
+    fontSize: 14.5,
+    color: 'rgba(255, 255, 255, 0.6)',
     lineHeight: 20,
-    textAlign: 'center',
+    paddingRight: 32,
+  },
+  formCard: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 50,
+    minHeight: screenHeight - 230,
   },
   inputGroup: {
     marginBottom: 20,
@@ -457,9 +514,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   label: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#40444C',
+    color: '#1A1C1E',
   },
   errorTextInline: {
     color: '#D32F2F',
@@ -468,13 +525,13 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   input: {
-    backgroundColor: '#FCFDFF',
+    backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 14,
+    height: 52,
+    fontSize: 14.5,
     color: '#1A1C1E',
   },
   inputFocused: {
@@ -493,10 +550,10 @@ const styles = StyleSheet.create({
   countryCodeSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FCFDFF',
+    backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 12,
     gap: 4,
     height: 52,
@@ -505,27 +562,32 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   codeText: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '700',
     color: '#1A1C1E',
   },
   phoneInput: {
     flex: 1,
-    backgroundColor: '#FCFDFF',
+    backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 16,
     height: 52,
-    fontSize: 14,
+    fontSize: 14.5,
     color: '#1A1C1E',
   },
   btn: {
-    backgroundColor: '#1C873C',
-    borderRadius: 28,
+    backgroundColor: '#1C873C', // Brand Green
+    borderRadius: 27,
     paddingVertical: 15,
     alignItems: 'center',
     marginTop: 12,
+    shadowColor: '#1C873C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   btnText: {
     color: '#ffffff',
@@ -543,35 +605,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
   },
   dividerText: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: '#A0A4AC',
-    marginHorizontal: 12,
+    marginHorizontal: 16,
     fontWeight: '600',
   },
-  googleBtn: {
+  socialBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 28,
+    backgroundColor: '#F1F5F9', // Light grey pill as in mockup
+    borderRadius: 27,
     paddingVertical: 15,
     gap: 10,
+    marginBottom: 12,
   },
-  googleBtnText: {
+  socialIcon: {
+    marginRight: 2,
+  },
+  socialBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#4A5568',
+    color: '#1A1C1E',
   },
   toggleLink: {
     marginTop: 24,
     alignItems: 'center',
   },
-  toggleLinkText: {
+  toggleLinkNormalText: {
     fontSize: 14,
-    fontWeight: '700',
+    color: '#60646C',
+    fontWeight: '600',
+  },
+  toggleLinkActiveText: {
     color: '#1C873C',
+    fontWeight: '700',
   },
   otpInputRow: {
     flexDirection: 'row',
@@ -580,14 +648,14 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
   otpInputBox: {
-    width: 44,
-    height: 52,
+    width: 52,
+    height: 58,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     borderRadius: 12,
-    backgroundColor: '#FCFDFF',
+    backgroundColor: '#ffffff',
     textAlign: 'center',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: '#1A1C1E',
   },
@@ -597,7 +665,7 @@ const styles = StyleSheet.create({
   },
   otpErrorText: {
     color: '#D32F2F',
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '600',
     marginBottom: 16,
     textAlign: 'center',
@@ -609,16 +677,16 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   otpResendLabel: {
-    fontSize: 13,
+    fontSize: 13.5,
     color: '#60646C',
   },
   otpTimerText: {
-    fontSize: 13,
+    fontSize: 13.5,
     color: '#A0A4AC',
     fontWeight: '600',
   },
   otpResendLink: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#1C873C',
   },
@@ -627,7 +695,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   changeNumberLinkText: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#60646C',
     textDecorationLine: 'underline',
