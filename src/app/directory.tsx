@@ -116,7 +116,7 @@ function DirectoryCard({ item }: { item: ItemType }) {
 }
 
 export default function DirectoryScreen() {
-  const { professionals, directory, activeLocation, currentUser, logout, darkMode, setDarkMode } = useKnowAround();
+  const { professionals, directory, activeLocation, currentUser, logout, darkMode, setDarkMode, user, userAddress } = useKnowAround();
   const [menuVisible, setMenuVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -184,80 +184,31 @@ export default function DirectoryScreen() {
     return matchesSearch && matchesCategory && matchesDistance;
   });
 
+
   return (
-    <SafeAreaView style={[styles.container, darkMode && styles.containerDark]}>
-      {/* Uniform Top Header */}
-      <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
-        <View>
-          <Pressable style={styles.locationSelector}>
-            <LocationIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={18} />
-            <Text style={[styles.locationText, darkMode && styles.locationTextDark]}>{activeLocation.split(',')[0]}</Text>
-            <DownIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={15} style={styles.downChevron} />
-          </Pressable>
-        </View>
-        <View style={styles.headerRight}>
-          <Pressable style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
-            <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
-          </Pressable>
-          <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
-            <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
-            <View style={[styles.avatarBadge, darkMode && styles.avatarBadgeDark]}>
-              <Ionicons name="menu-outline" size={8} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-            </View>
-          </Pressable>
-        </View>
-      </View>
-
-      {/* WhatsApp Dropdown Modal Menu */}
-      <Modal
-        transparent
-        visible={menuVisible}
-        onRequestClose={() => setMenuVisible(false)}
-        animationType="fade"
-      >
-        <Pressable style={styles.modalBackdrop} onPress={() => setMenuVisible(false)}>
-          <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
-            <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Account Settings", "Manage profile, active sessions, and notification priorities."); }}>
-              <Ionicons name="person-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-              <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Account Settings</Text>
-            </Pressable>
-
-            <Pressable 
-              style={styles.dropdownItem} 
-              onPress={() => {
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                setDarkMode(!darkMode);
-              }}
-            >
-              <Ionicons name={darkMode ? "sunny-outline" : "moon-outline"} size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-              <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>{darkMode ? "Light Mode" : "Dark Mode"}</Text>
-              <View style={[styles.toggleTrack, darkMode && styles.toggleTrackActive]}>
-                <View style={[styles.toggleThumb, darkMode && styles.toggleThumbActive]} />
-              </View>
-            </Pressable>
-
-            <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Neighborhood Info", "White Town Neighborhood OS v2.0.0"); }}>
-              <Ionicons name="information-circle-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
-              <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Neighborhood Info</Text>
-            </Pressable>
-
-            <View style={[styles.dropdownDivider, darkMode && styles.dropdownDividerDark]} />
-
-            <Pressable 
-              style={[styles.dropdownItem, styles.dropdownItemDestructive]} 
-              onPress={() => {
-                setMenuVisible(false);
-                logout();
-              }}
-            >
-              <Ionicons name="log-out-outline" size={18} color="#E53935" />
-              <Text style={[styles.dropdownItemText, styles.destructiveText]}>Log Out</Text>
+    <View style={{ flex: 1, backgroundColor: darkMode ? '#121212' : '#ffffff' }}>
+      <SafeAreaView style={[styles.container, darkMode && styles.containerDark]}>
+        {/* Uniform Top Header */}
+        <View style={[styles.topHeader, darkMode && styles.topHeaderDark]}>
+          <View>
+            <Pressable style={styles.locationSelector}>
+              <LocationIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={18} />
+              <Text style={[styles.locationText, darkMode && styles.locationTextDark]}>{activeLocation.split(',')[0]}</Text>
+              <DownIcon color={darkMode ? "#A0A4AC" : "#60646C"} size={15} style={styles.downChevron} />
             </Pressable>
           </View>
-        </Pressable>
-      </Modal>
-
-      {/* Sub Header for Search */}
+          <View style={styles.headerRight}>
+            <Pressable style={[styles.iconButton, darkMode && styles.iconButtonDark]}>
+              <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
+            </Pressable>
+            <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
+              <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
+              <View style={[styles.avatarBadge, darkMode && styles.avatarBadgeDark]}>
+                <Ionicons name="menu-outline" size={8} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+              </View>
+            </Pressable>
+          </View>
+        </View>
       <View style={[styles.subHeader, darkMode && styles.subHeaderDark]}>
         {/* Search Input */}
         <View style={[styles.searchBar, darkMode && styles.searchBarDark]}>
@@ -304,6 +255,75 @@ export default function DirectoryScreen() {
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
+
+    {/* WhatsApp Dropdown Modal Menu */}
+    <Modal
+      transparent
+      visible={menuVisible}
+      onRequestClose={() => setMenuVisible(false)}
+      animationType="fade"
+      statusBarTranslucent={true}
+    >
+      <Pressable style={styles.modalBackdrop} onPress={() => setMenuVisible(false)}>
+        <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
+          {/* Profile mini-card */}
+          <View style={[styles.dropdownProfileCard, darkMode && styles.dropdownProfileCardDark]}>
+            <Image source={{ uri: currentUser.avatar }} style={styles.dropdownAvatar} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.dropdownProfileName, darkMode && styles.dropdownProfileNameDark]} numberOfLines={1}>
+                {currentUser.name}
+              </Text>
+              {user?.phone ? (
+                <Text style={styles.dropdownProfilePhone} numberOfLines={1}>{user.phone}</Text>
+              ) : null}
+              {userAddress?.city ? (
+                <Text style={styles.dropdownProfileAddress} numberOfLines={1}>
+                  {[userAddress.place, userAddress.city].filter(Boolean).join(', ')}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+          <View style={[styles.dropdownDivider, darkMode && styles.dropdownDividerDark]} />
+          <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); router.push('/settings'); }}>
+            <Ionicons name="person-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+            <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Account Settings</Text>
+          </Pressable>
+
+          <Pressable 
+            style={styles.dropdownItem} 
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setDarkMode(!darkMode);
+            }}
+          >
+            <Ionicons name={darkMode ? "sunny-outline" : "moon-outline"} size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+            <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>{darkMode ? "Light Mode" : "Dark Mode"}</Text>
+            <View style={[styles.toggleTrack, darkMode && styles.toggleTrackActive]}>
+              <View style={[styles.toggleThumb, darkMode && styles.toggleThumbActive]} />
+            </View>
+          </Pressable>
+
+          <Pressable style={styles.dropdownItem} onPress={() => { setMenuVisible(false); Alert.alert("Neighborhood Info", "White Town Neighborhood OS v2.0.0"); }}>
+            <Ionicons name="information-circle-outline" size={18} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+            <Text style={[styles.dropdownItemText, darkMode && styles.dropdownItemTextDark]}>Neighborhood Info</Text>
+          </Pressable>
+
+          <View style={[styles.dropdownDivider, darkMode && styles.dropdownDividerDark]} />
+
+          <Pressable 
+            style={[styles.dropdownItem, styles.dropdownItemDestructive]} 
+            onPress={() => {
+              setMenuVisible(false);
+              logout();
+            }}
+          >
+            <Ionicons name="log-out-outline" size={18} color="#E53935" />
+            <Text style={[styles.dropdownItemText, styles.destructiveText]}>Log Out</Text>
+          </Pressable>
+        </View>
+      </Pressable>
+    </Modal>
+  </View>
   );
 }
 
@@ -673,9 +693,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'ios' ? 100 : 75,
     right: 16,
-    width: 200,
+    width: 230,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
+    borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 4,
     shadowColor: '#000000',
@@ -689,6 +709,46 @@ const styles = StyleSheet.create({
   dropdownContainerDark: {
     backgroundColor: '#1E1E1E',
     borderColor: '#2D2D2D',
+  },
+  dropdownProfileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 10,
+    backgroundColor: '#F8FBF8',
+    borderRadius: 12,
+    margin: 4,
+  },
+  dropdownProfileCardDark: {
+    backgroundColor: '#252525',
+  },
+  dropdownAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#1C873C',
+  },
+  dropdownProfileName: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#1A1C1E',
+  },
+  dropdownProfileNameDark: {
+    color: '#ffffff',
+  },
+  dropdownProfilePhone: {
+    fontSize: 11,
+    color: '#1C873C',
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  dropdownProfileAddress: {
+    fontSize: 10,
+    color: '#8A9099',
+    fontWeight: '500',
+    marginTop: 1,
   },
   dropdownItem: {
     flexDirection: 'row',
