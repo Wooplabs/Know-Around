@@ -458,10 +458,12 @@ const styles = StyleSheet.create({
   headerSection: {
     paddingHorizontal: 24,
     paddingTop: Platform.OS === 'ios' ? 54 : 32,
-    paddingBottom: 44,
+    paddingBottom: 32,
     backgroundColor: '#121417',
     position: 'relative',
     overflow: 'hidden',
+    height: screenHeight * 0.35,
+    justifyContent: 'flex-end',
   },
   glowEffect: {
     position: 'absolute',
@@ -474,13 +476,16 @@ const styles = StyleSheet.create({
     opacity: 0.15,
   },
   backBtn: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 24,
+    left: 24,
     width: 38,
     height: 38,
     borderRadius: 19,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    zIndex: 10,
   },
   title: {
     fontSize: 28,
@@ -502,8 +507,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
     paddingTop: 32,
-    paddingBottom: 50,
-    minHeight: screenHeight - 230,
+    paddingBottom: 40,
+    minHeight: screenHeight * 0.65 + 30,
   },
   inputGroup: {
     marginBottom: 20,
