@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   formScroll: {
     flexGrow: 0,
     flexShrink: 1,
-    maxHeight: 220,
+    maxHeight: 320,
     marginBottom: 12,
   },
   scrollContent: {
