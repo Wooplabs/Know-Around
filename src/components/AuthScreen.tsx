@@ -109,11 +109,12 @@ export default function AuthScreen() {
       isValid = false;
     }
 
+    const rawPhone = phone.replace(/[^0-9]/g, '');
     if (!phone.trim()) {
       setPhoneError('Mobile number is required.');
       isValid = false;
-    } else if (phone.length < 8) {
-      setPhoneError('Please enter a valid mobile number.');
+    } else if (rawPhone.length !== 10) {
+      setPhoneError('Please enter a valid 10-digit mobile number.');
       isValid = false;
     }
 
@@ -159,7 +160,8 @@ export default function AuthScreen() {
     }
 
     setIsSubmitting(true);
-    const fullPhoneNumber = `${selectedCountry.code}${phone}`;
+    const rawPhone = phone.replace(/[^0-9]/g, '');
+    const fullPhoneNumber = `${selectedCountry.code}${rawPhone}`;
 
     try {
       if (isSignUp) {
@@ -247,7 +249,11 @@ export default function AuthScreen() {
                     value={phone}
                     onChangeText={(text) => {
                       const cleaned = text.replace(/[^0-9]/g, '');
-                      setPhone(cleaned);
+                      let formatted = cleaned;
+                      if (cleaned.length > 5) {
+                        formatted = cleaned.slice(0, 5) + ' ' + cleaned.slice(5, 10);
+                      }
+                      setPhone(formatted);
                       if (phoneError) setPhoneError('');
                     }}
                     onFocus={() => setFocusedField('phone')}
@@ -255,7 +261,7 @@ export default function AuthScreen() {
                     placeholder="98765 43210"
                     placeholderTextColor="#A0A4AC"
                     keyboardType="phone-pad"
-                    maxLength={10}
+                    maxLength={11}
                     style={[
                       styles.phoneInput,
                       focusedField === 'phone' && styles.inputFocused,
