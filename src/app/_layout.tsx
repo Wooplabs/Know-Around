@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { useColorScheme, Platform, StyleSheet, View, Pressable, Text } from 'react-native';
+import { useColorScheme, Platform, StyleSheet, View, Pressable, Text, LogBox } from 'react-native';
 import { KnowAroundProvider, useKnowAround } from '@/context/KnowAroundContext';
 import { Colors } from '@/constants/theme';
 import MandatoryAddressModal from '@/components/MandatoryAddressModal';
@@ -7,6 +7,17 @@ import AuthScreen from '@/components/AuthScreen';
 import PostComposerModal from '@/components/PostComposerModal';
 import { Ionicons } from '@expo/vector-icons';
 import { HomeIcon, MapIcon, GroupIcon, ChatsIcon } from '@/components/CustomIcons';
+
+// Suppress non-critical Firebase / Expo noise from appearing as red overlay errors
+LogBox.ignoreLogs([
+  '@firebase/firestore',
+  'Could not reach Cloud Firestore',
+  'Backend didn\'t respond',
+  'setLayoutAnimationEnabledExperimental',
+  'SafeAreaView has been deprecated',
+  '@firebase/auth',
+  'AsyncStorage',
+]);
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const { setComposerVisible, darkMode } = useKnowAround();

@@ -815,11 +815,6 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     if (!isFirebaseConfigured || !db) return;
 
-    const onFsError = (err: Error) => {
-      // Silently ignore transient Firestore offline / connection errors
-      // The app will continue working with locally cached data
-    };
-
     // Subscribe to feeds
     const unsubFeeds = onSnapshot(collection(db, 'feeds'), async (snapshot) => {
       const list: Post[] = [];
@@ -837,7 +832,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setFeeds(list);
         saveState('native_feeds', list);
       }
-    }, onFsError);
+    });
 
     // Subscribe to alerts
     const unsubAlerts = onSnapshot(collection(db, 'alerts'), async (snapshot) => {
@@ -854,7 +849,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setAlerts(list);
         saveState('native_alerts', list);
       }
-    }, onFsError);
+    });
 
     // Subscribe to professionals
     const unsubPros = onSnapshot(collection(db, 'professionals'), async (snapshot) => {
@@ -870,7 +865,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setProfessionals(list);
         saveState('native_professionals', list);
       }
-    }, onFsError);
+    });
 
     // Subscribe to groups
     const unsubGroups = onSnapshot(collection(db, 'groups'), async (snapshot) => {
@@ -886,7 +881,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setGroups(list);
         saveState('native_groups', list);
       }
-    }, onFsError);
+    });
 
     // Subscribe to group posts
     const unsubGroupPosts = onSnapshot(collection(db, 'group_posts'), async (snapshot) => {
@@ -903,7 +898,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setGroupPosts(list);
         saveState('native_group_posts', list);
       }
-    }, onFsError);
+    });
 
     return () => {
       unsubFeeds();
