@@ -11,7 +11,8 @@ import {
   Switch, 
   Alert, 
   Image,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useKnowAround } from '../context/KnowAroundContext';
@@ -341,6 +342,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0,
   },
   safeAreaDark: {
     backgroundColor: '#121212',
