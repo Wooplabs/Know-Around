@@ -68,7 +68,8 @@ export default function MandatoryAddressModal() {
     }
   }, [user, justRegistered]);
 
-  if (!visible) return null;
+  // Keep dialog accessible even if visible is false, so we handle it gracefully inside wrapper
+  if (!visible && !dialogConfig.visible) return null;
 
   const handleSave = () => {
     if (!street.trim() || !city.trim() || !state.trim() || !pin.trim()) {
@@ -95,164 +96,177 @@ export default function MandatoryAddressModal() {
       });
       
       setIsSubmitting(false);
+      setVisible(false);
       showCustomDialog(
         'Location Configured 🎉',
         'Your home location has been set successfully!',
         'success',
         () => {
           setJustRegistered(false);
-          setVisible(false);
         }
       );
     }, 800);
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="slide"
-      statusBarTranslucent={true}
-      onRequestClose={() => {}} // Empty to block Android back button close
-    >
-      <View style={styles.backdrop}>
-        <KeyboardAvoidingView
-          behavior={focusedField ? 'padding' : undefined}
-          style={styles.keyboardView}
+    <>
+      {visible && (
+        <Modal
+          visible={visible}
+          transparent={true}
+          animationType="slide"
+          statusBarTranslucent={true}
+          onRequestClose={() => {}} // Empty to block Android back button close
         >
-          <View style={styles.card}>
-            {/* Grab Handle Decoration */}
-            <View style={styles.handle} />
-
-            <Text style={styles.title}>Set House Location</Text>
-            <Text style={styles.subtitle}>
-              Please configure your primary residential address location to explore nearby neighborhood feeds and groups.
-            </Text>
-
-            <ScrollView 
-              showsVerticalScrollIndicator={false}
-              style={styles.formScroll}
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
+          <View style={styles.backdrop}>
+            <KeyboardAvoidingView
+              behavior={focusedField ? 'padding' : undefined}
+              style={styles.keyboardView}
             >
-              {/* Street Address */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Street Address / House No.</Text>
-                <TextInput
-                  value={street}
-                  onChangeText={setStreet}
-                  onFocus={() => setFocusedField('street')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="e.g. 24, Victor Simonel Street"
-                  placeholderTextColor="#A0A4AC"
-                  style={[
-                    styles.input,
-                    focusedField === 'street' && styles.inputFocused
-                  ]}
-                />
+              <View style={styles.card}>
+                {/* Grab Handle Decoration */}
+                <View style={styles.handle} />
+
+                <Text style={styles.title}>Set House Location</Text>
+                <Text style={styles.subtitle}>
+                  Please configure your primary residential address location to explore nearby neighborhood feeds and groups.
+                </Text>
+
+                <ScrollView 
+                  showsVerticalScrollIndicator={false}
+                  style={styles.formScroll}
+                  contentContainerStyle={styles.scrollContent}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {/* Street Address */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Street Address / House No.</Text>
+                    <TextInput
+                      value={street}
+                      onChangeText={setStreet}
+                      onFocus={() => setFocusedField('street')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="e.g. 24, Victor Simonel Street"
+                      placeholderTextColor="#A0A4AC"
+                      style={[
+                        styles.input,
+                        focusedField === 'street' && styles.inputFocused
+                      ]}
+                    />
+                  </View>
+
+                  {/* City */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>City</Text>
+                    <TextInput
+                      value={city}
+                      onChangeText={setCity}
+                      onFocus={() => setFocusedField('city')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="e.g. Pondicherry"
+                      placeholderTextColor="#A0A4AC"
+                      style={[
+                        styles.input,
+                        focusedField === 'city' && styles.inputFocused
+                      ]}
+                    />
+                  </View>
+
+                  {/* State & Pincode Row */}
+                  <View style={styles.row}>
+                    <View style={[styles.inputGroup, { flex: 1.2 }]}>
+                      <Text style={styles.label}>State</Text>
+                      <TextInput
+                        value={state}
+                        onChangeText={setState}
+                        onFocus={() => setFocusedField('state')}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="e.g. Puducherry"
+                        placeholderTextColor="#A0A4AC"
+                        style={[
+                          styles.input,
+                          focusedField === 'state' && styles.inputFocused
+                        ]}
+                      />
+                    </View>
+
+                    <View style={[styles.inputGroup, { flex: 1 }]}>
+                      <Text style={styles.label}>Pincode</Text>
+                      <TextInput
+                        value={pin}
+                        onChangeText={(text) => setPin(text.replace(/[^0-9]/g, ''))}
+                        onFocus={() => setFocusedField('pin')}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="605001"
+                        placeholderTextColor="#A0A4AC"
+                        keyboardType="number-pad"
+                        maxLength={6}
+                        style={[
+                          styles.input,
+                          focusedField === 'pin' && styles.inputFocused
+                        ]}
+                      />
+                    </View>
+                  </View>
+                </ScrollView>
+
+                <Pressable style={styles.btn} onPress={handleSave} disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.btnText}>Save & Set Location</Text>
+                  )}
+                </Pressable>
               </View>
+            </KeyboardAvoidingView>
+          </View>
+        </Modal>
+      )}
 
-              {/* City */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>City</Text>
-                <TextInput
-                  value={city}
-                  onChangeText={setCity}
-                  onFocus={() => setFocusedField('city')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="e.g. Pondicherry"
-                  placeholderTextColor="#A0A4AC"
-                  style={[
-                    styles.input,
-                    focusedField === 'city' && styles.inputFocused
-                  ]}
-                />
-              </View>
+      {/* Themed Success/Error Custom Dialog Alert */}
+      <Modal
+        visible={dialogConfig.visible}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => {
+          if (dialogConfig.type === 'error') {
+            setDialogConfig(prev => ({ ...prev, visible: false }));
+          }
+        }}
+      >
+        <View style={styles.dialogBackdrop}>
+          <View style={styles.dialogCard}>
+            <View style={[
+              styles.dialogIconContainer,
+              dialogConfig.type === 'success' ? styles.dialogIconSuccess : styles.dialogIconError
+            ]}>
+              <Ionicons 
+                name={dialogConfig.type === 'success' ? 'checkmark' : 'alert-circle-outline'} 
+                size={36} 
+                color={dialogConfig.type === 'success' ? '#1C873C' : '#D32F2F'} 
+              />
+            </View>
 
-              {/* State & Pincode Row */}
-              <View style={styles.row}>
-                <View style={[styles.inputGroup, { flex: 1.2 }]}>
-                  <Text style={styles.label}>State</Text>
-                  <TextInput
-                    value={state}
-                    onChangeText={setState}
-                    onFocus={() => setFocusedField('state')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="e.g. Puducherry"
-                    placeholderTextColor="#A0A4AC"
-                    style={[
-                      styles.input,
-                      focusedField === 'state' && styles.inputFocused
-                    ]}
-                  />
-                </View>
+            <Text style={styles.dialogTitle}>{dialogConfig.title}</Text>
+            <Text style={styles.dialogMessage}>{dialogConfig.message}</Text>
 
-                <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>Pincode</Text>
-                  <TextInput
-                    value={pin}
-                    onChangeText={(text) => setPin(text.replace(/[^0-9]/g, ''))}
-                    onFocus={() => setFocusedField('pin')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="605001"
-                    placeholderTextColor="#A0A4AC"
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    style={[
-                      styles.input,
-                      focusedField === 'pin' && styles.inputFocused
-                    ]}
-                  />
-                </View>
-              </View>
-            </ScrollView>
-
-            <Pressable style={styles.btn} onPress={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Text style={styles.btnText}>Save & Set Location</Text>
-              )}
+            <Pressable 
+              style={styles.dialogBtn} 
+              onPress={() => {
+                setDialogConfig(prev => ({ ...prev, visible: false }));
+                if (dialogConfig.onClose) {
+                  dialogConfig.onClose();
+                }
+              }}
+            >
+              <Text style={styles.dialogBtnText}>OK</Text>
             </Pressable>
           </View>
-        </KeyboardAvoidingView>
-      </View>
-
-      {/* Themed Success/Error Custom Dialog Alert - Overlay inside the same native Modal */}
-      {dialogConfig.visible && (
-        <View style={StyleSheet.absoluteFillObject}>
-          <View style={styles.dialogBackdrop}>
-            <View style={styles.dialogCard}>
-              <View style={[
-                styles.dialogIconContainer,
-                dialogConfig.type === 'success' ? styles.dialogIconSuccess : styles.dialogIconError
-              ]}>
-                <Ionicons 
-                  name={dialogConfig.type === 'success' ? 'checkmark' : 'alert-circle-outline'} 
-                  size={36} 
-                  color={dialogConfig.type === 'success' ? '#1C873C' : '#D32F2F'} 
-                />
-              </View>
-
-              <Text style={styles.dialogTitle}>{dialogConfig.title}</Text>
-              <Text style={styles.dialogMessage}>{dialogConfig.message}</Text>
-
-              <Pressable 
-                style={styles.dialogBtn} 
-                onPress={() => {
-                  setDialogConfig(prev => ({ ...prev, visible: false }));
-                  if (dialogConfig.onClose) {
-                    dialogConfig.onClose();
-                  }
-                }}
-              >
-                <Text style={styles.dialogBtnText}>OK</Text>
-              </Pressable>
-            </View>
-          </View>
         </View>
-      )}
-    </Modal>
+      </Modal>
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
