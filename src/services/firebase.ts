@@ -52,9 +52,10 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
-    // Use long-polling transport to prevent streaming connection errors on React Native
+    // Auto-detect long-polling vs streaming; prevents WebChannel errors in Expo Go / React Native
     db = initializeFirestore(app, {
-      experimentalForceLongPolling: true
+      experimentalAutoDetectLongPolling: true,
+      ignoreUndefinedProperties: true,
     });
   } catch (error) {
     console.warn("Failed to initialize Firebase SDK:", error);
