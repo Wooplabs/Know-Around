@@ -231,10 +231,12 @@ export default function AuthScreen() {
           <View style={styles.headerSection}>
             <View style={styles.glowEffect} />
             
-            {/* Back Button */}
-            <Pressable style={styles.backBtn} onPress={handleBackPress}>
-              <Ionicons name="chevron-back" size={20} color="#ffffff" />
-            </Pressable>
+            {/* Back Button (Only on OTP verification screen) */}
+            {authState === 'otp' && (
+              <Pressable style={styles.backBtn} onPress={handleBackPress}>
+                <Ionicons name="chevron-back" size={20} color="#ffffff" />
+              </Pressable>
+            )}
 
             {/* Title & Tagline inside Dark Section */}
             <Text style={styles.title}>{getHeaderTitle()}</Text>
