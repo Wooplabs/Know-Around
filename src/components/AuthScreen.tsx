@@ -456,6 +456,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    backgroundColor: '#121417',
   },
   headerSection: {
     paddingHorizontal: 24,
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 40,
-    minHeight: screenHeight * 0.65 + 30,
+    minHeight: screenHeight * 0.7,
   },
   inputGroup: {
     marginBottom: 20,

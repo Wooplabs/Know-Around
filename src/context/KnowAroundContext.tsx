@@ -827,10 +827,12 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           await addDoc(collection(db, 'feeds'), post);
         }
       } else {
-        // Sort feeds by id/creation time desc
-        list.sort((a, b) => b.id.localeCompare(a.id));
-        setFeeds(list);
-        saveState('native_feeds', list);
+        // Deduplicate by id (Firestore doc id wins), then sort newest first
+        const seen = new Set<string>();
+        const unique = list.filter(p => seen.has(p.id) ? false : (seen.add(p.id), true));
+        unique.sort((a, b) => b.id.localeCompare(a.id));
+        setFeeds(unique);
+        saveState('native_feeds', unique);
       }
     });
 
