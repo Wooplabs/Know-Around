@@ -7,7 +7,10 @@ import {
   doc, 
   updateDoc, 
   arrayUnion, 
-  increment 
+  increment,
+  getDocs,
+  deleteDoc,
+  query 
 } from 'firebase/firestore';
 import { 
   signInWithPhoneNumber,
@@ -182,7 +185,7 @@ const SEED_POSTS: Post[] = [
     author: 'Olivia Cooke',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
     location: 'Heritage Town',
-    time: '1w',
+    time: '1h',
     verified: true,
     category: 'Community Update',
     distance: '300m away',
@@ -196,18 +199,18 @@ const SEED_POSTS: Post[] = [
     lng: 79.8320,
     comments: [
       {
-        id: 'c1',
+        id: 'c1_1',
         author: 'Ramesh Kumar',
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-        text: 'I have two extra louvred doors in my garage, you can take them!',
-        time: '6d'
+        text: 'This bakery is fantastic, love their croissants!',
+        time: '45m'
       },
       {
-        id: 'c2',
+        id: 'c1_2',
         author: 'Sarah Johnson',
         avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-        text: 'This sounds like an amazing reuse project. Good luck!',
-        time: '5d'
+        text: 'Perfect morning walk vibe!',
+        time: '30m'
       }
     ]
   },
@@ -216,7 +219,7 @@ const SEED_POSTS: Post[] = [
     author: 'Neighborhood Safety Committee',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
     location: 'White Town',
-    time: '2d',
+    time: '2h',
     verified: true,
     category: 'Alert',
     distance: '100m away',
@@ -234,7 +237,7 @@ const SEED_POSTS: Post[] = [
     author: 'Pondy News Daily',
     avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=200',
     location: 'Goubert Avenue',
-    time: '4d',
+    time: '4h',
     verified: true,
     category: 'News',
     distance: '1.4km away',
@@ -251,15 +254,15 @@ const SEED_POSTS: Post[] = [
     id: 'p4',
     author: 'Sunita Krishnan',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
-    location: 'White Town',
-    time: '3h',
+    location: 'Swings Park',
+    time: '5h',
     verified: false,
     category: 'Alert',
     distance: '50m away',
-    content: '⚠️ LOST PET ALERT: Our Golden Retriever, Bella, went missing near Canal Street. She is wearing a red collar and is extremely friendly. Please ping if spotted!',
+    content: '⚠️ LOST PET ALERT: Our Golden Retriever, Bella, went missing near Swings Park. She is wearing a red collar and is extremely friendly. Please ping if spotted!',
     image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=800',
     likes: 28,
-    commentsCount: 4,
+    commentsCount: 1,
     isLiked: false,
     isBookmarked: false,
     lat: 11.9348,
@@ -269,40 +272,8 @@ const SEED_POSTS: Post[] = [
         id: 'c4_1',
         author: 'Ramesh Kumar',
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-        text: 'I saw a golden retriever matching her description running near the Swings Park about an hour ago!',
-        time: '2h',
-        replies: [
-          {
-            id: 'r4_1_1',
-            author: 'Sunita Krishnan',
-            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
-            text: 'Oh! Which swings? The ones near the primary school side?',
-            time: '1.5h'
-          },
-          {
-            id: 'r4_1_2',
-            author: 'Ramesh Kumar',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-            text: 'Yes, exactly there. A local shopkeeper was trying to feed her biscuit.',
-            time: '1h'
-          }
-        ]
-      },
-      {
-        id: 'c4_2',
-        author: 'Sarah Johnson',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-        text: 'Sharing this in our local WhatsApp group. Hope Bella comes home soon!',
-        time: '1.5h',
-        replies: [
-          {
-            id: 'r4_2_1',
-            author: 'Sunita Krishnan',
-            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
-            text: 'Thank you so much Sarah, really appreciate the help!',
-            time: '1h'
-          }
-        ]
+        text: 'I saw a dog matching this near Swings Park about an hour ago!',
+        time: '3h'
       }
     ]
   },
@@ -310,155 +281,292 @@ const SEED_POSTS: Post[] = [
     id: 'p5',
     author: 'Pondy Foodies Club',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-    location: 'Heritage Town',
-    time: '5h',
+    location: 'Goubert Avenue',
+    time: '6h',
     verified: true,
     category: 'Event',
     distance: '450m away',
     content: '🌮 LOCAL FESTIVAL: The Neighborhood Food Carnival starts this Friday at Goubert Avenue! Come support 20+ local home-chefs and bakers. Live acoustic set starts at 6:30 PM!',
     image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800',
     likes: 89,
-    commentsCount: 3,
+    commentsCount: 0,
     isLiked: false,
     isBookmarked: false,
     lat: 11.9300,
     lng: 79.8330,
-    comments: [
-      {
-        id: 'c5_1',
-        author: 'Priya Sharma',
-        avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=200',
-        text: 'Will there be options for gluten-free or vegan food?',
-        time: '4h',
-        replies: [
-          {
-            id: 'r5_1_1',
-            author: 'Pondy Foodies Club',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-            text: 'Yes! Stalls #4 (Arogya Organic) and #12 (Cocoa Love) are completely gluten-free and vegan friendly.',
-            time: '3.5h'
-          }
-        ]
-      },
-      {
-        id: 'c5_2',
-        author: 'Dinesh Karthik',
-        avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200',
-        text: 'Is entry free or do we need passes?',
-        time: '3h',
-        replies: [
-          {
-            id: 'r5_2_1',
-            author: 'Pondy Foodies Club',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-            text: 'Entry is completely free for everyone!',
-            time: '2h'
-          }
-        ]
-      }
-    ]
+    comments: []
   },
   {
     id: 'p6',
-    author: 'Neighborhood Civic Council',
-    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200',
+    author: 'Vikram Malhotra',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
     location: 'White Town',
-    time: '1d',
-    verified: true,
-    category: 'News',
+    time: '7h',
+    verified: false,
+    category: 'Community Update',
     distance: '200m away',
-    content: '🚧 CIVIC UPDATE: New Smart Metro Station planning approved for White Town extension. Preliminary soil testing begins on Monday. Expect minor traffic diversions on Kamaraj Salai during daytime hours.',
-    likes: 54,
-    commentsCount: 1,
+    content: 'Anyone experiencing slow fiber broadband near Romain Rolland Street today? Let me know if it is a local area outage or just my connection.',
+    likes: 5,
+    commentsCount: 0,
     isLiked: false,
     isBookmarked: false,
-    lat: 11.9310,
+    lat: 11.9320,
     lng: 79.8310,
-    comments: [
-      {
-        id: 'c6_1',
-        author: 'Balaji S.',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-        text: 'This is long overdue! Hope they ensure proper parking space design next to the entrance.',
-        time: '18h'
-      }
-    ]
+    comments: []
   },
   {
     id: 'p7',
-    author: 'Karan Malhotra',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200',
+    author: 'Marie Dubois',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=200',
     location: 'Heritage Town',
-    time: '2d',
-    verified: false,
+    time: '8h',
+    verified: true,
     category: 'Community Update',
     distance: '600m away',
-    content: '🌱 Clean & Green Drive: Let\'s gather this Sunday at 7 AM near the Canal Road arch for a cleanliness drive. Garbage bags, rake, and safety gloves will be provided. High tea at 9 AM for volunteers!',
-    likes: 42,
-    commentsCount: 2,
+    content: "Just donated old books to the municipal library! 📚 They mentioned they are looking for children's fiction and school textbooks. Drop them off if you have any spare!",
+    likes: 22,
+    commentsCount: 0,
     isLiked: false,
     isBookmarked: false,
-    lat: 11.9350,
-    lng: 79.8280,
-    comments: [
-      {
-        id: 'c7_1',
-        author: 'Arun Kumar',
-        avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200',
-        text: 'Count me in! I will bring my son along as well to help out.',
-        time: '1.5d'
-      },
-      {
-        id: 'c7_2',
-        author: 'Olivia Cooke',
-        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
-        text: 'Great initiative Karan, I will be there!',
-        time: '1d'
-      }
-    ]
+    lat: 11.9360,
+    lng: 79.8270,
+    comments: []
   },
   {
     id: 'p8',
-    author: 'Pondy Bakeries Association',
-    avatar: 'https://images.unsplash.com/photo-1579038773867-044c48829161?auto=format&fit=crop&q=80&w=200',
-    location: 'White Town',
-    time: '3d',
-    verified: true,
-    category: 'News',
-    distance: '900m away',
-    content: '🏆 CHAMPIONS: Local neighborhood bakery \'Baker Street\' has won the regional Sourdough Bread Championship! Huge congratulations to Chef Pierre and his hardworking crew.',
-    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=800',
-    likes: 112,
-    commentsCount: 3,
+    author: 'Rajesh Iyer',
+    avatar: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?auto=format&fit=crop&q=80&w=200',
+    location: 'Mission Street',
+    time: '9h',
+    verified: false,
+    category: 'Community Update',
+    distance: '400m away',
+    content: '🔑 Found a bunch of keys on the pavement near the SBI ATM on Mission Street. I have left them with the security guard at the cash point. Please retrieve them if they are yours.',
+    likes: 12,
+    commentsCount: 0,
     isLiked: false,
     isBookmarked: false,
-    lat: 11.9325,
-    lng: 79.8325,
-    comments: [
-      {
-        id: 'c8_1',
-        author: 'Sarah Johnson',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-        text: 'So deserved! Chef Pierre is extremely talented.',
-        time: '2d',
-        replies: [
-          {
-            id: 'r8_1_1',
-            author: 'Olivia Cooke',
-            avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
-            text: 'Agreed! Their chocolate almond croissants are out of this world as well.',
-            time: '1.5d'
-          },
-          {
-            id: 'r8_1_2',
-            author: 'Sarah Johnson',
-            avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-            text: 'Oh my, yes! Those are to die for.',
-            time: '1d'
-          }
-        ]
-      }
-    ]
+    lat: 11.9338,
+    lng: 79.8305,
+    comments: []
+  },
+  {
+    id: 'p9',
+    author: 'Canal Road Watch',
+    avatar: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?auto=format&fit=crop&q=80&w=200',
+    location: 'Heritage Town',
+    time: '10h',
+    verified: true,
+    category: 'Alert',
+    distance: '700m away',
+    content: '⚠️ WATER LOGGING ALERT: Heavy water accumulation near the Canal Road junction following last night\'s rain. Avoid this stretch and take the Mission Street detour.',
+    likes: 18,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9370,
+    lng: 79.8260,
+    comments: []
+  },
+  {
+    id: 'p10',
+    author: 'Priya Sharma',
+    avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=200',
+    location: 'Romain Rolland St',
+    time: '11h',
+    verified: false,
+    category: 'Community Update',
+    distance: '350m away',
+    content: 'The new gelato spot on Romain Rolland St is absolutely amazing! 🍦 Their dark Belgian chocolate is a must-try. Perfect relief for the afternoon heat.',
+    likes: 14,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9315,
+    lng: 79.8320,
+    comments: []
+  },
+  {
+    id: 'p11',
+    author: 'Pondy Art House',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+    location: 'Beach Road',
+    time: '12h',
+    verified: true,
+    category: 'Event',
+    distance: '1.2km away',
+    content: '🎨 ART EXHIBITION: Join us for the annual Pondicherry local artists showcase this Saturday at 10 AM. Free entry. Come support local talent and buy unique paintings!',
+    likes: 38,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9295,
+    lng: 79.8335,
+    comments: []
+  },
+  {
+    id: 'p12',
+    author: 'David K.',
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200',
+    location: 'Heritage Town',
+    time: '13h',
+    verified: false,
+    category: 'Community Update',
+    distance: '500m away',
+    content: 'Looking for a reliable local plumber to fix an overhead water tank seepage. Any quick recommendations would be highly appreciated. Thanks!',
+    likes: 3,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9355,
+    lng: 79.8275,
+    comments: []
+  },
+  {
+    id: 'p13',
+    author: 'Green Pondy Initiative',
+    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=200',
+    location: 'Swadeshi Plaza',
+    time: '14h',
+    verified: true,
+    category: 'Community Update',
+    distance: '800m away',
+    content: '♻️ CLEANUP SUCCESS: Our Sunday cleanup drive at Swadeshi Plaza was a huge hit! Over 15 volunteers turned up and we collected 12 bags of plastic waste. Thanks team!',
+    image: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&q=80&w=800',
+    likes: 56,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9340,
+    lng: 79.8250,
+    comments: []
+  },
+  {
+    id: 'p14',
+    author: 'Amit Patel',
+    avatar: 'https://images.unsplash.com/photo-1500048993953-d23a436266cf?auto=format&fit=crop&q=80&w=200',
+    location: 'Promenade',
+    time: '15h',
+    verified: false,
+    category: 'Community Update',
+    distance: '1.5km away',
+    content: 'The evening breeze on the Promenade is absolutely perfect tonight. It is the best place in Pondicherry to clear your head after a long workday. 🌊',
+    likes: 29,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9288,
+    lng: 79.8340,
+    comments: []
+  },
+  {
+    id: 'p15',
+    author: 'Swadeshi Residents Assc',
+    avatar: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?auto=format&fit=crop&q=80&w=200',
+    location: 'Swadeshi Plaza',
+    time: '16h',
+    verified: true,
+    category: 'Alert',
+    distance: '850m away',
+    content: '⚠️ VEHICLE BLOCKING: A grey sedan is parked blocking the entrance of Residential Lane 4. Traffic police have been notified. Please move it if it belongs to you.',
+    likes: 9,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9345,
+    lng: 79.8255,
+    comments: []
+  },
+  {
+    id: 'p16',
+    author: 'Ananya Das',
+    avatar: 'https://images.unsplash.com/photo-1534751516642-a131ffd103fd?auto=format&fit=crop&q=80&w=200',
+    location: 'Swings Park',
+    time: '17h',
+    verified: false,
+    category: 'Community Update',
+    distance: '100m away',
+    content: 'Does anyone know if the Swings Park children\'s play section has reopened? Thinking of taking my nieces there this weekend.',
+    likes: 4,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9350,
+    lng: 79.8290,
+    comments: []
+  },
+  {
+    id: 'p17',
+    author: 'Chef Francois',
+    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200',
+    location: 'White Town',
+    time: '18h',
+    verified: true,
+    category: 'Community Update',
+    distance: '250m away',
+    content: '🍕 NEW MENU: We are launching our brand new wood-fired sourdough pizzas tonight at the Cafe! Fresh organic ingredients, handmade dough. Come try them!',
+    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=800',
+    likes: 67,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9322,
+    lng: 79.8318,
+    comments: []
+  },
+  {
+    id: 'p18',
+    author: 'Sanjay Verma',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+    location: 'Mission Street',
+    time: '19h',
+    verified: false,
+    category: 'Alert',
+    distance: '450m away',
+    content: '⚠️ PIPELINE LEAK: Major Metro water pipeline burst near Swadeshi Plaza junction. Watch out for water logging and mud flow on the road.',
+    likes: 15,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9342,
+    lng: 79.8298,
+    comments: []
+  },
+  {
+    id: 'p19',
+    author: 'Pondy Music Collective',
+    avatar: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&q=80&w=200',
+    location: 'Beach Road',
+    time: '20h',
+    verified: true,
+    category: 'Event',
+    distance: '1.3km away',
+    content: '🎸 SUNSET JAM: Sunset acoustic jam session this Sunday at 5:30 PM on Beach Road. Open to all musicians and music lovers. Bring your own acoustic instrument!',
+    likes: 52,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9290,
+    lng: 79.8338,
+    comments: []
+  },
+  {
+    id: 'p20',
+    author: 'Meera Nair',
+    avatar: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&q=80&w=200',
+    location: 'Heritage Town',
+    time: '21h',
+    verified: false,
+    category: 'Community Update',
+    distance: '650m away',
+    content: 'The beautiful colonial architecture is what makes Heritage Town truly special. Glad to call this place home. ❤️',
+    likes: 31,
+    commentsCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    lat: 11.9365,
+    lng: 79.8268,
+    comments: []
   }
 ];
 
@@ -723,6 +831,8 @@ const getLocalStorageJSON = (key: string): any => {
   }
 };
 
+let feedsResetDone = false;
+
 export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [activeLocation, setActiveLocation] = useState('White Town, PY');
@@ -811,6 +921,40 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db) return;
+
+    // Reset database feeds to 20 fresh items if not already done
+    const checkAndResetFeeds = async () => {
+      try {
+        if (feedsResetDone) return;
+
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const resetDone = window.localStorage.getItem('db_feeds_reset_v4');
+          if (resetDone === 'true') {
+            feedsResetDone = true;
+            return;
+          }
+        }
+        
+        console.log("WIPING FIRESTORE 'feeds' COLLECTION FOR 20 NEW POSTS...");
+        const q = collection(db, 'feeds');
+        const snapshot = await getDocs(query(q));
+        const deletePromises = snapshot.docs.map((docSnap) => deleteDoc(doc(db, 'feeds', docSnap.id)));
+        await Promise.all(deletePromises);
+        
+        feedsResetDone = true;
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem('db_feeds_reset_v4', 'true');
+        }
+        console.log("WIPE SUCCESSFUL, METRO WILL AUTOMATICALLY RE-BOOTSTRAP!");
+      } catch (err) {
+        console.warn("Feeds database reset error:", err);
+      }
+    };
+    checkAndResetFeeds();
+  }, [db]);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !db) return;
