@@ -439,12 +439,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1A1C1E',
     marginBottom: 6,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 14,
     color: '#60646C',
     marginBottom: 28,
     lineHeight: 20,
+    textAlign: 'center',
   },
   inputGroup: {
     marginBottom: 20,
