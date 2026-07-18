@@ -6,7 +6,7 @@ import OnboardingModal from '@/components/OnboardingModal';
 import AuthScreen from '@/components/AuthScreen';
 import PostComposerModal from '@/components/PostComposerModal';
 import { Ionicons } from '@expo/vector-icons';
-import { HomeIcon, MapIcon, ChatsIcon } from '@/components/CustomIcons';
+import { HomeIcon, MapIcon, GroupIcon, ChatsIcon } from '@/components/CustomIcons';
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const { setComposerVisible, darkMode } = useKnowAround();
@@ -56,7 +56,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               } else if (route.name === 'search') {
                 return <MapIcon color={color} size={24} />;
               } else if (route.name === 'groups') {
-                return <Ionicons name="people-sharp" color={color} size={24} />;
+                return <GroupIcon color={color} size={24} />;
               } else {
                 return <ChatsIcon color={color} size={24} />;
               }
