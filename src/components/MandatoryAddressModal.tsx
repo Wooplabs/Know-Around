@@ -13,6 +13,7 @@ import {
   Alert
 } from 'react-native';
 import { useKnowAround } from '../context/KnowAroundContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function MandatoryAddressModal() {
   const { 
@@ -31,6 +32,30 @@ export default function MandatoryAddressModal() {
 
   const [focusedField, setFocusedField] = useState<'street' | 'city' | 'state' | 'pin' | null>(null);
 
+  // Custom alert dialog state to replace native system Alert popups
+  const [dialogConfig, setDialogConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error';
+    onClose?: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'success'
+  });
+
+  const showCustomDialog = (title: string, message: string, type: 'success' | 'error', onClose?: () => void) => {
+    setDialogConfig({
+      visible: true,
+      title,
+      message,
+      type,
+      onClose
+    });
+  };
+
   // Trigger modal after exactly 1 second of landing on home screen after registration
   useEffect(() => {
     if (user && justRegistered) {
@@ -43,16 +68,17 @@ export default function MandatoryAddressModal() {
     }
   }, [user, justRegistered]);
 
-  if (!visible) return null;
+  // Keep dialog accessible even if visible is false, so we handle it gracefully inside wrapper
+  if (!visible && !dialogConfig.visible) return null;
 
   const handleSave = () => {
     if (!street.trim() || !city.trim() || !state.trim() || !pin.trim()) {
-      Alert.alert('Required Fields', 'Please fill in all address details to set your location.');
+      showCustomDialog('Required Fields', 'Please fill in all address details to set your location.', 'error');
       return;
     }
 
     if (pin.replace(/[^0-9]/g, '').length < 6) {
-      Alert.alert('Invalid Pincode', 'Please enter a valid 6-digit pin code.');
+      showCustomDialog('Invalid Pincode', 'Please enter a valid 6-digit pin code.', 'error');
       return;
     }
 
@@ -69,125 +95,177 @@ export default function MandatoryAddressModal() {
         phone: user?.email || ''
       });
       
-      setJustRegistered(false);
-      setVisible(false);
       setIsSubmitting(false);
-      
-      Alert.alert('Location Configured 🎉', 'Your home location has been set successfully!');
+      showCustomDialog(
+        'Location Configured 🎉',
+        'Your home location has been set successfully!',
+        'success',
+        () => {
+          setJustRegistered(false);
+          setVisible(false);
+        }
+      );
     }, 800);
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="slide"
-      statusBarTranslucent={true}
-      onRequestClose={() => {}} // Empty to block Android back button close
-    >
-      <View style={styles.backdrop}>
-        <KeyboardAvoidingView
-          behavior="padding"
-          style={styles.keyboardView}
+    <>
+      {visible && (
+        <Modal
+          visible={visible}
+          transparent={true}
+          animationType="slide"
+          statusBarTranslucent={true}
+          onRequestClose={() => {}} // Empty to block Android back button close
         >
-          <View style={styles.card}>
-            {/* Grab Handle Decoration */}
-            <View style={styles.handle} />
-
-            <Text style={styles.title}>Set House Location</Text>
-            <Text style={styles.subtitle}>
-              Please configure your primary residential address location to explore nearby neighborhood feeds and groups.
-            </Text>
-
-            <ScrollView 
-              showsVerticalScrollIndicator={false}
-              style={styles.formScroll}
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
+          <View style={styles.backdrop}>
+            <KeyboardAvoidingView
+              behavior="padding"
+              style={styles.keyboardView}
             >
-              {/* Street Address */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Street Address / House No.</Text>
-                <TextInput
-                  value={street}
-                  onChangeText={setStreet}
-                  onFocus={() => setFocusedField('street')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="e.g. 24, Victor Simonel Street"
-                  placeholderTextColor="#A0A4AC"
-                  style={[
-                    styles.input,
-                    focusedField === 'street' && styles.inputFocused
-                  ]}
-                />
+              <View style={styles.card}>
+                {/* Grab Handle Decoration */}
+                <View style={styles.handle} />
+
+                <Text style={styles.title}>Set House Location</Text>
+                <Text style={styles.subtitle}>
+                  Please configure your primary residential address location to explore nearby neighborhood feeds and groups.
+                </Text>
+
+                <ScrollView 
+                  showsVerticalScrollIndicator={false}
+                  style={styles.formScroll}
+                  contentContainerStyle={styles.scrollContent}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {/* Street Address */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Street Address / House No.</Text>
+                    <TextInput
+                      value={street}
+                      onChangeText={setStreet}
+                      onFocus={() => setFocusedField('street')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="e.g. 24, Victor Simonel Street"
+                      placeholderTextColor="#A0A4AC"
+                      style={[
+                        styles.input,
+                        focusedField === 'street' && styles.inputFocused
+                      ]}
+                    />
+                  </View>
+
+                  {/* City */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>City</Text>
+                    <TextInput
+                      value={city}
+                      onChangeText={setCity}
+                      onFocus={() => setFocusedField('city')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="e.g. Pondicherry"
+                      placeholderTextColor="#A0A4AC"
+                      style={[
+                        styles.input,
+                        focusedField === 'city' && styles.inputFocused
+                      ]}
+                    />
+                  </View>
+
+                  {/* State & Pincode Row */}
+                  <View style={styles.row}>
+                    <View style={[styles.inputGroup, { flex: 1.2 }]}>
+                      <Text style={styles.label}>State</Text>
+                      <TextInput
+                        value={state}
+                        onChangeText={setState}
+                        onFocus={() => setFocusedField('state')}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="e.g. Puducherry"
+                        placeholderTextColor="#A0A4AC"
+                        style={[
+                          styles.input,
+                          focusedField === 'state' && styles.inputFocused
+                        ]}
+                      />
+                    </View>
+
+                    <View style={[styles.inputGroup, { flex: 1 }]}>
+                      <Text style={styles.label}>Pincode</Text>
+                      <TextInput
+                        value={pin}
+                        onChangeText={(text) => setPin(text.replace(/[^0-9]/g, ''))}
+                        onFocus={() => setFocusedField('pin')}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="605001"
+                        placeholderTextColor="#A0A4AC"
+                        keyboardType="number-pad"
+                        maxLength={6}
+                        style={[
+                          styles.input,
+                          focusedField === 'pin' && styles.inputFocused
+                        ]}
+                      />
+                    </View>
+                  </View>
+                </ScrollView>
+
+                <Pressable style={styles.btn} onPress={handleSave} disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.btnText}>Save & Set Location</Text>
+                  )}
+                </Pressable>
               </View>
+            </KeyboardAvoidingView>
+          </View>
+        </Modal>
+      )}
 
-              {/* City */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>City</Text>
-                <TextInput
-                  value={city}
-                  onChangeText={setCity}
-                  onFocus={() => setFocusedField('city')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="e.g. Pondicherry"
-                  placeholderTextColor="#A0A4AC"
-                  style={[
-                    styles.input,
-                    focusedField === 'city' && styles.inputFocused
-                  ]}
-                />
-              </View>
+      {/* Themed Success/Error Custom Dialog Alert */}
+      <Modal
+        visible={dialogConfig.visible}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => {
+          if (dialogConfig.type === 'error') {
+            setDialogConfig(prev => ({ ...prev, visible: false }));
+          }
+        }}
+      >
+        <View style={styles.dialogBackdrop}>
+          <View style={styles.dialogCard}>
+            <View style={[
+              styles.dialogIconContainer,
+              dialogConfig.type === 'success' ? styles.dialogIconSuccess : styles.dialogIconError
+            ]}>
+              <Ionicons 
+                name={dialogConfig.type === 'success' ? 'checkmark' : 'alert-circle-outline'} 
+                size={36} 
+                color={dialogConfig.type === 'success' ? '#1C873C' : '#D32F2F'} 
+              />
+            </View>
 
-              {/* State & Pincode Row */}
-              <View style={styles.row}>
-                <View style={[styles.inputGroup, { flex: 1.2 }]}>
-                  <Text style={styles.label}>State</Text>
-                  <TextInput
-                    value={state}
-                    onChangeText={setState}
-                    onFocus={() => setFocusedField('state')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="e.g. Puducherry"
-                    placeholderTextColor="#A0A4AC"
-                    style={[
-                      styles.input,
-                      focusedField === 'state' && styles.inputFocused
-                    ]}
-                  />
-                </View>
+            <Text style={styles.dialogTitle}>{dialogConfig.title}</Text>
+            <Text style={styles.dialogMessage}>{dialogConfig.message}</Text>
 
-                <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>Pincode</Text>
-                  <TextInput
-                    value={pin}
-                    onChangeText={(text) => setPin(text.replace(/[^0-9]/g, ''))}
-                    onFocus={() => setFocusedField('pin')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="605001"
-                    placeholderTextColor="#A0A4AC"
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    style={[
-                      styles.input,
-                      focusedField === 'pin' && styles.inputFocused
-                    ]}
-                  />
-                </View>
-              </View>
-            </ScrollView>
-
-            <Pressable style={styles.btn} onPress={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Text style={styles.btnText}>Save & Set Location</Text>
-              )}
+            <Pressable 
+              style={styles.dialogBtn} 
+              onPress={() => {
+                setDialogConfig(prev => ({ ...prev, visible: false }));
+                if (dialogConfig.onClose) {
+                  dialogConfig.onClose();
+                }
+              }}
+            >
+              <Text style={styles.dialogBtnText}>OK</Text>
             </Pressable>
           </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -292,6 +370,73 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   btnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  dialogBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  dialogCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 28,
+    width: '85%',
+    maxWidth: 320,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  dialogIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dialogIconSuccess: {
+    backgroundColor: '#E8F5E9',
+  },
+  dialogIconError: {
+    backgroundColor: '#FFEBEE',
+  },
+  dialogTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A1C1E',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  dialogMessage: {
+    fontSize: 13.5,
+    color: '#60646C',
+    textAlign: 'center',
+    lineHeight: 19,
+    opacity: 0.8,
+    marginBottom: 24,
+  },
+  dialogBtn: {
+    backgroundColor: '#1C873C',
+    borderRadius: 24,
+    height: 48,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#1C873C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  dialogBtnText: {
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '700',
