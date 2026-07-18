@@ -62,7 +62,7 @@ export default function AuthScreen() {
 
   // OTP states
   const [otpCode, setOtpCode] = useState('');
-  const [otpInput, setOtpInput] = useState(['', '', '', '', '', '']);
+  const [otpInput, setOtpInput] = useState(['', '', '', '']);
   const [otpError, setOtpError] = useState('');
   const [resendTimer, setResendTimer] = useState(30);
   
@@ -124,9 +124,9 @@ export default function AuthScreen() {
   };
 
   const generateAndSendOtp = () => {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
     setOtpCode(code);
-    setOtpInput(['', '', '', '', '', '']);
+    setOtpInput(['', '', '', '']);
     setOtpError('');
     setResendTimer(30);
     setAuthState('otp');
@@ -134,7 +134,7 @@ export default function AuthScreen() {
     // Simulate sending real OTP through Alert modal
     Alert.alert(
       '💬 SMS OTP Sent',
-      `We sent a 6-digit verification code to ${selectedCountry.code} ${phone}.\n\nFor testing, your OTP is: ${code}`,
+      `We sent a 4-digit verification code to ${selectedCountry.code} ${phone}.\n\nFor testing, your OTP is: ${code}`,
       [{ text: 'OK' }]
     );
   };
@@ -146,8 +146,8 @@ export default function AuthScreen() {
 
   const handleVerifyOtp = async () => {
     const enteredCode = otpInput.join('');
-    if (enteredCode.length < 6) {
-      setOtpError('Please enter the full 6-digit code');
+    if (enteredCode.length < 4) {
+      setOtpError('Please enter the full 4-digit code');
       triggerShake();
       return;
     }
@@ -302,7 +302,7 @@ export default function AuthScreen() {
             <Animated.View style={[styles.formContainer, { transform: [{ translateX: shakeAnim }] }]}>
               <Text style={styles.title}>Verify Mobile</Text>
               <Text style={styles.subtitle}>
-                We sent a 6-digit code to{' '}
+                We sent a 4-digit code to{' '}
                 <Text style={{ fontWeight: '700', color: '#1A1C1E' }}>
                   {selectedCountry.flag} {selectedCountry.code} {phone}
                 </Text>. Enter it below to complete verification.
@@ -321,7 +321,7 @@ export default function AuthScreen() {
                       setOtpInput(newOtp);
 
                       // Focus next cell
-                      if (cleanedText && idx < 5) {
+                      if (cleanedText && idx < 3) {
                         otpRefs.current[idx + 1]?.focus();
                       }
                     }}
