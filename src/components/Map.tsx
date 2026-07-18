@@ -4,6 +4,9 @@ import { WebView } from 'react-native-webview';
 
 export interface MapRef {
   panTo: (lat: number, lng: number, zoom?: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  setMapType: (type: 'street' | 'satellite' | 'dark') => void;
 }
 
 interface MapProps {
@@ -27,13 +30,35 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
   const webViewRef = useRef<WebView>(null);
   const [isReady, setIsReady] = useState(false);
 
-  // Expose panTo function to parent screens
+  // Expose map controls to parent screens
   useImperativeHandle(ref, () => ({
     panTo: (lat: number, lng: number, zoom?: number) => {
       if (webViewRef.current) {
         webViewRef.current.postMessage(JSON.stringify({
           type: 'PAN_TO',
           payload: { lat, lng, zoom }
+        }));
+      }
+    },
+    zoomIn: () => {
+      if (webViewRef.current) {
+        webViewRef.current.postMessage(JSON.stringify({
+          type: 'ZOOM_IN'
+        }));
+      }
+    },
+    zoomOut: () => {
+      if (webViewRef.current) {
+        webViewRef.current.postMessage(JSON.stringify({
+          type: 'ZOOM_OUT'
+        }));
+      }
+    },
+    setMapType: (type: 'street' | 'satellite' | 'dark') => {
+      if (webViewRef.current) {
+        webViewRef.current.postMessage(JSON.stringify({
+          type: 'SET_MAP_TYPE',
+          payload: { type }
         }));
       }
     }
@@ -76,7 +101,7 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
     }
   }, [darkMode, isReady]);
 
-  // Static HTML Content to prevent WebView from constantly reloading when coordinate variables change
+  // Static HTML Content to prevent WebView from constantly reloading
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -101,8 +126,33 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
           /* Custom Popup Styling */
           .leaflet-popup-content-wrapper {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            border-radius: 8px;
-            box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 4px;
+          }
+          .leaflet-popup-tip {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          }
+          
+          /* Pulsing and Bouncing Animations */
+          @keyframes radar {
+            0% { transform: scale(0.6); opacity: 1; }
+            100% { transform: scale(1.6); opacity: 0; }
+          }
+          @keyframes bouncePin {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+          }
+          .pulse-ring {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            background-color: rgba(26, 115, 232, 0.25);
+            animation: radar 1.8s infinite ease-in-out;
+          }
+          .animated-pin {
+            animation: bouncePin 2.2s infinite ease-in-out;
           }
         </style>
       </head>
@@ -114,21 +164,29 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
           var map = L.map('map', { zoomControl: false }).setView([11.9340, 79.8300], 14);
           
           var tileLayer = null;
-          function setMapStyle(isDark) {
+          var currentStyle = 'street';
+          
+          function setMapStyle(styleName) {
+            currentStyle = styleName;
             if (tileLayer) {
               map.removeLayer(tileLayer);
             }
-            var url = isDark 
-              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-              : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+            
+            var url = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+            if (styleName === 'dark') {
+              url = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+            } else if (styleName === 'satellite') {
+              url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+            }
             
             tileLayer = L.tileLayer(url, {
-              maxZoom: 20
+              maxZoom: 20,
+              attribution: '&copy; CARTO'
             }).addTo(map);
           }
           
           // Initialize map style
-          setMapStyle(false);
+          setMapStyle('street');
 
           var markersLayer = L.layerGroup().addTo(map);
 
@@ -157,7 +215,13 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
               } else if (data.type === 'PAN_TO') {
                 map.setView([data.payload.lat, data.payload.lng], data.payload.zoom || map.getZoom(), { animate: true });
               } else if (data.type === 'SET_DARK_MODE') {
-                setMapStyle(data.payload.darkMode);
+                setMapStyle(data.payload.darkMode ? 'dark' : 'street');
+              } else if (data.type === 'ZOOM_IN') {
+                map.zoomIn();
+              } else if (data.type === 'ZOOM_OUT') {
+                map.zoomOut();
+              } else if (data.type === 'SET_MAP_TYPE') {
+                setMapStyle(data.payload.type);
               }
             } catch (err) {
               console.error(err);
@@ -177,31 +241,32 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
                 weight: 1,
                 opacity: 0.2,
                 fillColor: '#1a73e8',
-                fillOpacity: 0.12
+                fillOpacity: 0.1
               }).addTo(map);
             }
 
             // 2. Draw subtle translucent green search radius boundary
             if (searchRadius) {
               searchRadiusCircle = L.circle([lat, lng], {
-                radius: searchRadius * 1000, // convert km to meters
+                radius: searchRadius * 1000,
                 color: '#1C873C',
                 weight: 1.5,
                 opacity: 0.4,
-                dashArray: '4, 4',
+                dashArray: '5, 5',
                 fillColor: '#1C873C',
-                fillOpacity: 0.03
+                fillOpacity: 0.025
               }).addTo(map);
             }
 
-            // 3. Render Google Maps style blue pulsing dot
+            // 3. Render pulsing location dot
             var userIcon = L.divIcon({
               className: 'custom-leaflet-marker',
-              html: '<div style="display:flex; justify-content:center; align-items:center; width:20px; height:20px; border-radius:10px; background-color:#1a73e8; border:3px solid white; box-shadow: 0 0 8px rgba(26,115,232,0.6);">' +
-                    '<div style="width:6px; height:6px; border-radius:3px; background-color:#1a73e8;"></div>' +
+              html: '<div style="display:flex; justify-content:center; align-items:center; width:36px; height:36px;">' +
+                    '<div class="pulse-ring"></div>' +
+                    '<div style="width:16px; height:16px; border-radius:8px; background-color:#1a73e8; border:2.5px solid white; box-shadow: 0 2px 8px rgba(26,115,232,0.5);"></div>' +
                     '</div>',
-              iconSize: [20, 20],
-              iconAnchor: [10, 10]
+              iconSize: [36, 36],
+              iconAnchor: [18, 18]
             });
 
             userLocationMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
@@ -219,39 +284,43 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
             markers.forEach(function(marker) {
               if (marker.type === 'user') return;
 
-              var markerColor = '#4caf50'; // Default Green
-              var iconHtml = '<i class="fa fa-user" style="color: white; font-size: 14px;"></i>';
+              var markerColor = '#1C873C'; // Default Brand Green
+              var iconHtml = '<i class="fa fa-map-marker-alt" style="color: white; font-size: 14px;"></i>';
 
               if (marker.type === 'alerts') {
                 markerColor = '#e53935'; // Red Alert
-                iconHtml = '<i class="fa fa-exclamation-triangle" style="color: white; font-size: 13px;"></i>';
+                iconHtml = '<i class="fa fa-exclamation-triangle" style="color: white; font-size: 12px;"></i>';
               } else if (marker.type === 'jobs') {
-                markerColor = '#ff9800';
-                iconHtml = '<i class="fa fa-briefcase" style="color: white; font-size: 13px;"></i>';
+                markerColor = '#ff9800'; // Orange Shop/Service
+                iconHtml = '<i class="fa fa-briefcase" style="color: white; font-size: 12px;"></i>';
               } else if (marker.type === 'professionals') {
                 if (marker.title.toLowerCase().indexOf('plumb') !== -1) {
-                  markerColor = '#2196f3';
-                  iconHtml = '<i class="fa fa-tint" style="color: white; font-size: 14px;"></i>';
+                  markerColor = '#1877F2';
+                  iconHtml = '<i class="fa fa-tint" style="color: white; font-size: 13px;"></i>';
                 } else if (marker.title.toLowerCase().indexOf('carp') !== -1) {
-                  markerColor = '#795548';
-                  iconHtml = '<i class="fa fa-hammer" style="color: white; font-size: 13px;"></i>';
+                  markerColor = '#8D6E63';
+                  iconHtml = '<i class="fa fa-hammer" style="color: white; font-size: 12px;"></i>';
                 } else {
-                  markerColor = '#4caf50';
-                  iconHtml = '<i class="fa fa-bolt" style="color: white; font-size: 14px;"></i>';
+                  markerColor = '#1C873C';
+                  iconHtml = '<i class="fa fa-bolt" style="color: white; font-size: 13px;"></i>';
                 }
               }
 
+              // Curved pointed bottom pin design matching premium aesthetics
               var customIcon = L.divIcon({
                 className: 'custom-leaflet-marker',
-                html: '<div style="display:flex; justify-content:center; align-items:center; width:32px; height:32px; border-radius:16px; background-color:' + markerColor + '; border:2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">' + iconHtml + '</div>',
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
+                html: '<div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 34px; height: 40px;" class="animated-pin">' +
+                      '<div style="display:flex; justify-content:center; align-items:center; width:34px; height:34px; border-radius:17px; background-color:' + markerColor + '; border:2px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.3);">' + iconHtml + '</div>' +
+                      '<div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6.5px solid white; margin-top: -1.5px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.15));"></div>' +
+                      '</div>',
+                iconSize: [34, 40],
+                iconAnchor: [17, 40]
               });
 
               var lMarker = L.marker([marker.lat, marker.lng], { icon: customIcon }).addTo(markersLayer);
               
               if (marker.title) {
-                lMarker.bindPopup('<strong style="font-size:14px;color:#333;">' + marker.title + '</strong>' + (marker.details ? '<p style="margin:4px 0 0;font-size:12px;color:#666;">' + marker.details + '</p>' : ''));
+                lMarker.bindPopup('<strong style="font-size:13.5px;color:#1A1C1E;font-weight:800;">' + marker.title + '</strong>' + (marker.details ? '<p style="margin:4px 0 0;font-size:11.5px;color:#60646C;line-height:15px;opacity:0.9;">' + marker.details + '</p>' : ''));
               }
 
               lMarker.on('click', function() {
@@ -263,7 +332,6 @@ const Map = forwardRef<MapRef, MapProps>(({ markers, userLocation, searchRadius,
             });
           }
 
-          // Notify React Native that the map is fully loaded and ready to receive messaging data
           window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
         </script>
       </body>

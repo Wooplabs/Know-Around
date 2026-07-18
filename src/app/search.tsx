@@ -32,6 +32,7 @@ export default function SearchScreen() {
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLayers, setSelectedLayers] = useState<string[]>(['professionals', 'alerts', 'directory']);
+  const [mapType, setMapType] = useState<'street' | 'satellite'>('street');
   
   // Custom Alert Pin Drop State
   const [clickCoords, setClickCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -44,8 +45,15 @@ export default function SearchScreen() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedItemType, setSelectedItemType] = useState<'professional' | 'alert' | 'job' | 'directory' | null>(null);
 
-  // Search Tag Suggestions
-  const searchSuggestions = ['Plumber', 'Electrician', 'ATM', 'Hospital', 'Supermarket', 'Pharmacy'];
+  // High-fidelity search suggestion tags with emojis
+  const searchSuggestions = [
+    { label: 'Plumber', emoji: '🪠' },
+    { label: 'Electrician', emoji: '⚡' },
+    { label: 'ATM', emoji: '🏧' },
+    { label: 'Hospital', emoji: '🏥' },
+    { label: 'Supermarket', emoji: '🛒' },
+    { label: 'Pharmacy', emoji: '💊' }
+  ];
 
   // Location permission setup, subscription, and target button actions
   useEffect(() => {
@@ -197,7 +205,6 @@ export default function SearchScreen() {
       }
     ];
 
-    // Filter by search query
     const matchesSearch = (text: string) => {
       return !searchQuery || text.toLowerCase().includes(searchQuery.toLowerCase());
     };
@@ -234,7 +241,7 @@ export default function SearchScreen() {
       });
     }
 
-    // Directory Businesses (mapped to 'jobs' icon color pin)
+    // Directory Businesses
     if (selectedLayers.includes('directory')) {
       directory.forEach((d) => {
         if (matchesSearch(d.name) || matchesSearch(d.category)) {
@@ -253,6 +260,22 @@ export default function SearchScreen() {
     return list;
   };
 
+  // Calculate dynamic layer counts based on current search filter
+  const getLayerCount = (layerId: string) => {
+    const matchesSearch = (text: string) => {
+      return !searchQuery || text.toLowerCase().includes(searchQuery.toLowerCase());
+    };
+
+    if (layerId === 'professionals') {
+      return professionals.filter(p => matchesSearch(p.name) || matchesSearch(p.profession)).length;
+    } else if (layerId === 'directory') {
+      return directory.filter(d => matchesSearch(d.name) || matchesSearch(d.category)).length;
+    } else if (layerId === 'alerts') {
+      return alerts.filter(a => matchesSearch(a.title) || matchesSearch(a.description)).length;
+    }
+    return 0;
+  };
+
   // Tapping map to drop custom alert pin
   const handleMapClick = (lat: number, lng: number) => {
     setClickCoords({ lat, lng });
@@ -261,7 +284,7 @@ export default function SearchScreen() {
 
   const handleSaveAlert = () => {
     if (!newAlertTitle.trim() || !newAlertDesc.trim() || !clickCoords) {
-      alert('Please fill in alert details.');
+      Alert.alert('Required Fields', 'Please fill in alert details.');
       return;
     }
     addAlert(newAlertTitle, newAlertDesc, newAlertLevel, clickCoords.lat, clickCoords.lng);
@@ -328,10 +351,44 @@ export default function SearchScreen() {
         />
       </View>
 
-      {/* Floating My Location Button */}
-      <Pressable style={[styles.myLocationButton, darkMode && styles.myLocationButtonDark]} onPress={handleCenterOnUser}>
-        <Ionicons name="locate" size={24} color={permissionStatus === 'granted' ? '#1a73e8' : '#60646C'} />
-      </Pressable>
+      {/* Map Type Switcher & Zoom Controls Stack (Right Floating Column) */}
+      <View style={styles.mapToolsContainer}>
+        {/* Toggle Satellite View */}
+        <Pressable 
+          style={[styles.toolCircle, darkMode && styles.toolCircleDark]} 
+          onPress={() => {
+            const nextType = mapType === 'street' ? 'satellite' : 'street';
+            setMapType(nextType);
+            mapRef.current?.setMapType(nextType);
+          }}
+        >
+          <Ionicons name={mapType === 'street' ? "earth" : "map"} size={20} color="#1C873C" />
+        </Pressable>
+
+        {/* Zoom In */}
+        <Pressable 
+          style={[styles.toolCircle, darkMode && styles.toolCircleDark]} 
+          onPress={() => mapRef.current?.zoomIn()}
+        >
+          <Ionicons name="add" size={22} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+        </Pressable>
+
+        {/* Zoom Out */}
+        <Pressable 
+          style={[styles.toolCircle, darkMode && styles.toolCircleDark]} 
+          onPress={() => mapRef.current?.zoomOut()}
+        >
+          <Ionicons name="remove" size={22} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
+        </Pressable>
+
+        {/* Locate User */}
+        <Pressable 
+          style={[styles.toolCircle, darkMode && styles.toolCircleDark]} 
+          onPress={handleCenterOnUser}
+        >
+          <Ionicons name="locate" size={20} color={permissionStatus === 'granted' ? '#1877F2' : '#60646C'} />
+        </Pressable>
+      </View>
 
       {/* Location Access Disabled Card */}
       {permissionStatus === 'denied' && (
@@ -373,15 +430,28 @@ export default function SearchScreen() {
 
         {/* Suggestion tags under search bar */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsContainer}>
-          {searchSuggestions.map((tag) => (
-            <Pressable
-              key={tag}
-              style={[styles.tagPill, darkMode && styles.tagPillDark]}
-              onPress={() => setSearchQuery(tag)}
-            >
-              <Text style={[styles.tagText, darkMode && styles.tagTextDark]}>{tag}</Text>
-            </Pressable>
-          ))}
+          {searchSuggestions.map((tag) => {
+            const isActive = searchQuery === tag.label;
+            return (
+              <Pressable
+                key={tag.label}
+                style={[
+                  styles.tagPill, 
+                  darkMode && styles.tagPillDark,
+                  isActive && styles.activeTagPill
+                ]}
+                onPress={() => setSearchQuery(isActive ? '' : tag.label)}
+              >
+                <Text style={[
+                  styles.tagText, 
+                  darkMode && styles.tagTextDark,
+                  isActive && styles.activeTagText
+                ]}>
+                  {tag.emoji} {tag.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </View>
 
@@ -393,6 +463,7 @@ export default function SearchScreen() {
           { id: 'alerts', label: 'Alerts', icon: 'warning' },
         ].map((layer) => {
           const isActive = selectedLayers.includes(layer.id);
+          const count = getLayerCount(layer.id);
           return (
             <Pressable
               key={layer.id}
@@ -400,7 +471,9 @@ export default function SearchScreen() {
               onPress={() => toggleLayer(layer.id)}
             >
               <Ionicons name={layer.icon as any} size={15} color={isActive ? '#ffffff' : '#60646C'} />
-              <Text style={[styles.layerBtnText, darkMode && styles.layerBtnTextDark, isActive && styles.activeLayerBtnText]}>{layer.label}</Text>
+              <Text style={[styles.layerBtnText, darkMode && styles.layerBtnTextDark, isActive && styles.activeLayerBtnText]}>
+                {layer.label} ({count})
+              </Text>
             </Pressable>
           );
         })}
@@ -421,7 +494,20 @@ export default function SearchScreen() {
                   <Text style={styles.detailName}>{selectedItem.name}</Text>
                   {selectedItem.verified && <RoundTickIcon color="#1C873C" size={16} />}
                 </View>
-                <Text style={styles.detailCategory}>{selectedItem.profession} &middot; Rated {selectedItem.rating} ★ ({selectedItem.reviewsCount} reviews)</Text>
+                {/* Rating stars display */}
+                <View style={styles.ratingStarsBox}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Ionicons 
+                      key={star}
+                      name={star <= Math.round(selectedItem.rating) ? "star" : "star-outline"} 
+                      size={14} 
+                      color="#F1C40F" 
+                      style={{ marginRight: 2 }}
+                    />
+                  ))}
+                  <Text style={styles.ratingStarsText}>({selectedItem.reviewsCount} reviews)</Text>
+                </View>
+                <Text style={styles.detailCategory}>{selectedItem.profession} &middot; Rated {selectedItem.rating} ★</Text>
                 <Text style={styles.detailLocation}>📍 {selectedItem.location} &middot; {selectedItem.distance} km away</Text>
               </View>
               
@@ -460,6 +546,14 @@ export default function SearchScreen() {
                 <Text style={styles.mapsActionLabel}>Share</Text>
               </Pressable>
             </View>
+
+            {/* Primary booking request action button */}
+            <Pressable 
+              style={styles.sheetPrimaryBtn} 
+              onPress={() => Alert.alert('Booking Requested', `Booking request sent to ${selectedItem.name}. They will contact you shortly.`)}
+            >
+              <Text style={styles.sheetPrimaryBtnText}>Request Service Booking</Text>
+            </Pressable>
           </View>
         )}
 
@@ -472,7 +566,20 @@ export default function SearchScreen() {
               </View>
               <View style={styles.detailMetaBox}>
                 <Text style={styles.detailName}>{selectedItem.name}</Text>
-                <Text style={styles.detailCategory}>{selectedItem.category} &middot; Rated {selectedItem.rating} ★</Text>
+                {/* Rating stars display */}
+                <View style={styles.ratingStarsBox}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Ionicons 
+                      key={star}
+                      name={star <= Math.round(selectedItem.rating) ? "star" : "star-outline"} 
+                      size={14} 
+                      color="#F1C40F" 
+                      style={{ marginRight: 2 }}
+                    />
+                  ))}
+                  <Text style={styles.ratingStarsText}>({selectedItem.rating} ★)</Text>
+                </View>
+                <Text style={styles.detailCategory}>{selectedItem.category}</Text>
                 <Text style={styles.detailLocation}>📍 {selectedItem.location} &middot; {selectedItem.distance} km away</Text>
               </View>
 
@@ -511,6 +618,14 @@ export default function SearchScreen() {
                 <Text style={styles.mapsActionLabel}>Share</Text>
               </Pressable>
             </View>
+
+            {/* Primary message inquiry action button */}
+            <Pressable 
+              style={styles.sheetPrimaryBtn} 
+              onPress={() => Alert.alert('Chat Initiated', `Opening chat channel with ${selectedItem.name} for pricing/orders.`)}
+            >
+              <Text style={styles.sheetPrimaryBtnText}>Message Shop / Place Order</Text>
+            </Pressable>
           </View>
         )}
 
@@ -563,10 +678,17 @@ export default function SearchScreen() {
               return (
                 <Pressable
                   key={lvl.id}
-                  style={[styles.severityBtn, isSelected && styles.activeSeverityBtn, { backgroundColor: lvl.color }]}
+                  style={[
+                    styles.severityBtn, 
+                    isSelected && styles.activeSeverityBtn, 
+                    { backgroundColor: lvl.color }
+                  ]}
                   onPress={() => setNewAlertLevel(lvl.id)}
                 >
-                  <Text style={styles.severityBtnText}>{lvl.label}</Text>
+                  <Text style={[
+                    styles.severityBtnText,
+                    isSelected && { color: '#1C873C', fontWeight: '800' }
+                  ]}>{lvl.label}</Text>
                 </Pressable>
               );
             })}
@@ -588,10 +710,6 @@ const styles = StyleSheet.create({
   },
   safeAreaDark: {
     backgroundColor: '#121212',
-  },
-  myLocationButtonDark: {
-    backgroundColor: '#1E1E1E',
-    borderColor: '#2D2D2D',
   },
   permissionDeniedCardDark: {
     backgroundColor: '#1E1E1E',
@@ -639,13 +757,17 @@ const styles = StyleSheet.create({
     flex: 1,
     ...StyleSheet.absoluteFillObject,
   },
-  myLocationButton: {
+  mapToolsContainer: {
     position: 'absolute',
-    bottom: 80,
+    top: Platform.OS === 'ios' ? 200 : 180,
     right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    zIndex: 10,
+    gap: 8,
+  },
+  toolCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -656,7 +778,10 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: '#EAF0F6',
-    zIndex: 20,
+  },
+  toolCircleDark: {
+    backgroundColor: '#1E1E1E',
+    borderColor: '#2D2D2D',
   },
   permissionDeniedCard: {
     position: 'absolute',
@@ -730,14 +855,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 12,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: '#F0F2F5',
   },
   searchInput: {
     flex: 1,
@@ -751,38 +878,50 @@ const styles = StyleSheet.create({
   },
   tagPill: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     marginRight: 6,
     shadowColor: '#000',
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1.2,
+    borderColor: 'transparent',
+  },
+  activeTagPill: {
+    backgroundColor: '#EAF6EA',
+    borderColor: '#1C873C',
   },
   tagText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#60646C',
   },
+  activeTagText: {
+    color: '#1C873C',
+  },
   layersContainer: {
     position: 'absolute',
-    bottom: 96,
+    bottom: Platform.OS === 'ios' ? 32 : 16,
     left: 16,
+    right: 16,
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
     zIndex: 10,
   },
   layerBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    borderRadius: 18,
+    paddingVertical: 10,
+    marginHorizontal: 4,
     gap: 6,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -790,7 +929,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1C873C',
   },
   layerBtnText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#60646C',
   },
@@ -799,6 +938,7 @@ const styles = StyleSheet.create({
   },
   detailContainer: {
     width: '100%',
+    paddingBottom: 8,
   },
   detailHeaderBox: {
     flexDirection: 'row',
@@ -806,17 +946,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   detailAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 16,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    marginRight: 14,
     backgroundColor: '#E2E8F0',
   },
   detailAvatarContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 16,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    marginRight: 14,
     backgroundColor: '#EAF6EA',
     justifyContent: 'center',
     alignItems: 'center',
@@ -834,10 +974,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1A202C',
   },
+  ratingStarsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  ratingStarsText: {
+    fontSize: 11.5,
+    color: '#8A9099',
+    marginLeft: 6,
+    fontWeight: '600',
+  },
   statusBadge: {
     borderRadius: 12,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     alignSelf: 'flex-start',
   },
   statusAvailable: {
@@ -847,8 +998,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FCE8E6',
   },
   statusText: {
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: 9.5,
+    fontWeight: '850',
     color: '#1C873C',
     textTransform: 'uppercase',
   },
@@ -856,12 +1007,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#60646C',
-    marginTop: 2,
+    marginTop: 3,
   },
   detailLocation: {
     fontSize: 12,
     color: '#8A9099',
-    marginTop: 4,
+    marginTop: 3,
   },
   mapsActionsBar: {
     flexDirection: 'row',
@@ -870,6 +1021,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#F0F2F5',
     paddingTop: 16,
     marginTop: 8,
+    marginBottom: 16,
   },
   mapsActionItem: {
     alignItems: 'center',
@@ -903,6 +1055,23 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#60646C',
+  },
+  sheetPrimaryBtn: {
+    backgroundColor: '#1C873C',
+    borderRadius: 24,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#1C873C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  sheetPrimaryBtnText: {
+    color: '#ffffff',
+    fontSize: 14.5,
+    fontWeight: '700',
   },
   alertHeader: {
     flexDirection: 'row',
@@ -978,9 +1147,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
   activeSeverityBtn: {
-    borderWidth: 2,
     borderColor: '#1C873C',
   },
   severityBtnText: {
