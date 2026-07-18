@@ -15,7 +15,7 @@ export default function BottomSheet({ visible, onClose, children }: BottomSheetP
   return (
     <KeyboardAvoidingView 
       style={styles.overlay} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       pointerEvents="box-none"
     >
       {/* Backdrop to tap and close */}

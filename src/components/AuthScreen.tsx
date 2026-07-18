@@ -218,7 +218,7 @@ export default function AuthScreen() {
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
         <ScrollView 
@@ -456,7 +456,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: '#121417',
   },
   headerSection: {
     paddingHorizontal: 24,
@@ -511,7 +510,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 40,
-    minHeight: screenHeight * 0.7,
+    minHeight: screenHeight * 0.65 + 30,
   },
   inputGroup: {
     marginBottom: 20,

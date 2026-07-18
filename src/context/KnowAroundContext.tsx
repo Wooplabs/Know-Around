@@ -819,7 +819,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const unsubFeeds = onSnapshot(collection(db, 'feeds'), async (snapshot) => {
       const list: Post[] = [];
       snapshot.forEach((docSnap) => {
-        list.push({ id: docSnap.id, ...docSnap.data() } as Post);
+        list.push({ ...docSnap.data(), id: docSnap.id } as Post);
       });
       if (snapshot.empty) {
         // Bootstrap seed data
@@ -827,12 +827,10 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           await addDoc(collection(db, 'feeds'), post);
         }
       } else {
-        // Deduplicate by id (Firestore doc id wins), then sort newest first
-        const seen = new Set<string>();
-        const unique = list.filter(p => seen.has(p.id) ? false : (seen.add(p.id), true));
-        unique.sort((a, b) => b.id.localeCompare(a.id));
-        setFeeds(unique);
-        saveState('native_feeds', unique);
+        // Sort feeds by id/creation time desc
+        list.sort((a, b) => b.id.localeCompare(a.id));
+        setFeeds(list);
+        saveState('native_feeds', list);
       }
     });
 
@@ -840,7 +838,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const unsubAlerts = onSnapshot(collection(db, 'alerts'), async (snapshot) => {
       const list: AlertItem[] = [];
       snapshot.forEach((docSnap) => {
-        list.push({ id: docSnap.id, ...docSnap.data() } as AlertItem);
+        list.push({ ...docSnap.data(), id: docSnap.id } as AlertItem);
       });
       if (snapshot.empty) {
         for (const alert of SEED_ALERTS) {
@@ -857,7 +855,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const unsubPros = onSnapshot(collection(db, 'professionals'), async (snapshot) => {
       const list: Professional[] = [];
       snapshot.forEach((docSnap) => {
-        list.push({ id: docSnap.id, ...docSnap.data() } as Professional);
+        list.push({ ...docSnap.data(), id: docSnap.id } as Professional);
       });
       if (snapshot.empty) {
         for (const pro of SEED_PROFESSIONALS) {
@@ -873,7 +871,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const unsubGroups = onSnapshot(collection(db, 'groups'), async (snapshot) => {
       const list: Group[] = [];
       snapshot.forEach((docSnap) => {
-        list.push({ id: docSnap.id, ...docSnap.data() } as Group);
+        list.push({ ...docSnap.data(), id: docSnap.id } as Group);
       });
       if (snapshot.empty) {
         for (const grp of SEED_GROUPS) {
@@ -889,7 +887,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const unsubGroupPosts = onSnapshot(collection(db, 'group_posts'), async (snapshot) => {
       const list: GroupPost[] = [];
       snapshot.forEach((docSnap) => {
-        list.push({ id: docSnap.id, ...docSnap.data() } as GroupPost);
+        list.push({ ...docSnap.data(), id: docSnap.id } as GroupPost);
       });
       if (snapshot.empty) {
         for (const gp of SEED_GROUP_POSTS) {
