@@ -82,6 +82,7 @@ export default function MandatoryAddressModal() {
       visible={visible}
       transparent={true}
       animationType="slide"
+      statusBarTranslucent={true}
       onRequestClose={() => {}} // Empty to block Android back button close
     >
       <View style={styles.backdrop}>
@@ -198,11 +199,15 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     width: '100%',
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   card: {
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: Platform.OS === 'ios' ? 44 : 32,
