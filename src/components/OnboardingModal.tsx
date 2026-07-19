@@ -15,6 +15,20 @@ import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 
+export interface AddressSuggestion {
+  id: string;
+  title: string;
+  subtitle: string;
+  street: string;
+  area: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  latitude: number;
+  longitude: number;
+}
+
 export default function OnboardingModal() {
   const { 
     user, 
@@ -41,6 +55,95 @@ export default function OnboardingModal() {
 
   const [isLocating, setIsLocating] = useState(false);
   const [autoFilledBadge, setAutoFilledBadge] = useState<string | null>(null);
+
+  // Real-time Address Suggestions State
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
+  const [activeSearchField, setActiveSearchField] = useState<'street' | 'area' | null>(null);
+  const searchTimerRef = React.useRef<any>(null);
+
+  // Fetch live address suggestions from OSM Nominatim API
+  const fetchAddressSuggestions = (queryStr: string, field: 'street' | 'area') => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+    if (!queryStr || queryStr.trim().length < 3) {
+      setSuggestions([]);
+      setIsSearchingSuggestions(false);
+      setActiveSearchField(null);
+      return;
+    }
+
+    setActiveSearchField(field);
+    setIsSearchingSuggestions(true);
+
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr.trim())}&addressdetails=1&limit=5`,
+          {
+            headers: {
+              'User-Agent': 'KnowAroundApp/1.0'
+            }
+          }
+        );
+        const data = await res.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          const parsed: AddressSuggestion[] = data.map((item: any, idx: number) => {
+            const addr = item.address || {};
+            const streetName = [addr.house_number, addr.road || addr.pedestrian || addr.footway].filter(Boolean).join(' ') || item.display_name.split(',')[0];
+            const areaName = addr.suburb || addr.neighbourhood || addr.residential || addr.district || '';
+            const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.county || '';
+            const stateName = addr.state || '';
+            const countryName = addr.country || 'India';
+            const postcode = addr.postcode || '';
+
+            const title = streetName || item.display_name.split(',')[0];
+            const subtitleParts = [areaName, cityName, stateName, postcode].filter(Boolean);
+            const subtitle = subtitleParts.length > 0 ? subtitleParts.join(', ') : item.display_name;
+
+            return {
+              id: `sug_${idx}_${item.place_id}`,
+              title,
+              subtitle,
+              street: streetName,
+              area: areaName,
+              city: cityName,
+              state: stateName,
+              country: countryName,
+              postalCode: postcode,
+              latitude: parseFloat(item.lat),
+              longitude: parseFloat(item.lon)
+            };
+          });
+          setSuggestions(parsed);
+        } else {
+          setSuggestions([]);
+        }
+      } catch (err) {
+        console.warn('Address autocomplete fetch error:', err);
+        setSuggestions([]);
+      } finally {
+        setIsSearchingSuggestions(false);
+      }
+    }, 400);
+  };
+
+  const handleSelectSuggestion = (sug: AddressSuggestion) => {
+    if (sug.street) setStreet(sug.street);
+    if (sug.area) setArea(sug.area);
+    if (sug.city) setCity(sug.city);
+    if (sug.state) setState(sug.state);
+    if (sug.country) setCountry(sug.country);
+    if (sug.postalCode) setPostalCode(sug.postalCode);
+    if (sug.latitude && sug.longitude) {
+      setLatitude(sug.latitude);
+      setLongitude(sug.longitude);
+    }
+    setAutoFilledBadge('✨ Address selected!');
+    setSuggestions([]);
+    setActiveSearchField(null);
+  };
 
   // Step 3 State (Notifications)
   const [notificationEnabled, setNotificationEnabled] = useState(false);
@@ -229,23 +332,79 @@ export default function OnboardingModal() {
                 <Text style={styles.inputLabel}>House No. & Street Address *</Text>
                 <TextInput
                   value={street}
-                  onChangeText={setStreet}
+                  onChangeText={(text) => {
+                    setStreet(text);
+                    fetchAddressSuggestions(text, 'street');
+                  }}
+                  onFocus={() => {
+                    if (street.trim().length >= 3) fetchAddressSuggestions(street, 'street');
+                  }}
                   placeholder="e.g. No. 24, Victor Simonel Street"
                   placeholderTextColor="#A0A4AC"
                   style={styles.input}
                 />
               </View>
 
+              {/* Suggestions Dropdown for Street */}
+              {activeSearchField === 'street' && (suggestions.length > 0 || isSearchingSuggestions) && (
+                <View style={styles.suggestionsBox}>
+                  {isSearchingSuggestions ? (
+                    <View style={styles.suggestionsLoadingRow}>
+                      <ActivityIndicator size="small" color="#1C873C" />
+                      <Text style={styles.suggestionsLoadingText}>Searching address suggestions...</Text>
+                    </View>
+                  ) : (
+                    suggestions.map((sug) => (
+                      <Pressable key={sug.id} style={styles.suggestionItem} onPress={() => handleSelectSuggestion(sug)}>
+                        <Ionicons name="location-outline" size={18} color="#1C873C" style={{ marginTop: 2 }} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionTitle} numberOfLines={1}>{sug.title}</Text>
+                          <Text style={styles.suggestionSubtitle} numberOfLines={1}>{sug.subtitle}</Text>
+                        </View>
+                      </Pressable>
+                    ))
+                  )}
+                </View>
+              )}
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Area / Neighborhood</Text>
                 <TextInput
                   value={area}
-                  onChangeText={setArea}
+                  onChangeText={(text) => {
+                    setArea(text);
+                    fetchAddressSuggestions(text, 'area');
+                  }}
+                  onFocus={() => {
+                    if (area.trim().length >= 3) fetchAddressSuggestions(area, 'area');
+                  }}
                   placeholder="e.g. White Town"
                   placeholderTextColor="#A0A4AC"
                   style={styles.input}
                 />
               </View>
+
+              {/* Suggestions Dropdown for Area */}
+              {activeSearchField === 'area' && (suggestions.length > 0 || isSearchingSuggestions) && (
+                <View style={styles.suggestionsBox}>
+                  {isSearchingSuggestions ? (
+                    <View style={styles.suggestionsLoadingRow}>
+                      <ActivityIndicator size="small" color="#1C873C" />
+                      <Text style={styles.suggestionsLoadingText}>Searching area suggestions...</Text>
+                    </View>
+                  ) : (
+                    suggestions.map((sug) => (
+                      <Pressable key={sug.id} style={styles.suggestionItem} onPress={() => handleSelectSuggestion(sug)}>
+                        <Ionicons name="location-outline" size={18} color="#1C873C" style={{ marginTop: 2 }} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionTitle} numberOfLines={1}>{sug.title}</Text>
+                          <Text style={styles.suggestionSubtitle} numberOfLines={1}>{sug.subtitle}</Text>
+                        </View>
+                      </Pressable>
+                    ))
+                  )}
+                </View>
+              )}
 
               <View style={styles.row}>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -560,5 +719,49 @@ const styles = StyleSheet.create({
     color: '#60646C',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  suggestionsBox: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    marginTop: -8,
+    marginBottom: 16,
+    paddingVertical: 4,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+    zIndex: 10,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  suggestionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1C1E',
+  },
+  suggestionSubtitle: {
+    fontSize: 12,
+    color: '#60646C',
+    marginTop: 2,
+  },
+  suggestionsLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+  },
+  suggestionsLoadingText: {
+    fontSize: 13,
+    color: '#60646C',
   },
 });
