@@ -2,7 +2,6 @@ import { Tabs } from 'expo-router';
 import { useColorScheme, Platform, StyleSheet, View, Pressable, Text, LogBox } from 'react-native';
 import { KnowAroundProvider, useKnowAround } from '@/context/KnowAroundContext';
 import { Colors } from '@/constants/theme';
-import MandatoryAddressModal from '@/components/MandatoryAddressModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AuthScreen from '@/components/AuthScreen';
 import PostComposerModal from '@/components/PostComposerModal';
@@ -117,7 +116,6 @@ function MainLayout() {
         <Tabs.Screen name="groups" />
         <Tabs.Screen name="directory" />
       </Tabs>
-      <MandatoryAddressModal />
       {!onboardingCompleted && <OnboardingModal />}
       <PostComposerModal />
     </View>
