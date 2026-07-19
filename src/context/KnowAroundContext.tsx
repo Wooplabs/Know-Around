@@ -5,8 +5,6 @@ import {
   onSnapshot, 
   addDoc, 
   doc, 
-  setDoc,
-  getDoc,
   updateDoc, 
   arrayUnion, 
   increment,
@@ -129,50 +127,7 @@ export interface JobVacancy {
   applied?: boolean;
 }
 
-export interface UserProfile {
-  uid: string;
-  phoneNumber: string;
-  name: string;
-  address: string;
-  street: string;
-  area: string;
-  locality: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
-  latitude: number | null;
-  longitude: number | null;
-  locationVerified: boolean;
-  notificationEnabled: boolean;
-  profileCompleted: boolean;
-  accountType: 'personal';
-  createdAt: string;
-  updatedAt: string;
-  lastLogin: string;
-  avatar?: string;
-}
-
 export interface KnowAroundContextProps {
-  userProfile: UserProfile | null;
-  authStatus: 'unauthenticated' | 'authenticating' | 'onboarding' | 'authenticated';
-  onboardingStep: number;
-  setOnboardingStep: (step: number) => void;
-  authenticatePhone: (phoneNumber: string) => Promise<{ isNewUser: boolean; profileCompleted: boolean }>;
-  updateOnboardingName: (fullName: string) => Promise<void>;
-  updateOnboardingAddress: (addrData: {
-    street: string;
-    area: string;
-    locality: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-    latitude: number | null;
-    longitude: number | null;
-    locationVerified: boolean;
-  }) => Promise<void>;
-  updateOnboardingNotifications: (enabled: boolean) => Promise<void>;
   user: { name: string; email: string; phone?: string; avatar?: string } | null;
   login: (phone: string) => Promise<boolean>;
   googleLogin: () => void;
@@ -874,10 +829,6 @@ const getLocalStorageJSON = (key: string): any => {
 let feedsResetDone = false;
 
 export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [authStatus, setAuthStatus] = useState<'unauthenticated' | 'authenticating' | 'onboarding' | 'authenticated'>('unauthenticated');
-  const [onboardingStep, setOnboardingStep] = useState<number>(1);
-
   const [user, setUser] = useState<{ name: string; email: string; phone?: string; avatar?: string } | null>(null);
   const [activeLocation, setActiveLocation] = useState('White Town, PY');
   const [feeds, setFeeds] = useState<Post[]>(SEED_POSTS);
@@ -904,7 +855,6 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        const savedUserProfile = window.localStorage.getItem('native_user_profile');
         const savedUser = window.localStorage.getItem('native_user');
         const savedFeeds = window.localStorage.getItem('native_feeds');
         const savedAlerts = window.localStorage.getItem('native_alerts');
@@ -917,19 +867,6 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const savedGroups = window.localStorage.getItem('native_groups');
         const savedGPosts = window.localStorage.getItem('native_group_posts');
         
-        if (savedUserProfile) {
-          const parsedProf: UserProfile = JSON.parse(savedUserProfile);
-          setUserProfile(parsedProf);
-          if (parsedProf.profileCompleted && parsedProf.name && (parsedProf.street || parsedProf.city)) {
-            setAuthStatus('authenticated');
-            setOnboardingCompleted(true);
-          } else {
-            setAuthStatus('onboarding');
-            if (!parsedProf.name) setOnboardingStep(1);
-            else if (!parsedProf.street && !parsedProf.city) setOnboardingStep(2);
-            else setOnboardingStep(3);
-          }
-        }
         if (savedUser) setUser(JSON.parse(savedUser));
         if (savedFeeds) setFeeds(JSON.parse(savedFeeds));
         if (savedAlerts) setAlerts(JSON.parse(savedAlerts));
@@ -1122,365 +1059,19 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  // Phone sanitizer for consistent database keying
-  const sanitizePhoneKey = (phoneStr: string): string => {
-    const digits = phoneStr.replace(/[^0-9]/g, '');
-    return digits.length >= 10 ? digits.slice(-10) : digits || 'unknown';
-  };
-
-  const authenticatePhone = async (phoneNumber: string): Promise<{ isNewUser: boolean; profileCompleted: boolean }> => {
-    setAuthStatus('authenticating');
-    const cleanPhone = phoneNumber.trim();
-    const phoneKey = sanitizePhoneKey(cleanPhone);
-    const nowIso = new Date().toISOString();
-
-    let existingDoc: UserProfile | null = null;
-
-    // 1. Check Firestore 'users/{uid}'
-    if (isFirebaseConfigured && db && phoneKey) {
-      try {
-        const userRef = doc(db, 'users', phoneKey);
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          existingDoc = snap.data() as UserProfile;
-          await updateDoc(userRef, {
-            lastLogin: nowIso,
-            updatedAt: nowIso
-          });
-          existingDoc.lastLogin = nowIso;
-          existingDoc.updatedAt = nowIso;
-        }
-      } catch (err) {
-        console.warn('Firestore user doc lookup error:', err);
-      }
-    }
-
-    // 2. Fallback to local persistent store dictionary
-    if (!existingDoc) {
-      try {
-        const storedMap = getLocalStorageJSON('native_registered_users');
-        if (storedMap && storedMap[phoneKey]) {
-          existingDoc = storedMap[phoneKey];
-        }
-      } catch (e) {}
-    }
-
-    // 3. IF Existing User & profile completed:
-    if (existingDoc && existingDoc.profileCompleted && existingDoc.name && (existingDoc.street || existingDoc.city)) {
-      setUserProfile(existingDoc);
-      saveState('native_user_profile', existingDoc);
-      setUser({ name: existingDoc.name, email: cleanPhone, phone: cleanPhone, avatar: existingDoc.avatar });
-      saveState('native_user', { name: existingDoc.name, email: cleanPhone, phone: cleanPhone, avatar: existingDoc.avatar });
-      setAuthStatus('authenticated');
-      setOnboardingCompleted(true);
-      if (existingDoc.city) {
-        setActiveLocation(existingDoc.state ? `${existingDoc.city}, ${existingDoc.state.slice(0, 2).toUpperCase()}` : existingDoc.city);
-      }
-      return { isNewUser: false, profileCompleted: true };
-    }
-
-    // 4. IF New User or Incomplete Profile:
-    const minimalDoc: UserProfile = existingDoc || {
-      uid: phoneKey,
-      phoneNumber: cleanPhone,
-      name: '',
-      address: '',
-      street: '',
-      area: '',
-      locality: '',
-      city: '',
-      state: '',
-      country: 'India',
-      postalCode: '',
-      latitude: null,
-      longitude: null,
-      locationVerified: false,
-      notificationEnabled: false,
-      profileCompleted: false,
-      accountType: 'personal',
-      createdAt: nowIso,
-      updatedAt: nowIso,
-      lastLogin: nowIso,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'
-    };
-
-    if (isFirebaseConfigured && db && phoneKey) {
-      try {
-        const userRef = doc(db, 'users', phoneKey);
-        await setDoc(userRef, minimalDoc, { merge: true });
-      } catch (err) {
-        console.warn('Firestore minimal user doc save error:', err);
-      }
-    }
-
-    setUserProfile(minimalDoc);
-    saveState('native_user_profile', minimalDoc);
-    setUser({ name: minimalDoc.name || 'Neighbor', email: cleanPhone, phone: cleanPhone, avatar: minimalDoc.avatar });
-    setAuthStatus('onboarding');
-
-    if (!minimalDoc.name) {
-      setOnboardingStep(1);
-    } else if (!minimalDoc.street && !minimalDoc.city) {
-      setOnboardingStep(2);
-    } else {
-      setOnboardingStep(3);
-    }
-
-    return { isNewUser: !existingDoc, profileCompleted: false };
-  };
-
-  const updateOnboardingName = async (fullName: string) => {
-    if (!userProfile) return;
-    const nowIso = new Date().toISOString();
-    const updated: UserProfile = {
-      ...userProfile,
-      name: fullName.trim(),
-      updatedAt: nowIso
-    };
-
-    setUserProfile(updated);
-    saveState('native_user_profile', updated);
-    setUser({ name: updated.name, email: updated.phoneNumber, phone: updated.phoneNumber, avatar: updated.avatar });
-    saveState('native_user', { name: updated.name, email: updated.phoneNumber, phone: updated.phoneNumber, avatar: updated.avatar });
-
-    if (isFirebaseConfigured && db && userProfile.uid) {
-      try {
-        await updateDoc(doc(db, 'users', userProfile.uid), {
-          name: fullName.trim(),
-          updatedAt: nowIso
-        });
-      } catch (e) {}
-    }
-
-    setOnboardingStep(2);
-  };
-
-  const updateOnboardingAddress = async (addrData: {
-    street: string;
-    area: string;
-    locality: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-    latitude: number | null;
-    longitude: number | null;
-    locationVerified: boolean;
-  }) => {
-    if (!userProfile) return;
-    const nowIso = new Date().toISOString();
-    const fullAddress = [
-      addrData.street,
-      addrData.area || addrData.locality,
-      addrData.city,
-      addrData.state,
-      addrData.postalCode
-    ].filter(Boolean).join(', ');
-
-    const updated: UserProfile = {
-      ...userProfile,
-      address: fullAddress,
-      street: addrData.street,
-      area: addrData.area,
-      locality: addrData.locality,
-      city: addrData.city,
-      state: addrData.state,
-      country: addrData.country || 'India',
-      postalCode: addrData.postalCode,
-      latitude: addrData.latitude,
-      longitude: addrData.longitude,
-      locationVerified: addrData.locationVerified,
-      updatedAt: nowIso
-    };
-
-    setUserProfile(updated);
-    saveState('native_user_profile', updated);
-    setUserAddress({
-      street: addrData.street,
-      place: addrData.area || addrData.locality,
-      city: addrData.city,
-      state: addrData.state,
-      pin: addrData.postalCode,
-      phone: userProfile.phoneNumber
-    });
-
-    if (addrData.city) {
-      setActiveLocation(addrData.state ? `${addrData.city}, ${addrData.state.slice(0, 2).toUpperCase()}` : addrData.city);
-    }
-
-    if (isFirebaseConfigured && db && userProfile.uid) {
-      try {
-        await updateDoc(doc(db, 'users', userProfile.uid), {
-          address: fullAddress,
-          street: addrData.street,
-          area: addrData.area,
-          locality: addrData.locality,
-          city: addrData.city,
-          state: addrData.state,
-          country: addrData.country || 'India',
-          postalCode: addrData.postalCode,
-          latitude: addrData.latitude,
-          longitude: addrData.longitude,
-          locationVerified: addrData.locationVerified,
-          updatedAt: nowIso
-        });
-      } catch (e) {}
-    }
-
-    setOnboardingStep(3);
-  };
-
-  const updateOnboardingNotifications = async (enabled: boolean) => {
-    if (!userProfile) return;
-    const nowIso = new Date().toISOString();
-    const updated: UserProfile = {
-      ...userProfile,
-      notificationEnabled: enabled,
-      locationVerified: true,
-      profileCompleted: true,
-      updatedAt: nowIso
-    };
-
-    setUserProfile(updated);
-    saveState('native_user_profile', updated);
-    saveState('native_onboarding', true);
-
-    try {
-      const storedMap = getLocalStorageJSON('native_registered_users') || {};
-      storedMap[userProfile.uid] = updated;
-      saveState('native_registered_users', storedMap);
-    } catch (e) {}
-
-    if (isFirebaseConfigured && db && userProfile.uid) {
-      try {
-        await updateDoc(doc(db, 'users', userProfile.uid), {
-          notificationEnabled: enabled,
-          locationVerified: true,
-          profileCompleted: true,
-          updatedAt: nowIso
-        });
-      } catch (e) {}
-    }
-
-    setOnboardingCompleted(true);
-    setAuthStatus('authenticated');
-  };
-
-  const register = async (name: string, phone: string): Promise<boolean> => {
-    // New signup, force onboarding to run
-    setOnboardingCompleted(false);
-    saveState('native_onboarding', false);
-    setJustRegistered(true);
-
-    const cleanPhone = phone.trim();
-    const phoneKey = sanitizePhoneKey(cleanPhone);
-
-    const newUser = {
-      name: name.trim() || 'Neighbor',
-      email: cleanPhone,
-      phone: cleanPhone,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'
-    };
-
-    setUser(newUser);
-    saveState('native_user', newUser);
-
-    // Save to local registered users database dictionary
-    try {
-      const storedMap = getLocalStorageJSON('native_registered_users') || {};
-      storedMap[phoneKey] = newUser;
-      saveState('native_registered_users', storedMap);
-    } catch (e) {}
-
-    // Save user record to Firestore 'users' collection
-    if (isFirebaseConfigured && db && phoneKey) {
-      try {
-        const userRef = doc(db, 'users', phoneKey);
-        await setDoc(userRef, {
-          ...newUser,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-      } catch (err) {
-        console.warn('Firestore register user save error:', err);
-      }
-    }
-
-    return true;
-  };
-
   const login = async (phone: string): Promise<boolean> => {
     setOnboardingCompleted(true);
     saveState('native_onboarding', true);
     setJustRegistered(false);
 
-    const cleanPhone = phone.trim();
-    const phoneKey = sanitizePhoneKey(cleanPhone);
-    let matchedUser: { name: string; email: string; phone?: string; avatar?: string } | null = null;
-    let matchedAddr: any = null;
-
-    // 1. Try to restore user profile & address from Firestore
-    if (isFirebaseConfigured && db && phoneKey) {
-      try {
-        const userRef = doc(db, 'users', phoneKey);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          matchedUser = {
-            name: data.name || `Neighbor ${phoneKey.slice(-4)}`,
-            email: data.email || cleanPhone,
-            phone: data.phone || cleanPhone,
-            avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'
-          };
-        }
-
-        const addrRef = doc(db, 'user_addresses', phoneKey);
-        const addrSnap = await getDoc(addrRef);
-        if (addrSnap.exists()) {
-          matchedAddr = addrSnap.data();
-        }
-      } catch (err) {
-        console.warn('Firestore login lookup notice:', err);
-      }
-    }
-
-    // 2. Fallback to local persistent registered users database
-    if (!matchedUser) {
-      try {
-        const storedMap = getLocalStorageJSON('native_registered_users');
-        if (storedMap && storedMap[phoneKey]) {
-          matchedUser = storedMap[phoneKey];
-        }
-      } catch (e) {}
-    }
-
-    // 3. Fallback to local persistent registered addresses database
-    if (!matchedAddr) {
-      try {
-        const storedAddrMap = getLocalStorageJSON('native_registered_addresses');
-        if (storedAddrMap && storedAddrMap[phoneKey]) {
-          matchedAddr = storedAddrMap[phoneKey];
-        }
-      } catch (e) {}
-    }
-
-    // If still no profile found (e.g. brand new user logging in without prior signup), create default profile
-    if (!matchedUser) {
-      matchedUser = {
-        name: `Neighbor ${phoneKey.slice(-4)}`,
-        email: cleanPhone,
-        phone: cleanPhone,
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'
-      };
-    }
-
-    setUser(matchedUser);
-    saveState('native_user', matchedUser);
-
-    if (matchedAddr) {
-      setUserAddress(matchedAddr);
-      saveState('native_address', matchedAddr);
-    }
-
+    // Try to restore previously registered user details by phone
+    const existingUser = getLocalStorageJSON('native_user');
+    const phoneDigits = phone.replace(/[^0-9]/g, '');
+    const newUser = existingUser && existingUser.phone === phone
+      ? existingUser
+      : { name: `User ${phoneDigits.slice(-10)}`, email: phone, phone };
+    setUser(newUser);
+    saveState('native_user', newUser);
     return true;
   };
 
@@ -1491,6 +1082,23 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setOnboardingCompleted(true);
     saveState('native_onboarding', true);
     setJustRegistered(false);
+  };
+
+  const register = async (name: string, phone: string): Promise<boolean> => {
+    // New signup, force onboarding to run
+    setOnboardingCompleted(false);
+    saveState('native_onboarding', false);
+    setJustRegistered(true);
+
+    const newUser = {
+      name: name.trim() || 'Neighbor',
+      email: phone,
+      phone,
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'
+    };
+    setUser(newUser);
+    saveState('native_user', newUser);
+    return true;
   };
 
   const logout = async () => {
@@ -1541,37 +1149,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {}
   };
 
-  const updateUserAddress = async (addr: { street: string; place: string; city: string; state: string; pin: string; phone: string }) => {
-    setUserAddress(addr);
-    saveState('native_address', addr);
-
-    const targetPhone = user?.phone || addr.phone;
-    const phoneKey = targetPhone ? sanitizePhoneKey(targetPhone) : '';
-
-    if (phoneKey) {
-      // Save to local registered address dictionary
-      try {
-        const storedAddrMap = getLocalStorageJSON('native_registered_addresses') || {};
-        storedAddrMap[phoneKey] = addr;
-        saveState('native_registered_addresses', storedAddrMap);
-      } catch (e) {}
-
-      // Save to Firestore 'user_addresses' collection
-      if (isFirebaseConfigured && db) {
-        try {
-          const addrRef = doc(db, 'user_addresses', phoneKey);
-          await setDoc(addrRef, {
-            ...addr,
-            updatedAt: new Date().toISOString()
-          }, { merge: true });
-        } catch (err) {
-          console.warn('Firestore address save error:', err);
-        }
-      }
-    }
-  };
-
-  const updateProfileDetails = async (name: string, email?: string, phone?: string, avatar?: string) => {
+  const updateProfileDetails = (name: string, email?: string, phone?: string, avatar?: string) => {
     if (user) {
       const updatedUser = {
         ...user,
@@ -1582,29 +1160,6 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       };
       setUser(updatedUser);
       saveState('native_user', updatedUser);
-
-      const phoneKey = sanitizePhoneKey(updatedUser.phone || user.phone || '');
-      if (phoneKey) {
-        // Save to local registered users dictionary
-        try {
-          const storedMap = getLocalStorageJSON('native_registered_users') || {};
-          storedMap[phoneKey] = updatedUser;
-          saveState('native_registered_users', storedMap);
-        } catch (e) {}
-
-        // Save to Firestore 'users' collection
-        if (isFirebaseConfigured && db) {
-          try {
-            const userRef = doc(db, 'users', phoneKey);
-            await setDoc(userRef, {
-              ...updatedUser,
-              updatedAt: new Date().toISOString()
-            }, { merge: true });
-          } catch (err) {
-            console.warn('Firestore updateProfile error:', err);
-          }
-        }
-      }
     }
   };
 
@@ -1944,14 +1499,6 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   return (
     <KnowAroundContext.Provider
       value={{
-        userProfile,
-        authStatus,
-        onboardingStep,
-        setOnboardingStep,
-        authenticatePhone,
-        updateOnboardingName,
-        updateOnboardingAddress,
-        updateOnboardingNotifications,
         user,
         login,
         googleLogin,
@@ -1982,7 +1529,10 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           saveState('native_role', role);
         },
         userAddress,
-        setUserAddress: updateUserAddress,
+        setUserAddress: (addr) => {
+          setUserAddress(addr);
+          saveState('native_address', addr);
+        },
         selectedCategory,
         setSelectedCategory,
         selectedProfession,
