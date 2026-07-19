@@ -203,150 +203,139 @@ export default function AuthScreen() {
           <Text style={styles.subtitle}>{getHeaderSubtitle()}</Text>
         </View>
 
-        {/* BOTTOM WHITE CARD (Always fills 100% space down to screen bottom) */}
-        <View style={styles.formCardContainer}>
-          <ScrollView 
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent} 
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            bounces={false}
-          >
-            <Animated.View style={[styles.formCard, { transform: [{ translateX: shakeAnim }] }]}>
-              {authState === 'input' ? (
-                /* PHASE 1: ENTER PHONE NUMBER */
-                <View>
-                  <View style={styles.inputGroup}>
-                    <View style={styles.labelRow}>
-                      <Text style={styles.label}>Mobile Number</Text>
-                      {!!phoneError && <Text style={styles.errorTextInline}>{phoneError}</Text>}
-                    </View>
-                    <View style={styles.phoneInputRow}>
-                      <Pressable style={styles.countryCodeSelector} onPress={() => setShowCountryPicker(true)}>
-                        <Text style={styles.flagText}>{selectedCountry.flag}</Text>
-                        <Text style={styles.codeText}>{selectedCountry.code}</Text>
-                        <Ionicons name="chevron-down" size={12} color="#60646C" />
-                      </Pressable>
-                      
-                      <TextInput
-                        value={phone}
-                        onChangeText={(text) => {
-                          const cleaned = text.replace(/[^0-9]/g, '');
-                          let formatted = cleaned;
-                          if (cleaned.length > 5) {
-                            formatted = cleaned.slice(0, 5) + ' ' + cleaned.slice(5, 10);
-                          }
-                          setPhone(formatted);
-                          if (phoneError) setPhoneError('');
-                        }}
-                        onFocus={() => setFocusedField('phone')}
-                        onBlur={() => setFocusedField(null)}
-                        placeholder="98765 43210"
-                        placeholderTextColor="#A0A4AC"
-                        keyboardType="phone-pad"
-                        maxLength={11}
-                        style={[
-                          styles.phoneInput,
-                          focusedField === 'phone' && styles.inputFocused,
-                          !!phoneError && styles.inputError
-                        ]}
-                      />
-                    </View>
-                  </View>
-
-                  {/* Main Action Button using Brand Green */}
-                  {(() => {
-                    const isPhoneValid = phone.replace(/[^0-9]/g, '').length === 10;
-                    return (
-                      <Pressable 
-                        style={[styles.btn, (!isPhoneValid || isSubmitting) && styles.btnDisabled]} 
-                        onPress={handleSendOtpPress} 
-                        disabled={!isPhoneValid || isSubmitting}
-                      >
-                        <Text style={[styles.btnText, (!isPhoneValid || isSubmitting) && styles.btnTextDisabled]}>Continue</Text>
-                      </Pressable>
-                    );
-                  })()}
+        {/* BOTTOM WHITE CARD - Anchored Flush to Bottom Center */}
+        <Animated.View style={[styles.formCard, { transform: [{ translateX: shakeAnim }] }]}>
+          {authState === 'input' ? (
+            /* PHASE 1: ENTER PHONE NUMBER */
+            <View>
+              <View style={styles.inputGroup}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>Mobile Number</Text>
+                  {!!phoneError && <Text style={styles.errorTextInline}>{phoneError}</Text>}
                 </View>
-              ) : (
-                /* PHASE 2: SMS OTP VERIFICATION */
-                <View>
-                  <View style={styles.otpInputRow}>
-                    {otpInput.map((digit, idx) => (
-                      <TextInput
-                        key={idx}
-                        ref={(el) => (otpRefs.current[idx] = el)}
-                        value={digit}
-                        onChangeText={(text) => {
-                          const cleanedText = text.replace(/[^0-9]/g, '');
-                          const newOtp = [...otpInput];
-                          newOtp[idx] = cleanedText;
-                          setOtpInput(newOtp);
-
-                          // Focus next cell
-                          if (cleanedText && idx < 3) {
-                            otpRefs.current[idx + 1]?.focus();
-                          }
-                        }}
-                        onKeyPress={(e) => {
-                          if (e.nativeEvent.key === 'Backspace' && !otpInput[idx] && idx > 0) {
-                            const newOtp = [...otpInput];
-                            newOtp[idx - 1] = '';
-                            setOtpInput(newOtp);
-                            otpRefs.current[idx - 1]?.focus();
-                          }
-                        }}
-                        maxLength={1}
-                        keyboardType="number-pad"
-                        textContentType="oneTimeCode"
-                        style={[
-                          styles.otpInputBox,
-                          !!otpError && styles.otpInputBoxError
-                        ]}
-                      />
-                    ))}
-                  </View>
-
-                  {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
-
-                  {/* Verify OTP Button */}
-                  {(() => {
-                    const isOtpValid = otpInput.join('').length === 4;
-                    return (
-                      <Pressable 
-                        style={[styles.btn, (!isOtpValid || isSubmitting) && styles.btnDisabled]} 
-                        onPress={handleVerifyOtp} 
-                        disabled={!isOtpValid || isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          <ActivityIndicator size="small" color="#ffffff" />
-                        ) : (
-                          <Text style={[styles.btnText, (!isOtpValid || isSubmitting) && styles.btnTextDisabled]}>Verify & Continue</Text>
-                        )}
-                      </Pressable>
-                    );
-                  })()}
-
-                  <View style={styles.otpResendRow}>
-                    <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
-                    {resendTimer > 0 ? (
-                      <Text style={styles.otpTimerText}>Resend in {resendTimer}s</Text>
-                    ) : (
-                      <Pressable onPress={generateAndSendOtp}>
-                        <Text style={styles.otpResendLink}>Resend OTP</Text>
-                      </Pressable>
-                    )}
-                  </View>
-
-                  <Pressable style={styles.changeNumberLink} onPress={() => setAuthState('input')}>
-                    <Text style={styles.changeNumberLinkText}>Change Mobile Number</Text>
+                <View style={styles.phoneInputRow}>
+                  <Pressable style={styles.countryCodeSelector} onPress={() => setShowCountryPicker(true)}>
+                    <Text style={styles.flagText}>{selectedCountry.flag}</Text>
+                    <Text style={styles.codeText}>{selectedCountry.code}</Text>
+                    <Ionicons name="chevron-down" size={12} color="#60646C" />
                   </Pressable>
+                  
+                  <TextInput
+                    value={phone}
+                    onChangeText={(text) => {
+                      const cleaned = text.replace(/[^0-9]/g, '');
+                      let formatted = cleaned;
+                      if (cleaned.length > 5) {
+                        formatted = cleaned.slice(0, 5) + ' ' + cleaned.slice(5, 10);
+                      }
+                      setPhone(formatted);
+                      if (phoneError) setPhoneError('');
+                    }}
+                    onFocus={() => setFocusedField('phone')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="98765 43210"
+                    placeholderTextColor="#A0A4AC"
+                    keyboardType="phone-pad"
+                    maxLength={11}
+                    style={[
+                      styles.phoneInput,
+                      focusedField === 'phone' && styles.inputFocused,
+                      !!phoneError && styles.inputError
+                    ]}
+                  />
                 </View>
-              )}
-            </Animated.View>
-          </ScrollView>
-        </View>
+              </View>
+
+              {/* Main Action Button using Brand Green */}
+              {(() => {
+                const isPhoneValid = phone.replace(/[^0-9]/g, '').length === 10;
+                return (
+                  <Pressable 
+                    style={[styles.btn, (!isPhoneValid || isSubmitting) && styles.btnDisabled]} 
+                    onPress={handleSendOtpPress} 
+                    disabled={!isPhoneValid || isSubmitting}
+                  >
+                    <Text style={[styles.btnText, (!isPhoneValid || isSubmitting) && styles.btnTextDisabled]}>Continue</Text>
+                  </Pressable>
+                );
+              })()}
+            </View>
+          ) : (
+            /* PHASE 2: SMS OTP VERIFICATION */
+            <View>
+              <View style={styles.otpInputRow}>
+                {otpInput.map((digit, idx) => (
+                  <TextInput
+                    key={idx}
+                    ref={(el) => (otpRefs.current[idx] = el)}
+                    value={digit}
+                    onChangeText={(text) => {
+                      const cleanedText = text.replace(/[^0-9]/g, '');
+                      const newOtp = [...otpInput];
+                      newOtp[idx] = cleanedText;
+                      setOtpInput(newOtp);
+
+                      // Focus next cell
+                      if (cleanedText && idx < 3) {
+                        otpRefs.current[idx + 1]?.focus();
+                      }
+                    }}
+                    onKeyPress={(e) => {
+                      if (e.nativeEvent.key === 'Backspace' && !otpInput[idx] && idx > 0) {
+                        const newOtp = [...otpInput];
+                        newOtp[idx - 1] = '';
+                        setOtpInput(newOtp);
+                        otpRefs.current[idx - 1]?.focus();
+                      }
+                    }}
+                    maxLength={1}
+                    keyboardType="number-pad"
+                    textContentType="oneTimeCode"
+                    style={[
+                      styles.otpInputBox,
+                      !!otpError && styles.otpInputBoxError
+                    ]}
+                  />
+                ))}
+              </View>
+
+              {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
+
+              {/* Verify OTP Button */}
+              {(() => {
+                const isOtpValid = otpInput.join('').length === 4;
+                return (
+                  <Pressable 
+                    style={[styles.btn, (!isOtpValid || isSubmitting) && styles.btnDisabled]} 
+                    onPress={handleVerifyOtp} 
+                    disabled={!isOtpValid || isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text style={[styles.btnText, (!isOtpValid || isSubmitting) && styles.btnTextDisabled]}>Verify & Continue</Text>
+                    )}
+                  </Pressable>
+                );
+              })()}
+
+              <View style={styles.otpResendRow}>
+                <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
+                {resendTimer > 0 ? (
+                  <Text style={styles.otpTimerText}>Resend in {resendTimer}s</Text>
+                ) : (
+                  <Pressable onPress={generateAndSendOtp}>
+                    <Text style={styles.otpResendLink}>Resend OTP</Text>
+                  </Pressable>
+                )}
+              </View>
+
+              <Pressable style={styles.changeNumberLink} onPress={() => setAuthState('input')}>
+                <Text style={styles.changeNumberLinkText}>Change Mobile Number</Text>
+              </Pressable>
+            </View>
+          )}
+        </Animated.View>
       </KeyboardAvoidingView>
 
       {/* Selectable Country Picker Bottom Sheet */}
@@ -380,23 +369,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#121417',
   },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: Platform.OS === 'ios' ? 44 : 32,
-    justifyContent: 'space-between',
-  },
   headerSection: {
+    flex: 1,
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 44,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: 28,
     backgroundColor: '#121417',
     position: 'relative',
     overflow: 'hidden',
+    justifyContent: 'flex-end',
   },
   glowEffect: {
     position: 'absolute',
@@ -433,16 +414,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingRight: 32,
   },
-  formCardContainer: {
-    flex: 1,
+  formCard: {
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    overflow: 'hidden',
-  },
-  formCard: {
-    flex: 1,
-    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 28,
   },
   inputGroup: {
     marginBottom: 20,
