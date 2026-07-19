@@ -184,13 +184,15 @@ export default function AuthScreen() {
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView 
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           bounces={false}
         >
           {/* TOP HEADER SECTION */}
@@ -385,13 +387,13 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 36,
+    paddingTop: Platform.OS === 'ios' ? 60 : 36,
+    paddingBottom: 24,
     backgroundColor: '#121417',
     position: 'relative',
     overflow: 'hidden',
     flex: 1,
-    minHeight: screenHeight * 0.42,
+    minHeight: screenHeight * 0.22,
     justifyContent: 'flex-end',
   },
   glowEffect: {
