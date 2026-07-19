@@ -35,7 +35,8 @@ export default function OnboardingModal() {
   const { 
     user, 
     onboardingCompleted, 
-    completeOnboarding 
+    completeOnboarding,
+    logout
   } = useKnowAround();
 
   // Wizard Step: 1 = Name, 2 = Mandatory Location & Address, 3 = Notifications, 4 = Success
@@ -267,11 +268,19 @@ export default function OnboardingModal() {
         {/* Step Indicator Bar with Back Button */}
         {step <= 4 && (
           <View style={styles.topBarRow}>
-            {step > 1 && (
-              <Pressable onPress={() => setStep(step - 1)} style={styles.backBtnWrapper}>
-                <Ionicons name="arrow-back" size={24} color="#1E293B" />
-              </Pressable>
-            )}
+            <Pressable 
+              onPress={() => {
+                if (step > 1) {
+                  setStep(step - 1);
+                } else {
+                  logout();
+                }
+              }} 
+              style={styles.backBtnWrapper}
+            >
+              <Ionicons name="arrow-back" size={24} color="#1E293B" />
+            </Pressable>
+
             <View style={styles.progressRow}>
               {[1, 2, 3, 4].map((s) => (
                 <View 
