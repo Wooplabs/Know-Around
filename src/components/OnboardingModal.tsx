@@ -231,10 +231,13 @@ export default function OnboardingModal() {
     setStep(3);
   };
 
-  const handleStep3Finish = async (enableNotifications: boolean) => {
-    setIsSubmitting(true);
+  const handleStep3Finish = (enableNotifications: boolean) => {
     setNotificationEnabled(enableNotifications);
+    setStep(4);
+  };
 
+  const handleStep4Finish = async () => {
+    setIsSubmitting(true);
     try {
       await completeOnboarding({
         name: name.trim(),
@@ -247,9 +250,9 @@ export default function OnboardingModal() {
         postalCode: postalCode.trim(),
         latitude,
         longitude,
-        notificationEnabled: enableNotifications
+        notificationEnabled,
       });
-      setStep(4);
+      setStep(5);
     } catch (e) {
       console.error('Onboarding completion error:', e);
     } finally {
@@ -261,18 +264,25 @@ export default function OnboardingModal() {
     <View style={styles.fullscreenOverlay}>
       <View style={styles.container}>
         
-        {/* Step Indicator Bar */}
-        {step <= 3 && (
-          <View style={styles.progressRow}>
-            {[1, 2, 3].map((s) => (
-              <View 
-                key={s} 
-                style={[
-                  styles.progressSegment, 
-                  step >= s && styles.progressSegmentActive
-                ]} 
-              />
-            ))}
+        {/* Step Indicator Bar with Back Button */}
+        {step <= 4 && (
+          <View style={styles.topBarRow}>
+            {step > 1 && (
+              <Pressable onPress={() => setStep(step - 1)} style={styles.backBtnWrapper}>
+                <Ionicons name="arrow-back" size={24} color="#1E293B" />
+              </Pressable>
+            )}
+            <View style={styles.progressRow}>
+              {[1, 2, 3, 4].map((s) => (
+                <View 
+                  key={s} 
+                  style={[
+                    styles.progressSegment, 
+                    step >= s && styles.progressSegmentActive
+                  ]} 
+                />
+              ))}
+            </View>
           </View>
         )}
 
@@ -550,8 +560,86 @@ export default function OnboardingModal() {
           </View>
         )}
 
-        {/* STEP 4: Success Animation */}
+        {/* STEP 4: Community Guidelines */}
         {step === 4 && (
+          <View style={styles.step4Container}>
+            <Text style={styles.step4HeaderTitle}>
+              One last thing! Let's all do our part to keep KnowAround safe and fun.
+            </Text>
+
+            <View style={styles.guidelinesList}>
+              {/* Item 1 */}
+              <View style={styles.guidelineItem}>
+                <View style={styles.guidelineIconBox}>
+                  <Ionicons name="heart-outline" size={24} color="#1E293B" />
+                </View>
+                <View style={styles.guidelineTextContent}>
+                  <Text style={styles.guidelineTitle}>Be helpful</Text>
+                  <Text style={styles.guidelineBody}>
+                    Keep posts and conversations constructive, even when opinions differ.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Item 2 */}
+              <View style={styles.guidelineItem}>
+                <View style={styles.guidelineIconBox}>
+                  <Ionicons name="megaphone-outline" size={24} color="#1E293B" />
+                </View>
+                <View style={styles.guidelineTextContent}>
+                  <Text style={styles.guidelineTitle}>Lead with respect</Text>
+                  <Text style={styles.guidelineBody}>
+                    Remember that your KnowAround neighbors are a part of your offline community, too.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Item 3 */}
+              <View style={styles.guidelineItem}>
+                <View style={styles.guidelineIconBox}>
+                  <Ionicons name="ban-outline" size={24} color="#1E293B" />
+                </View>
+                <View style={styles.guidelineTextContent}>
+                  <Text style={styles.guidelineTitle}>Do no harm</Text>
+                  <Text style={styles.guidelineBody}>
+                    Don't engage in activity that could hurt a neighbor or put them in danger.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Item 4 */}
+              <View style={styles.guidelineItem}>
+                <View style={styles.guidelineIconBox}>
+                  <Ionicons name="happy-outline" size={24} color="#1E293B" />
+                </View>
+                <View style={styles.guidelineTextContent}>
+                  <Text style={styles.guidelineTitle}>All are welcome</Text>
+                  <Text style={styles.guidelineBody}>
+                    Racism, hateful language, and discrimination are expressly prohibited.
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={{ flex: 1 }} />
+
+            {/* Bottom Button */}
+            <Pressable 
+              style={styles.primaryBtn} 
+              onPress={handleStep4Finish} 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text style={styles.primaryBtnText}>I understand</Text>
+              )}
+            </Pressable>
+          </View>
+        )}
+
+        {/* STEP 5: Success Animation */}
+        {step === 5 && (
           <View style={styles.successBox}>
             <View style={styles.successIconCircle}>
               <Ionicons name="checkmark" size={54} color="#ffffff" />
@@ -579,11 +667,19 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     justifyContent: 'flex-start',
   },
+  topBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 20,
+  },
+  backBtnWrapper: {
+    padding: 2,
+  },
   progressRow: {
+    flex: 1,
     flexDirection: 'row',
     gap: 8,
-    marginTop: 4,
-    marginBottom: 28,
   },
   progressSegment: {
     flex: 1,
@@ -871,5 +967,45 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     fontWeight: '700',
     color: '#1E293B',
+  },
+  step4Container: {
+    flex: 1,
+    paddingTop: 8,
+  },
+  step4HeaderTitle: {
+    fontSize: 23,
+    fontWeight: '800',
+    color: '#1E293B',
+    lineHeight: 32,
+    marginBottom: 28,
+    letterSpacing: -0.4,
+  },
+  guidelinesList: {
+    gap: 22,
+  },
+  guidelineItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+  },
+  guidelineIconBox: {
+    width: 30,
+    alignItems: 'center',
+    paddingTop: 2,
+  },
+  guidelineTextContent: {
+    flex: 1,
+  },
+  guidelineTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  guidelineBody: {
+    fontSize: 13.5,
+    color: '#64748B',
+    lineHeight: 20,
+    fontWeight: '400',
   },
 });
