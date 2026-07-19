@@ -31,6 +31,7 @@ export default function SettingsScreen() {
     darkMode, 
     setDarkMode, 
     logout,
+    clearUserCredentials,
     userLocation
   } = useKnowAround();
 
@@ -102,6 +103,24 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await logout();
+            router.replace('/');
+          } 
+        }
+      ]
+    );
+  };
+
+  const handleClearCredentials = () => {
+    Alert.alert(
+      '🧹 Reset Credentials for Testing v0.0.1',
+      'This will wipe all stored credentials from the app so you can test clean signups and dynamic user flows. Proceed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Wipe & Reset', 
+          style: 'destructive',
+          onPress: async () => {
+            await clearUserCredentials();
             router.replace('/');
           } 
         }
@@ -349,7 +368,14 @@ export default function SettingsScreen() {
 
             <Pressable onPress={handleDeleteAccount} style={styles.dangerActionBtn}>
               <Ionicons name="trash-outline" size={20} color="#E53935" />
-              <Text style={styles.dangerActionText}>Delete Account Permanently</Text>
+              <Text style={styles.dangerActionText}>Delete Account Data</Text>
+            </Pressable>
+
+            <View style={styles.divider} />
+
+            <Pressable onPress={handleClearCredentials} style={styles.dangerActionBtn}>
+              <Ionicons name="refresh-circle-outline" size={20} color="#208AEF" />
+              <Text style={[styles.dangerActionText, { color: '#208AEF' }]}>Reset Credentials (Test v0.0.1)</Text>
             </Pressable>
           </View>
         </ScrollView>

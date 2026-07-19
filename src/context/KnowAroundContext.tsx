@@ -175,6 +175,7 @@ export interface KnowAroundContextProps {
   groupPosts: GroupPost[];
   joinGroup: (groupId: string) => Promise<void>;
   postToGroup: (groupId: string, content: string) => Promise<void>;
+  clearUserCredentials: () => Promise<void>;
 }
 
 const KnowAroundContext = createContext<KnowAroundContextProps | undefined>(undefined);
@@ -1124,6 +1125,30 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setProfessionals(SEED_PROFESSIONALS);
   };
 
+  const clearUserCredentials = async () => {
+    if (isFirebaseConfigured && auth) {
+      try {
+        await signOut(auth);
+      } catch (err) {
+        console.warn('Sign out error on clear credentials:', err);
+      }
+    }
+    setUser(null);
+    setUserAddress(null);
+    setOnboardingCompleted(false);
+    setJustRegistered(false);
+    setUserRole(null);
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem('native_user');
+        window.localStorage.removeItem('native_onboarding');
+        window.localStorage.removeItem('native_role');
+        window.localStorage.removeItem('native_address');
+        window.localStorage.removeItem('native_location');
+      }
+    } catch (e) {}
+  };
+
   const updateProfileDetails = (name: string, email?: string, phone?: string, avatar?: string) => {
     if (user) {
       const updatedUser = {
@@ -1532,7 +1557,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         groups,
         groupPosts,
         joinGroup,
-        postToGroup
+        postToGroup,
+        clearUserCredentials
       }}
     >
       {children}
