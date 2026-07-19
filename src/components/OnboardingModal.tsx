@@ -208,20 +208,6 @@ export default function OnboardingModal() {
               <Text style={styles.stepTitle}>Where do you live?</Text>
               <Text style={styles.stepSubtitle}>Set your primary address location to unlock nearby neighborhood news, alerts & groups.</Text>
 
-              {/* Action Buttons: Auto GPS vs Manual */}
-              <View style={styles.locationActionRow}>
-                <Pressable style={styles.gpsBtn} onPress={handleUseCurrentLocation} disabled={isLocating}>
-                  {isLocating ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <>
-                      <Ionicons name="navigate" size={16} color="#ffffff" />
-                      <Text style={styles.gpsBtnText}>Use Current Location</Text>
-                    </>
-                  )}
-                </Pressable>
-              </View>
-
               {autoFilledBadge && (
                 <View style={styles.autoFilledBanner}>
                   <Ionicons name="checkmark-circle" size={16} color="#1C873C" />
@@ -298,6 +284,20 @@ export default function OnboardingModal() {
                     style={styles.input}
                   />
                 </View>
+              </View>
+
+              {/* Ghost Button: Use Current Location shifted above Save Address */}
+              <View style={styles.locationActionRow}>
+                <Pressable style={styles.ghostGpsBtn} onPress={handleUseCurrentLocation} disabled={isLocating}>
+                  {isLocating ? (
+                    <ActivityIndicator size="small" color="#1C873C" />
+                  ) : (
+                    <>
+                      <Ionicons name="navigate-outline" size={16} color="#1C873C" />
+                      <Text style={styles.ghostGpsBtnText}>At home? Use your current location</Text>
+                    </>
+                  )}
+                </Pressable>
               </View>
 
               <Pressable style={styles.primaryBtn} onPress={handleStep2Submit}>
@@ -437,21 +437,24 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   locationActionRow: {
-    marginBottom: 16,
+    marginTop: 8,
+    marginBottom: 4,
   },
-  gpsBtn: {
+  ghostGpsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#1C873C',
-    borderRadius: 24,
-    height: 48,
+    backgroundColor: '#F0F9F4',
+    borderWidth: 1.5,
+    borderColor: '#1C873C',
+    borderRadius: 26,
+    height: 50,
   },
-  gpsBtnText: {
-    fontSize: 14,
+  ghostGpsBtnText: {
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#1C873C',
   },
   autoFilledBanner: {
     flexDirection: 'row',
