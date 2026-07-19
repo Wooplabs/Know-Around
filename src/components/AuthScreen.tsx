@@ -240,78 +240,78 @@ export default function AuthScreen() {
           <Animated.View style={[styles.formCard, { transform: [{ translateX: shakeAnim }] }]}>
             {authState === 'input' ? (
               /* PHASE 1: ENTER PHONE & OPTIONAL NAME */
-              <View>
-                {isSignUp && (
+              <View style={styles.formContent}>
+                <View style={styles.topFormGroup}>
+                  {isSignUp && (
+                    <View style={styles.inputGroup}>
+                      <View style={styles.labelRow}>
+                        <Text style={styles.label}>Name</Text>
+                        {!!nameError && <Text style={styles.errorTextInline}>{nameError}</Text>}
+                      </View>
+                      <TextInput
+                        value={name}
+                        onChangeText={(text) => {
+                          setName(text);
+                          if (nameError) setNameError('');
+                        }}
+                        onFocus={() => setFocusedField('name')}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="Example name"
+                        placeholderTextColor="#A0A4AC"
+                        style={[
+                          styles.input,
+                          focusedField === 'name' && styles.inputFocused,
+                          !!nameError && styles.inputError
+                        ]}
+                      />
+                    </View>
+                  )}
+
                   <View style={styles.inputGroup}>
                     <View style={styles.labelRow}>
-                      <Text style={styles.label}>Name</Text>
-                      {!!nameError && <Text style={styles.errorTextInline}>{nameError}</Text>}
+                      <Text style={styles.label}>Mobile Number</Text>
+                      {!!phoneError && <Text style={styles.errorTextInline}>{phoneError}</Text>}
                     </View>
-                    <TextInput
-                      value={name}
-                      onChangeText={(text) => {
-                        setName(text);
-                        if (nameError) setNameError('');
-                      }}
-                      onFocus={() => setFocusedField('name')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Example name"
-                      placeholderTextColor="#A0A4AC"
-                      style={[
-                        styles.input,
-                        focusedField === 'name' && styles.inputFocused,
-                        !!nameError && styles.inputError
-                      ]}
-                    />
+                    <View style={styles.phoneInputRow}>
+                      <Pressable style={styles.countryCodeSelector} onPress={() => setShowCountryPicker(true)}>
+                        <Text style={styles.flagText}>{selectedCountry.flag}</Text>
+                        <Text style={styles.codeText}>{selectedCountry.code}</Text>
+                        <Ionicons name="chevron-down" size={12} color="#60646C" />
+                      </Pressable>
+                      
+                      <TextInput
+                        value={phone}
+                        onChangeText={(text) => {
+                          const cleaned = text.replace(/[^0-9]/g, '');
+                          let formatted = cleaned;
+                          if (cleaned.length > 5) {
+                            formatted = cleaned.slice(0, 5) + ' ' + cleaned.slice(5, 10);
+                          }
+                          setPhone(formatted);
+                          if (phoneError) setPhoneError('');
+                        }}
+                        onFocus={() => setFocusedField('phone')}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="98765 43210"
+                        placeholderTextColor="#A0A4AC"
+                        keyboardType="phone-pad"
+                        maxLength={11}
+                        style={[
+                          styles.phoneInput,
+                          focusedField === 'phone' && styles.inputFocused,
+                          !!phoneError && styles.inputError
+                        ]}
+                      />
+                    </View>
                   </View>
-                )}
 
-                <View style={styles.inputGroup}>
-                  <View style={styles.labelRow}>
-                    <Text style={styles.label}>Mobile Number</Text>
-                    {!!phoneError && <Text style={styles.errorTextInline}>{phoneError}</Text>}
-                  </View>
-                  <View style={styles.phoneInputRow}>
-                    <Pressable style={styles.countryCodeSelector} onPress={() => setShowCountryPicker(true)}>
-                      <Text style={styles.flagText}>{selectedCountry.flag}</Text>
-                      <Text style={styles.codeText}>{selectedCountry.code}</Text>
-                      <Ionicons name="chevron-down" size={12} color="#60646C" />
-                    </Pressable>
-                    
-                    <TextInput
-                      value={phone}
-                      onChangeText={(text) => {
-                        const cleaned = text.replace(/[^0-9]/g, '');
-                        let formatted = cleaned;
-                        if (cleaned.length > 5) {
-                          formatted = cleaned.slice(0, 5) + ' ' + cleaned.slice(5, 10);
-                        }
-                        setPhone(formatted);
-                        if (phoneError) setPhoneError('');
-                      }}
-                      onFocus={() => setFocusedField('phone')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="98765 43210"
-                      placeholderTextColor="#A0A4AC"
-                      keyboardType="phone-pad"
-                      maxLength={11}
-                      style={[
-                        styles.phoneInput,
-                        focusedField === 'phone' && styles.inputFocused,
-                        !!phoneError && styles.inputError
-                      ]}
-                    />
-                  </View>
+                  {/* Main Action Button using Brand Green */}
+                  <Pressable style={styles.btn} onPress={handleSendOtpPress} disabled={isSubmitting}>
+                    <Text style={styles.btnText}>{isSignUp ? 'Sign up' : 'Log in'}</Text>
+                  </Pressable>
                 </View>
 
-                {/* Main Action Button using Brand Green */}
-                <Pressable style={styles.btn} onPress={handleSendOtpPress} disabled={isSubmitting}>
-                  <Text style={styles.btnText}>{isSignUp ? 'Sign up' : 'Log in'}</Text>
-                </Pressable>
-
-
-
-                {/* Switch Mode Link */}
+                {/* Switch Mode Link - Bottom Centered */}
                 <Pressable style={styles.toggleLink} onPress={toggleMode}>
                   <Text style={styles.toggleLinkNormalText}>
                     {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
@@ -323,63 +323,65 @@ export default function AuthScreen() {
               </View>
             ) : (
               /* PHASE 2: SMS OTP VERIFICATION */
-              <View>
-                <View style={styles.otpInputRow}>
-                  {otpInput.map((digit, idx) => (
-                    <TextInput
-                      key={idx}
-                      ref={(el) => (otpRefs.current[idx] = el)}
-                      value={digit}
-                      onChangeText={(text) => {
-                        const cleanedText = text.replace(/[^0-9]/g, '');
-                        const newOtp = [...otpInput];
-                        newOtp[idx] = cleanedText;
-                        setOtpInput(newOtp);
-
-                        // Focus next cell
-                        if (cleanedText && idx < 3) {
-                          otpRefs.current[idx + 1]?.focus();
-                        }
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.nativeEvent.key === 'Backspace' && !otpInput[idx] && idx > 0) {
+              <View style={styles.formContent}>
+                <View style={styles.topFormGroup}>
+                  <View style={styles.otpInputRow}>
+                    {otpInput.map((digit, idx) => (
+                      <TextInput
+                        key={idx}
+                        ref={(el) => (otpRefs.current[idx] = el)}
+                        value={digit}
+                        onChangeText={(text) => {
+                          const cleanedText = text.replace(/[^0-9]/g, '');
                           const newOtp = [...otpInput];
-                          newOtp[idx - 1] = '';
+                          newOtp[idx] = cleanedText;
                           setOtpInput(newOtp);
-                          otpRefs.current[idx - 1]?.focus();
-                        }
-                      }}
-                      maxLength={1}
-                      keyboardType="number-pad"
-                      textContentType="oneTimeCode"
-                      style={[
-                        styles.otpInputBox,
-                        !!otpError && styles.otpInputBoxError
-                      ]}
-                    />
-                  ))}
-                </View>
 
-                {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
+                          // Focus next cell
+                          if (cleanedText && idx < 3) {
+                            otpRefs.current[idx + 1]?.focus();
+                          }
+                        }}
+                        onKeyPress={(e) => {
+                          if (e.nativeEvent.key === 'Backspace' && !otpInput[idx] && idx > 0) {
+                            const newOtp = [...otpInput];
+                            newOtp[idx - 1] = '';
+                            setOtpInput(newOtp);
+                            otpRefs.current[idx - 1]?.focus();
+                          }
+                        }}
+                        maxLength={1}
+                        keyboardType="number-pad"
+                        textContentType="oneTimeCode"
+                        style={[
+                          styles.otpInputBox,
+                          !!otpError && styles.otpInputBoxError
+                        ]}
+                      />
+                    ))}
+                  </View>
 
-                {/* Verify OTP Button */}
-                <Pressable style={styles.btn} onPress={handleVerifyOtp} disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <Text style={styles.btnText}>Verify & Login</Text>
-                  )}
-                </Pressable>
+                  {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
 
-                <View style={styles.otpResendRow}>
-                  <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
-                  {resendTimer > 0 ? (
-                    <Text style={styles.otpTimerText}>Resend in {resendTimer}s</Text>
-                  ) : (
-                    <Pressable onPress={generateAndSendOtp}>
-                      <Text style={styles.otpResendLink}>Resend OTP</Text>
-                    </Pressable>
-                  )}
+                  {/* Verify OTP Button */}
+                  <Pressable style={styles.btn} onPress={handleVerifyOtp} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text style={styles.btnText}>Verify & Login</Text>
+                    )}
+                  </Pressable>
+
+                  <View style={styles.otpResendRow}>
+                    <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
+                    {resendTimer > 0 ? (
+                      <Text style={styles.otpTimerText}>Resend in {resendTimer}s</Text>
+                    ) : (
+                      <Pressable onPress={generateAndSendOtp}>
+                        <Text style={styles.otpResendLink}>Resend OTP</Text>
+                      </Pressable>
+                    )}
+                  </View>
                 </View>
 
                 <Pressable style={styles.changeNumberLink} onPress={() => setAuthState('input')}>
@@ -430,12 +432,11 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 54 : 32,
-    paddingBottom: 32,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 28,
     backgroundColor: '#121417',
     position: 'relative',
     overflow: 'hidden',
-    height: screenHeight * 0.35,
     justifyContent: 'flex-end',
   },
   glowEffect: {
@@ -480,7 +481,15 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
     paddingTop: 28,
-    paddingBottom: 36,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+  },
+  formContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+    minHeight: 280,
+  },
+  topFormGroup: {
+    width: '100%',
   },
   inputGroup: {
     marginBottom: 20,
@@ -571,10 +580,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
-  toggleLink: {
-    marginTop: 20,
+  dividerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginVertical: 24,
+  },
+  toggleLink: {
+    marginTop: 28,
+    marginBottom: Platform.OS === 'ios' ? 12 : 6,
+    alignItems: 'center',
   },
   toggleLinkNormalText: {
     fontSize: 14,
