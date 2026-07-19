@@ -14,13 +14,17 @@ import {
 } from 'react-native';
 import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function MandatoryAddressModal() {
   const { 
     user, 
     justRegistered, 
     setJustRegistered, 
-    setUserAddress 
+    setUserAddress,
+    setUserLocation,
+    setActiveLocation
   } = useKnowAround();
 
   const [visible, setVisible] = useState(false);
@@ -31,8 +35,10 @@ export default function MandatoryAddressModal() {
   // Pre-fill phone from signup registration
   const [phone, setPhone] = useState(user?.phone || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [autoFilledBadge, setAutoFilledBadge] = useState<string | null>(null);
 
-  const [focusedField, setFocusedField] = useState<'street' | 'city' | 'state' | 'pin' | null>(null);
+  const [focusedField, setFocusedField] = useState<'street' | 'city' | 'state' | 'pin' | null>('street');
 
   // Custom alert dialog state to replace native system Alert popups
   const [dialogConfig, setDialogConfig] = useState<{
@@ -58,12 +64,80 @@ export default function MandatoryAddressModal() {
     });
   };
 
-  // Trigger modal after exactly 1 second of landing on home screen after registration
+  // Function to request Location, Camera & Media Library permissions and auto-fill address via reverse geocoding
+  const requestPermissionsAndDetectLocation = async () => {
+    setIsLocating(true);
+    setAutoFilledBadge(null);
+
+    try {
+      // 1. Request Location Permission
+      const locationPerm = await Location.requestForegroundPermissionsAsync();
+
+      // 2. Request Camera Permission
+      try {
+        await ImagePicker.requestCameraPermissionsAsync();
+      } catch (e) {
+        // Safe catch for simulator / web fallback
+      }
+
+      // 3. Request Media Library Access
+      try {
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      } catch (e) {
+        // Safe catch for simulator / web fallback
+      }
+
+      if (locationPerm.status === 'granted') {
+        let pos: Location.LocationObject | null = null;
+        try {
+          pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        } catch (e) {
+          pos = await Location.getLastKnownPositionAsync();
+        }
+
+        if (pos) {
+          const { latitude, longitude, accuracy } = pos.coords;
+          setUserLocation({ latitude, longitude, accuracy: accuracy || null });
+
+          // Reverse geocode GPS position
+          const geocoded = await Location.reverseGeocodeAsync({ latitude, longitude });
+          if (geocoded && geocoded.length > 0) {
+            const addr = geocoded[0];
+            const detectedCity = addr.city || addr.subregion || addr.district || '';
+            const detectedState = addr.region || '';
+            const detectedPin = addr.postalCode || '';
+            const detectedStreet = [addr.streetNumber, addr.street || addr.name].filter(Boolean).join(' ');
+
+            if (detectedCity) setCity(detectedCity);
+            if (detectedState) setState(detectedState);
+            if (detectedPin) setPin(detectedPin);
+            if (detectedStreet && !street) setStreet(detectedStreet);
+
+            if (detectedCity) {
+              const formattedLoc = detectedState 
+                ? `${detectedCity}, ${detectedState.slice(0, 2).toUpperCase()}` 
+                : detectedCity;
+              setActiveLocation(formattedLoc);
+            }
+
+            setAutoFilledBadge('City, State & Pincode auto-detected!');
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Location detection notice:', err);
+    } finally {
+      setIsLocating(false);
+    }
+  };
+
+  // Trigger modal after signup & run permission + auto location sequence
   useEffect(() => {
     if (user && justRegistered) {
       const timer = setTimeout(() => {
         setVisible(true);
-      }, 1000);
+        requestPermissionsAndDetectLocation();
+      }, 600);
       return () => clearTimeout(timer);
     } else {
       setVisible(false);
@@ -140,6 +214,29 @@ export default function MandatoryAddressModal() {
                   contentContainerStyle={styles.scrollContent}
                   keyboardShouldPersistTaps="handled"
                 >
+                  {/* GPS Auto-Detect Status Banner */}
+                  <View style={styles.autoDetectBanner}>
+                    {isLocating ? (
+                      <View style={styles.autoDetectRow}>
+                        <ActivityIndicator size="small" color="#1C873C" />
+                        <Text style={styles.autoDetectText}>Detecting your City, State & Pincode via GPS...</Text>
+                      </View>
+                    ) : autoFilledBadge ? (
+                      <View style={styles.autoDetectSuccessRow}>
+                        <Ionicons name="checkmark-circle" size={16} color="#1C873C" />
+                        <Text style={styles.autoDetectSuccessText}>{autoFilledBadge}</Text>
+                        <Pressable style={styles.reDetectBtn} onPress={requestPermissionsAndDetectLocation}>
+                          <Ionicons name="refresh" size={12} color="#1C873C" />
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <Pressable style={styles.autoDetectBtn} onPress={requestPermissionsAndDetectLocation}>
+                        <Ionicons name="location" size={14} color="#1C873C" />
+                        <Text style={styles.autoDetectBtnText}>Auto-detect City, State & Pincode via GPS</Text>
+                      </Pressable>
+                    )}
+                  </View>
+
                   {/* Street Address */}
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Street Address / House No.</Text>
@@ -329,6 +426,54 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     textAlign: 'center',
     marginBottom: 16,
+  },
+  autoDetectBanner: {
+    marginBottom: 16,
+    borderRadius: 14,
+    backgroundColor: '#F2FBF4',
+    borderWidth: 1,
+    borderColor: '#C6EAD0',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  autoDetectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  autoDetectText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#1C873C',
+  },
+  autoDetectSuccessRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  autoDetectSuccessText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1C873C',
+    flex: 1,
+  },
+  reDetectBtn: {
+    padding: 4,
+    backgroundColor: '#E1F5E6',
+    borderRadius: 12,
+  },
+  autoDetectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  autoDetectBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1C873C',
   },
   inputGroup: {
     marginBottom: 14,
