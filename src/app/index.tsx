@@ -207,44 +207,37 @@ export default function HomeScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {/* Modern Critical Announcement Card */}
+        {/* Minimal Safety Alert Card */}
         {topDangerAlert && !ignoredAlerts.includes(topDangerAlert.id) && (
-          <View style={[styles.alertBanner, darkMode && styles.alertBannerDark]}>
-            <View style={styles.alertIndicatorBar} />
-            <View style={styles.alertContentContainer}>
-              <View style={styles.alertHeader}>
-                <View style={[styles.alertBadge, darkMode && styles.alertBadgeDark]}>
-                  <Ionicons name="shield-half" size={14} color={darkMode ? "#FF85A1" : "#E11D48"} />
-                  <Text style={[styles.alertBadgeText, darkMode && styles.alertBadgeTextDark]}>SAFETY ALERT</Text>
-                </View>
-                <Text style={[styles.alertTimeText, darkMode && styles.alertTimeTextDark]}>&middot; {topDangerAlert.time}</Text>
+          <View style={[styles.minimalAlertCard, darkMode && styles.minimalAlertCardDark]}>
+            <View style={styles.minimalAlertHeader}>
+              <View style={styles.minimalAlertTitleRow}>
+                <Ionicons name="alert-circle" size={18} color={darkMode ? "#FF85A1" : "#E11D48"} />
+                <Text style={[styles.minimalAlertTitle, darkMode && styles.minimalAlertTitleDark]} numberOfLines={1}>
+                  {topDangerAlert.title}
+                </Text>
+              </View>
 
-                <View style={{ flex: 1 }} />
-                
+              <View style={styles.minimalAlertRightRow}>
+                <Text style={[styles.minimalAlertTime, darkMode && styles.minimalAlertTimeDark]}>
+                  {topDangerAlert.time}
+                </Text>
                 <Pressable 
-                  style={[styles.alertIgnoreButton, darkMode && styles.alertIgnoreButtonDark]} 
+                  style={styles.minimalDismissBtn}
                   onPress={() => {
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setIgnoredAlerts([...ignoredAlerts, topDangerAlert.id]);
                   }}
+                  hitSlop={8}
                 >
-                  <Ionicons name="close-circle-outline" size={14} color={darkMode ? "#FF85A1" : "#BE123C"} />
-                  <Text style={[styles.alertIgnoreText, darkMode && styles.alertIgnoreTextDark]}>Dismiss</Text>
+                  <Ionicons name="close" size={18} color={darkMode ? "#A1A1AA" : "#71717A"} />
                 </Pressable>
               </View>
-
-              <View style={styles.alertBody}>
-                <Text style={[styles.alertTitleText, darkMode && styles.alertTitleTextDark]}>{topDangerAlert.title}</Text>
-                <Text style={[styles.alertBannerDesc, darkMode && styles.alertBannerDescDark]}>{topDangerAlert.description}</Text>
-              </View>
-
-              <View style={styles.alertFooterRow}>
-                <View style={[styles.alertFooterTag, darkMode && styles.alertFooterTagDark]}>
-                  <Ionicons name="checkmark-circle" size={13} color={darkMode ? "#FF85A1" : "#E11D48"} />
-                  <Text style={[styles.alertFooterTagText, darkMode && styles.alertFooterTagTextDark]}>Official Neighborhood Broadcast</Text>
-                </View>
-              </View>
             </View>
+
+            <Text style={[styles.minimalAlertDesc, darkMode && styles.minimalAlertDescDark]}>
+              {topDangerAlert.description}
+            </Text>
           </View>
         )}
 
@@ -374,6 +367,64 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     gap: 0,
     paddingBottom: 100, // Offset for floating tab bar capsule
+  },
+  minimalAlertCard: {
+    backgroundColor: '#FFF5F7',
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+  },
+  minimalAlertCardDark: {
+    backgroundColor: '#1E0A0D',
+    borderColor: '#4C0519',
+  },
+  minimalAlertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  minimalAlertTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    marginRight: 8,
+  },
+  minimalAlertTitle: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#9F1239',
+    flex: 1,
+  },
+  minimalAlertTitleDark: {
+    color: '#FFE4E6',
+  },
+  minimalAlertRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  minimalAlertTime: {
+    fontSize: 12,
+    color: '#BE123C',
+    fontWeight: '500',
+  },
+  minimalAlertTimeDark: {
+    color: '#FDA4AF',
+  },
+  minimalDismissBtn: {
+    padding: 2,
+  },
+  minimalAlertDesc: {
+    fontSize: 13,
+    color: '#4C0519',
+    lineHeight: 18,
+  },
+  minimalAlertDescDark: {
+    color: '#FECDD3',
   },
   alertBanner: {
     flexDirection: 'row',
