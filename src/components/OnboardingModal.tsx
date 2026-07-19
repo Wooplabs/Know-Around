@@ -10,7 +10,8 @@ import {
   Platform, 
   ActivityIndicator,
   Modal,
-  StatusBar
+  StatusBar,
+  Image
 } from 'react-native';
 import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -485,15 +486,48 @@ export default function OnboardingModal() {
           </ScrollView>
         )}
 
-        {/* STEP 3: Notifications */}
+        {/* STEP 3: Turn on Notifications */}
         {step === 3 && (
-          <View style={styles.stepBox}>
-            <View style={styles.headerIconWrapper}>
-              <Ionicons name="notifications" size={40} color="#1C873C" />
-            </View>
-            <Text style={styles.stepTitle}>Stay Informed</Text>
-            <Text style={styles.stepSubtitle}>Get instant popups for critical neighborhood safety alerts, water cuts, and community news.</Text>
+          <View style={styles.step3Container}>
+            <Text style={styles.step3HeaderTitle}>
+              Turn on notifications so you don't miss neighborhood updates!
+            </Text>
 
+            {/* Notification Preview Cards Stack */}
+            <View style={styles.notifCardsStack}>
+              {/* Card 1 */}
+              <View style={styles.notifCard}>
+                <Image 
+                  source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80' }} 
+                  style={styles.notifAvatar} 
+                />
+                <Text style={styles.notifText}>Hey! Are you still going to the community BBQ?</Text>
+                <View style={styles.replyBadge}>
+                  <Text style={styles.replyBadgeText}>Reply</Text>
+                </View>
+              </View>
+
+              {/* Card 2 */}
+              <View style={styles.notifCard}>
+                <View style={styles.alertIconAvatar}>
+                  <Ionicons name="warning" size={20} color="#334155" />
+                </View>
+                <Text style={styles.notifText}>There is an outage reported on 24th St. 306 customers are reported to be affected.</Text>
+              </View>
+
+              {/* Card 3 */}
+              <View style={styles.notifCard}>
+                <Image 
+                  source={{ uri: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80' }} 
+                  style={styles.notifAvatar} 
+                />
+                <Text style={styles.notifText}>I'm selling some furniture for spring cleaning. Any offers?</Text>
+              </View>
+            </View>
+
+            <View style={{ flex: 1 }} />
+
+            {/* Action Buttons */}
             <Pressable 
               style={styles.primaryBtn} 
               onPress={() => handleStep3Finish(true)} 
@@ -502,16 +536,16 @@ export default function OnboardingModal() {
               {isSubmitting ? (
                 <ActivityIndicator size="small" color="#ffffff" />
               ) : (
-                <Text style={styles.primaryBtnText}>Allow Notifications</Text>
+                <Text style={styles.primaryBtnText}>Enable notifications</Text>
               )}
             </Pressable>
 
             <Pressable 
-              style={styles.secondaryBtn} 
+              style={styles.textBtnLink} 
               onPress={() => handleStep3Finish(false)} 
               disabled={isSubmitting}
             >
-              <Text style={styles.secondaryBtnText}>Maybe Later</Text>
+              <Text style={styles.textBtnLinkText}>Not now</Text>
             </Pressable>
           </View>
         )}
@@ -764,5 +798,78 @@ const styles = StyleSheet.create({
   suggestionsLoadingText: {
     fontSize: 13,
     color: '#60646C',
+  },
+  step3Container: {
+    flex: 1,
+    paddingTop: 8,
+  },
+  step3HeaderTitle: {
+    fontSize: 23,
+    fontWeight: '800',
+    color: '#1E293B',
+    lineHeight: 32,
+    marginBottom: 24,
+    letterSpacing: -0.4,
+  },
+  notifCardsStack: {
+    gap: 12,
+  },
+  notifCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  notifAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+  },
+  alertIconAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#CBD5E1',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notifText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#334155',
+    lineHeight: 18,
+  },
+  replyBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+  },
+  replyBadgeText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  textBtnLink: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  textBtnLinkText: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#1E293B',
   },
 });
