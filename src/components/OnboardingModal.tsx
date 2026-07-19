@@ -9,7 +9,8 @@ import {
   Alert, 
   Platform, 
   ActivityIndicator,
-  Modal
+  Modal,
+  StatusBar
 } from 'react-native';
 import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -540,7 +541,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 54 : 28,
+    paddingTop: Platform.OS === 'ios' ? 58 : ((StatusBar.currentHeight || 36) + 16),
     paddingBottom: 24,
     justifyContent: 'flex-start',
   },
