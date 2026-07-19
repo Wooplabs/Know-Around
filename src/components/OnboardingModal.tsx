@@ -135,7 +135,7 @@ export default function OnboardingModal() {
         name: name.trim(),
         street: street.trim(),
         area: area.trim(),
-        locality: locality.trim(),
+        locality: '',
         city: city.trim(),
         state: state.trim(),
         country: country.trim(),
@@ -241,27 +241,15 @@ export default function OnboardingModal() {
                 />
               </View>
 
-              <View style={styles.row}>
-                <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.inputLabel}>Area / Neighborhood</Text>
-                  <TextInput
-                    value={area}
-                    onChangeText={setArea}
-                    placeholder="e.g. White Town"
-                    placeholderTextColor="#A0A4AC"
-                    style={styles.input}
-                  />
-                </View>
-                <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.inputLabel}>Locality</Text>
-                  <TextInput
-                    value={locality}
-                    onChangeText={setLocality}
-                    placeholder="e.g. Heritage Zone"
-                    placeholderTextColor="#A0A4AC"
-                    style={styles.input}
-                  />
-                </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Area / Neighborhood</Text>
+                <TextInput
+                  value={area}
+                  onChangeText={setArea}
+                  placeholder="e.g. White Town"
+                  placeholderTextColor="#A0A4AC"
+                  style={styles.input}
+                />
               </View>
 
               <View style={styles.row}>
