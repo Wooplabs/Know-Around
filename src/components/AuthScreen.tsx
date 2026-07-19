@@ -7,82 +7,45 @@ import {
   Pressable, 
   Platform, 
   ActivityIndicator, 
-  ScrollView, 
   SafeAreaView, 
   KeyboardAvoidingView,
   Animated,
-  LayoutAnimation,
-  UIManager,
-  Alert,
   StatusBar,
-  Dimensions
+  Dimensions,
+  ScrollView
 } from 'react-native';
 import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
-import BottomSheet from './BottomSheet';
 
-const { height: screenHeight } = Dimensions.get('window');
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-// Curated list of selectable countries with flags and codes
-const COUNTRIES = [
-  { name: 'India', code: '+91', flag: '🇮🇳' },
-  { name: 'United States', code: '+1', flag: '🇺🇸' },
-  { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
-  { name: 'United Arab Emirates', code: '+971', flag: '🇦🇪' },
-  { name: 'Australia', code: '+61', flag: '🇦🇺' },
-  { name: 'Canada', code: '+1', flag: '🇨🇦' },
-  { name: 'Singapore', code: '+65', flag: '🇸🇬' },
-  { name: 'Germany', code: '+49', flag: '🇩🇪' },
-  { name: 'France', code: '+33', flag: '🇫🇷' },
-  { name: 'Japan', code: '+81', flag: '🇯🇵' },
-];
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function AuthScreen() {
-  const { login, register, googleLogin } = useKnowAround();
+  const { authenticatePhone } = useKnowAround();
   
-  // Auth flow states
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [authState, setAuthState] = useState<'input' | 'otp'>('input');
-  
-  // Input fields
-  const [name, setName] = useState('');
+  // Auth steps: 'phone' -> 'otp'
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
-  
-  // Submission & Loader states
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Focus & Validation states
-  const [focusedField, setFocusedField] = useState<'name' | 'phone' | null>(null);
-  const [nameError, setNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
-
-  // OTP states
-  const [otpCode, setOtpCode] = useState('');
-  const [otpInput, setOtpInput] = useState(['', '', '', '']);
-  const [otpError, setOtpError] = useState('');
-  const [resendTimer, setResendTimer] = useState(30);
   
-  const otpRefs = useRef<Array<any>>([]);
+  // OTP input states
+  const [otpInput, setOtpInput] = useState(['', '', '', '', '', '']);
+  const [otpError, setOtpError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resendTimer, setResendTimer] = useState(30);
+
+  const otpRefs = useRef<Array<TextInput | null>>([]);
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
-  // Resend OTP timer countdown
+  // Resend OTP countdown
   useEffect(() => {
     let interval: any;
-    if (authState === 'otp' && resendTimer > 0) {
+    if (step === 'otp' && resendTimer > 0) {
       interval = setInterval(() => {
         setResendTimer((prev) => prev - 1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [authState, resendTimer]);
+  }, [step, resendTimer]);
 
   const triggerShake = () => {
     Animated.sequence([
@@ -90,658 +53,431 @@ export default function AuthScreen() {
       Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 5, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -5, duration: 50, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
     ]).start();
   };
 
-  const toggleMode = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsSignUp(!isSignUp);
-    setNameError('');
-    setPhoneError('');
-  };
-
-  const validateInput = (): boolean => {
-    let isValid = true;
-    setNameError('');
-    setPhoneError('');
-
-    if (isSignUp && !name.trim()) {
-      setNameError('Full Name is required.');
-      isValid = false;
-    }
-
-    const rawPhone = phone.replace(/[^0-9]/g, '');
-    if (!phone.trim()) {
-      setPhoneError('Mobile number is required.');
-      isValid = false;
-    } else if (rawPhone.length !== 10) {
-      setPhoneError('Please enter a valid 10-digit mobile number.');
-      isValid = false;
-    }
-
-    if (!isValid) {
-      triggerShake();
-    }
-    return isValid;
-  };
-
-  const generateAndSendOtp = () => {
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
-    setOtpCode(code);
-    setOtpInput(['', '', '', '']);
-    setOtpError('');
-    setResendTimer(30);
-    setAuthState('otp');
-
-    // Simulate sending real OTP through Alert modal
-    Alert.alert(
-      '💬 SMS OTP Sent',
-      `We sent a 4-digit verification code to ${selectedCountry.code} ${phone}.\n\nFor testing, your OTP is: ${code}`,
-      [{ text: 'OK' }]
-    );
-  };
-
-  const handleSendOtpPress = () => {
-    if (!validateInput()) return;
-    generateAndSendOtp();
-  };
-
-  const handleVerifyOtp = async () => {
-    const enteredCode = otpInput.join('');
-    if (enteredCode.length < 4) {
-      setOtpError('Please enter the full 4-digit code');
+  const handleSendOTP = () => {
+    const rawDigits = phone.replace(/[^0-9]/g, '');
+    if (rawDigits.length < 10) {
+      setPhoneError('Please enter a valid 10-digit mobile number');
       triggerShake();
       return;
     }
+    setPhoneError('');
+    setStep('otp');
+    setResendTimer(30);
+    setOtpInput(['', '', '', '', '', '']);
+    setOtpError('');
+    // Auto-focus first OTP input after step transition
+    setTimeout(() => {
+      if (otpRefs.current[0]) {
+        otpRefs.current[0]?.focus();
+      }
+    }, 150);
+  };
 
-    if (enteredCode !== otpCode) {
-      setOtpError('Invalid verification code. Please try again.');
+  const handleOtpChange = (text: string, index: number) => {
+    const sanitized = text.replace(/[^0-9]/g, '');
+    const newOtp = [...otpInput];
+
+    if (sanitized.length > 1) {
+      // Handle pasted code (e.g. 6 digits)
+      const digits = sanitized.slice(0, 6).split('');
+      for (let i = 0; i < 6; i++) {
+        newOtp[i] = digits[i] || '';
+      }
+      setOtpInput(newOtp);
+      if (digits.length === 6) {
+        verifyOtpCode(newOtp.join(''));
+      }
+      return;
+    }
+
+    newOtp[index] = sanitized;
+    setOtpInput(newOtp);
+
+    if (sanitized && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+
+    // Auto verify if all 6 digits entered
+    if (newOtp.join('').length === 6) {
+      verifyOtpCode(newOtp.join(''));
+    }
+  };
+
+  const handleKeyPress = (e: any, index: number) => {
+    if (e.nativeEvent.key === 'Backspace' && !otpInput[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const verifyOtpCode = async (codeStr?: string) => {
+    const fullCode = codeStr || otpInput.join('');
+    if (fullCode.length < 4) {
+      setOtpError('Please enter the verification code');
       triggerShake();
       return;
     }
 
     setIsSubmitting(true);
-    const rawPhone = phone.replace(/[^0-9]/g, '');
-    const fullPhoneNumber = `${selectedCountry.code}${rawPhone}`;
+    setOtpError('');
+    const fullPhone = `+91${phone.replace(/[^0-9]/g, '')}`;
 
     try {
-      if (isSignUp) {
-        await register(name.trim(), fullPhoneNumber);
-      } else {
-        await login(fullPhoneNumber);
-      }
+      await authenticatePhone(fullPhone);
     } catch (err: any) {
       triggerShake();
-      setOtpError(err.message || 'Authentication failed. Please check connection.');
+      setOtpError(err.message || 'OTP verification failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    setLoadingGoogle(true);
-    setTimeout(() => {
-      googleLogin();
-      setLoadingGoogle(false);
-    }, 1200);
-  };
-
-  // Back button functionality
-  const handleBackPress = () => {
-    if (authState === 'otp') {
-      setAuthState('input');
-    } else {
-      toggleMode();
-    }
-  };
-
-  // Header Title & Description text resolving
-  const getHeaderTitle = () => {
-    if (authState === 'otp') return 'Verify Mobile';
-    return isSignUp ? 'Create an account' : 'Welcome back';
-  };
-
-  const getHeaderSubtitle = () => {
-    if (authState === 'otp') {
-      return `Enter the 4-digit code sent to ${selectedCountry.code} ${phone}.`;
-    }
-    return isSignUp 
-      ? 'Enter your name and mobile number to sign up.' 
-      : 'Enter your mobile number to log in.';
-  };
-
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+        style={styles.keyboardView}
       >
         <ScrollView 
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent} 
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          bounces={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* TOP HEADER SECTION (Premium Cosmic Black Theme with Green Glow) */}
-          <View style={styles.headerSection}>
-            <View style={styles.glowEffect} />
-            
-            {/* Back Button (Only on OTP verification screen) */}
-            {authState === 'otp' && (
-              <Pressable style={styles.backBtn} onPress={handleBackPress}>
-                <Ionicons name="chevron-back" size={20} color="#ffffff" />
-              </Pressable>
-            )}
-
-            {/* Title & Tagline inside Dark Section */}
-            <Text style={styles.title}>{getHeaderTitle()}</Text>
-            <Text style={styles.subtitle}>{getHeaderSubtitle()}</Text>
+          {/* Top Brand Hero */}
+          <View style={styles.heroSection}>
+            <View style={styles.logoBadge}>
+              <Ionicons name="location" size={32} color="#208AEF" />
+            </View>
+            <Text style={styles.brandTitle}>Know Around</Text>
+            <Text style={styles.brandSubtitle}>
+              Connect with your neighborhood and discover everything local—from trusted professionals and businesses to news, alerts, events, and community updates.
+            </Text>
           </View>
 
-          {/* BOTTOM WHITE CARD (Inputs, Buttons and OAuth) */}
-          <Animated.View style={[styles.formCard, { transform: [{ translateX: shakeAnim }] }]}>
-            {authState === 'input' ? (
-              /* PHASE 1: ENTER PHONE & OPTIONAL NAME */
+          {/* Animated Card Body */}
+          <Animated.View style={[styles.card, { transform: [{ translateX: shakeAnim }] }]}>
+            {step === 'phone' ? (
               <View>
-                {isSignUp && (
-                  <View style={styles.inputGroup}>
-                    <View style={styles.labelRow}>
-                      <Text style={styles.label}>Name</Text>
-                      {!!nameError && <Text style={styles.errorTextInline}>{nameError}</Text>}
-                    </View>
-                    <TextInput
-                      value={name}
-                      onChangeText={(text) => {
-                        setName(text);
-                        if (nameError) setNameError('');
-                      }}
-                      onFocus={() => setFocusedField('name')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Example name"
-                      placeholderTextColor="#A0A4AC"
-                      style={[
-                        styles.input,
-                        focusedField === 'name' && styles.inputFocused,
-                        !!nameError && styles.inputError
-                      ]}
-                    />
-                  </View>
-                )}
+                <Text style={styles.cardHeaderTitle}>Enter Mobile Number</Text>
+                <Text style={styles.cardHeaderDesc}>
+                  We'll send an OTP to verify your account and keep your neighborhood safe.
+                </Text>
 
-                <View style={styles.inputGroup}>
-                  <View style={styles.labelRow}>
-                    <Text style={styles.label}>Mobile Number</Text>
-                    {!!phoneError && <Text style={styles.errorTextInline}>{phoneError}</Text>}
+                <View style={[styles.phoneInputRow, phoneError ? styles.inputErrorBorder : null]}>
+                  <View style={styles.countryPrefix}>
+                    <Text style={styles.flagIcon}>🇮🇳</Text>
+                    <Text style={styles.countryCode}>+91</Text>
                   </View>
-                  <View style={styles.phoneInputRow}>
-                    <Pressable style={styles.countryCodeSelector} onPress={() => setShowCountryPicker(true)}>
-                      <Text style={styles.flagText}>{selectedCountry.flag}</Text>
-                      <Text style={styles.codeText}>{selectedCountry.code}</Text>
-                      <Ionicons name="chevron-down" size={12} color="#60646C" />
-                    </Pressable>
-                    
-                    <TextInput
-                      value={phone}
-                      onChangeText={(text) => {
-                        const cleaned = text.replace(/[^0-9]/g, '');
-                        let formatted = cleaned;
-                        if (cleaned.length > 5) {
-                          formatted = cleaned.slice(0, 5) + ' ' + cleaned.slice(5, 10);
-                        }
-                        setPhone(formatted);
-                        if (phoneError) setPhoneError('');
-                      }}
-                      onFocus={() => setFocusedField('phone')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="98765 43210"
-                      placeholderTextColor="#A0A4AC"
-                      keyboardType="phone-pad"
-                      maxLength={11}
-                      style={[
-                        styles.phoneInput,
-                        focusedField === 'phone' && styles.inputFocused,
-                        !!phoneError && styles.inputError
-                      ]}
-                    />
-                  </View>
+                  <View style={styles.prefixDivider} />
+                  <TextInput
+                    style={styles.phoneInput}
+                    placeholder="Enter 10-digit number"
+                    placeholderTextColor="#A0A4AC"
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    value={phone}
+                    onChangeText={(val) => {
+                      setPhone(val.replace(/[^0-9]/g, ''));
+                      if (phoneError) setPhoneError('');
+                    }}
+                    onSubmitEditing={handleSendOTP}
+                    autoFocus={true}
+                  />
                 </View>
+                {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
 
-                {/* Main Action Button using Brand Green */}
-                <Pressable style={styles.btn} onPress={handleSendOtpPress} disabled={isSubmitting}>
-                  <Text style={styles.btnText}>{isSignUp ? 'Sign up' : 'Log in'}</Text>
+                <Pressable 
+                  style={styles.primaryBtn}
+                  onPress={handleSendOTP}
+                >
+                  <Text style={styles.primaryBtnText}>Get OTP</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#ffffff" />
                 </Pressable>
 
-                <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>or</Text>
-                  <View style={styles.dividerLine} />
+                <Text style={styles.termsText}>
+                  By continuing, you agree to our Terms of Service & Privacy Policy.
+                </Text>
+              </View>
+            ) : (
+              <View>
+                <View style={styles.otpHeaderRow}>
+                  <Pressable 
+                    onPress={() => setStep('phone')} 
+                    style={styles.backBtn}
+                  >
+                    <Ionicons name="arrow-back" size={20} color="#1A1C1E" />
+                  </Pressable>
+                  <Text style={styles.cardHeaderTitle}>Verify Mobile</Text>
                 </View>
 
-                {/* Continue with Google */}
-                <Pressable style={styles.socialBtn} onPress={handleGoogleLogin} disabled={loadingGoogle}>
-                  {loadingGoogle ? (
-                    <ActivityIndicator size="small" color="#60646C" />
+                <Text style={styles.cardHeaderDesc}>
+                  Enter the 6-digit OTP sent to <Text style={styles.highlightPhone}>+91 {phone}</Text>
+                </Text>
+
+                {/* 6 Digit OTP Inputs */}
+                <View style={styles.otpContainer}>
+                  {otpInput.map((digit, index) => (
+                    <TextInput
+                      key={index}
+                      ref={(el) => { otpRefs.current[index] = el; }}
+                      style={[
+                        styles.otpBox,
+                        digit ? styles.otpBoxFilled : null,
+                        otpError ? styles.inputErrorBorder : null
+                      ]}
+                      keyboardType="number-pad"
+                      maxLength={index === 0 ? 6 : 1}
+                      value={digit}
+                      onChangeText={(text) => handleOtpChange(text, index)}
+                      onKeyPress={(e) => handleKeyPress(e, index)}
+                      selectTextOnFocus={true}
+                    />
+                  ))}
+                </View>
+                {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
+
+                <Pressable 
+                  style={[styles.primaryBtn, isSubmitting && styles.btnDisabled]}
+                  onPress={() => verifyOtpCode()}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
                   ) : (
                     <>
-                      <Ionicons name="logo-google" size={18} color="#EA4335" style={styles.socialIcon} />
-                      <Text style={styles.socialBtnText}>Continue with Google</Text>
+                      <Text style={styles.primaryBtnText}>Verify & Continue</Text>
+                      <Ionicons name="checkmark-circle" size={18} color="#ffffff" />
                     </>
                   )}
                 </Pressable>
 
-                {/* Continue with Apple */}
-                <Pressable style={styles.socialBtn} disabled={isSubmitting}>
-                  <Ionicons name="logo-apple" size={18} color="#1A1C1E" style={styles.socialIcon} />
-                  <Text style={styles.socialBtnText}>Continue with Apple</Text>
-                </Pressable>
-
-                {/* Switch Mode Link */}
-                <Pressable style={styles.toggleLink} onPress={toggleMode}>
-                  <Text style={styles.toggleLinkNormalText}>
-                    {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-                    <Text style={styles.toggleLinkActiveText}>
-                      {isSignUp ? 'Sign in' : 'Sign up'}
-                    </Text>
-                  </Text>
-                </Pressable>
-              </View>
-            ) : (
-              /* PHASE 2: SMS OTP VERIFICATION */
-              <View>
-                <View style={styles.otpInputRow}>
-                  {otpInput.map((digit, idx) => (
-                    <TextInput
-                      key={idx}
-                      ref={(el) => (otpRefs.current[idx] = el)}
-                      value={digit}
-                      onChangeText={(text) => {
-                        const cleanedText = text.replace(/[^0-9]/g, '');
-                        const newOtp = [...otpInput];
-                        newOtp[idx] = cleanedText;
-                        setOtpInput(newOtp);
-
-                        // Focus next cell
-                        if (cleanedText && idx < 3) {
-                          otpRefs.current[idx + 1]?.focus();
-                        }
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.nativeEvent.key === 'Backspace' && !otpInput[idx] && idx > 0) {
-                          const newOtp = [...otpInput];
-                          newOtp[idx - 1] = '';
-                          setOtpInput(newOtp);
-                          otpRefs.current[idx - 1]?.focus();
-                        }
-                      }}
-                      maxLength={1}
-                      keyboardType="number-pad"
-                      textContentType="oneTimeCode"
-                      style={[
-                        styles.otpInputBox,
-                        !!otpError && styles.otpInputBoxError
-                      ]}
-                    />
-                  ))}
-                </View>
-
-                {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
-
-                {/* Verify OTP Button */}
-                <Pressable style={styles.btn} onPress={handleVerifyOtp} disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <Text style={styles.btnText}>Verify & Login</Text>
-                  )}
-                </Pressable>
-
-                <View style={styles.otpResendRow}>
-                  <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
+                {/* Resend Timer */}
+                <View style={styles.resendRow}>
                   {resendTimer > 0 ? (
-                    <Text style={styles.otpTimerText}>Resend in {resendTimer}s</Text>
+                    <Text style={styles.resendTimerText}>
+                      Resend OTP in <Text style={styles.timerBold}>{resendTimer}s</Text>
+                    </Text>
                   ) : (
-                    <Pressable onPress={generateAndSendOtp}>
-                      <Text style={styles.otpResendLink}>Resend OTP</Text>
+                    <Pressable onPress={() => handleSendOTP()}>
+                      <Text style={styles.resendActiveText}>Resend OTP Code</Text>
                     </Pressable>
                   )}
                 </View>
-
-                <Pressable style={styles.changeNumberLink} onPress={() => setAuthState('input')}>
-                  <Text style={styles.changeNumberLinkText}>Change Mobile Number</Text>
-                </Pressable>
               </View>
             )}
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Selectable Country Picker Bottom Sheet */}
-      <BottomSheet visible={showCountryPicker} onClose={() => setShowCountryPicker(false)}>
-        <View style={styles.pickerContent}>
-          <Text style={styles.pickerTitle}>Select Country Code</Text>
-          <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
-            {COUNTRIES.map((c) => (
-              <Pressable 
-                key={c.code + c.name} 
-                style={styles.pickerItem} 
-                onPress={() => {
-                  setSelectedCountry(c);
-                  setShowCountryPicker(false);
-                }}
-              >
-                <Text style={styles.pickerFlag}>{c.flag}</Text>
-                <Text style={styles.pickerName}>{c.name}</Text>
-                <Text style={styles.pickerCode}>{c.code}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      </BottomSheet>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121417',
+    backgroundColor: '#F8FAFC',
   },
-  scroll: {
+  keyboardView: {
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
-  },
-  headerSection: {
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 54 : 32,
-    paddingBottom: 32,
-    backgroundColor: '#121417',
-    position: 'relative',
-    overflow: 'hidden',
-    height: screenHeight * 0.35,
-    justifyContent: 'flex-end',
-  },
-  glowEffect: {
-    position: 'absolute',
-    top: -120,
-    right: -120,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: '#1C873C',
-    opacity: 0.15,
-  },
-  backBtn: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 24,
-    left: 24,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? 40 : 20,
+    paddingBottom: 30,
     justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
+    minHeight: '100%',
   },
-  title: {
-    fontSize: 28,
+  heroSection: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  logoBadge: {
+    width: 68,
+    height: 68,
+    borderRadius: 24,
+    backgroundColor: '#E6F4FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    shadowColor: '#208AEF',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  brandTitle: {
+    fontSize: 26,
     fontWeight: '800',
-    color: '#ffffff',
-    marginBottom: 8,
+    color: '#0F172A',
     letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 14.5,
-    color: 'rgba(255, 255, 255, 0.6)',
-    lineHeight: 20,
-    paddingRight: 32,
-  },
-  formCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 40,
-    minHeight: screenHeight * 0.65 + 30,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 8,
   },
-  label: {
+  brandSubtitle: {
     fontSize: 13.5,
-    fontWeight: '700',
-    color: '#1A1C1E',
+    fontWeight: '500',
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 10,
   },
-  errorTextInline: {
-    color: '#D32F2F',
-    fontSize: 12,
-    fontWeight: '700',
-    marginLeft: 'auto',
-  },
-  input: {
+  card: {
     backgroundColor: '#ffffff',
-    borderWidth: 1.5,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 4,
+    borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 52,
-    fontSize: 14.5,
-    color: '#1A1C1E',
   },
-  inputFocused: {
-    borderColor: '#1C873C',
-    backgroundColor: '#ffffff',
+  cardHeaderTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 6,
   },
-  inputError: {
-    borderColor: '#D32F2F',
-    backgroundColor: '#FFF5F5',
+  cardHeaderDesc: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748B',
+    lineHeight: 18,
+    marginBottom: 20,
   },
   phoneInputRow: {
     flexDirection: 'row',
-    gap: 10,
-    width: '100%',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderRadius: 16,
+    height: 56,
+    paddingHorizontal: 14,
+    marginBottom: 6,
   },
-  countryCodeSelector: {
+  countryPrefix: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    gap: 4,
-    height: 52,
+    gap: 6,
   },
-  flagText: {
-    fontSize: 20,
+  flagIcon: {
+    fontSize: 18,
   },
-  codeText: {
-    fontSize: 14.5,
+  countryCode: {
+    fontSize: 16,
     fontWeight: '700',
-    color: '#1A1C1E',
+    color: '#0F172A',
+  },
+  prefixDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#CBD5E1',
+    marginHorizontal: 12,
   },
   phoneInput: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 52,
-    fontSize: 14.5,
-    color: '#1A1C1E',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0F172A',
   },
-  btn: {
-    backgroundColor: '#1C873C', // Brand Green
-    borderRadius: 27,
-    paddingVertical: 15,
+  inputErrorBorder: {
+    borderColor: '#EF4444',
+  },
+  errorText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#EF4444',
+    marginBottom: 12,
+    marginTop: 2,
+  },
+  primaryBtn: {
+    backgroundColor: '#208AEF',
+    height: 54,
+    borderRadius: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    shadowColor: '#1C873C',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 14,
+    shadowColor: '#208AEF',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 3,
   },
-  btnText: {
+  btnDisabled: {
+    opacity: 0.7,
+  },
+  primaryBtnText: {
+    fontSize: 15.5,
+    fontWeight: '700',
     color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
   },
-  dividerRow: {
+  termsText: {
+    fontSize: 11.5,
+    fontWeight: '500',
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 18,
+    lineHeight: 16,
+  },
+  otpHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    gap: 12,
+    marginBottom: 4,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E2E8F0',
+  backBtn: {
+    padding: 6,
+    marginLeft: -6,
   },
-  dividerText: {
-    fontSize: 12.5,
-    color: '#A0A4AC',
-    marginHorizontal: 16,
-    fontWeight: '600',
-  },
-  socialBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F1F5F9', // Light grey pill as in mockup
-    borderRadius: 27,
-    paddingVertical: 15,
-    gap: 10,
-    marginBottom: 12,
-  },
-  socialIcon: {
-    marginRight: 2,
-  },
-  socialBtnText: {
-    fontSize: 14,
+  highlightPhone: {
     fontWeight: '700',
-    color: '#1A1C1E',
+    color: '#208AEF',
   },
-  toggleLink: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  toggleLinkNormalText: {
-    fontSize: 14,
-    color: '#60646C',
-    fontWeight: '600',
-  },
-  toggleLinkActiveText: {
-    color: '#1C873C',
-    fontWeight: '700',
-  },
-  otpInputRow: {
+  otpContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     gap: 8,
-    marginVertical: 24,
+    marginVertical: 12,
   },
-  otpInputBox: {
-    width: 52,
-    height: 58,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+  otpBox: {
+    width: 44,
+    height: 52,
     borderRadius: 12,
-    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#F8FAFC',
     textAlign: 'center',
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1A1C1E',
-  },
-  otpInputBoxError: {
-    borderColor: '#D32F2F',
-    backgroundColor: '#FFF5F5',
-  },
-  otpErrorText: {
-    color: '#D32F2F',
-    fontSize: 12.5,
-    fontWeight: '600',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  otpResendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  otpResendLabel: {
-    fontSize: 13.5,
-    color: '#60646C',
-  },
-  otpTimerText: {
-    fontSize: 13.5,
-    color: '#A0A4AC',
-    fontWeight: '600',
-  },
-  otpResendLink: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#1C873C',
-  },
-  changeNumberLink: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  changeNumberLinkText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#60646C',
-    textDecorationLine: 'underline',
-  },
-  pickerContent: {
-    paddingVertical: 10,
-    width: '100%',
-  },
-  pickerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#1A1C1E',
-    marginBottom: 16,
-    textAlign: 'center',
+    color: '#0F172A',
   },
-  pickerList: {
-    maxHeight: 280,
+  otpBoxFilled: {
+    borderColor: '#208AEF',
+    backgroundColor: '#F0F7FF',
   },
-  pickerItem: {
-    flexDirection: 'row',
+  resendRow: {
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    marginTop: 18,
   },
-  pickerFlag: {
-    fontSize: 24,
-    marginRight: 14,
+  resendTimerText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
   },
-  pickerName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1C1E',
-    flex: 1,
-  },
-  pickerCode: {
-    fontSize: 15,
+  timerBold: {
     fontWeight: '700',
-    color: '#1C873C',
+    color: '#0F172A',
+  },
+  resendActiveText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#208AEF',
   },
 });

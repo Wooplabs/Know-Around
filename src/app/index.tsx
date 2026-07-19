@@ -11,9 +11,35 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 import NewsTimeline from '@/components/NewsTimeline';
+import AuthScreen from '@/components/AuthScreen';
+import OnboardingFlow from '@/components/OnboardingFlow';
 
 export default function HomeScreen() {
-  const { currentUser, activeLocation, feeds, alerts, logout, darkMode, setDarkMode, user, userAddress } = useKnowAround();
+  const { 
+    currentUser, 
+    activeLocation, 
+    feeds, 
+    alerts, 
+    logout, 
+    darkMode, 
+    setDarkMode, 
+    user, 
+    userAddress,
+    userProfile,
+    authStatus,
+    onboardingCompleted
+  } = useKnowAround();
+
+  // ROUTING LOGIC:
+  // 1. Not Authenticated -> Show Unified AuthScreen (Phone + OTP)
+  if (authStatus === 'unauthenticated' || !userProfile) {
+    return <AuthScreen />;
+  }
+
+  // 2. Authenticated but onboarding / profile incomplete -> Show Step-by-Step Onboarding
+  if (authStatus === 'onboarding' || !userProfile.profileCompleted || !onboardingCompleted) {
+    return <OnboardingFlow />;
+  }
   
   // States
   const [selectedFilter, setSelectedFilter] = useState<'All' | 'News' | 'Alert' | 'Event' | 'Community Update'>('All');
