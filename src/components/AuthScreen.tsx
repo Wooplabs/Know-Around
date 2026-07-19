@@ -253,9 +253,18 @@ export default function AuthScreen() {
                 </View>
 
                 {/* Main Action Button using Brand Green */}
-                <Pressable style={styles.btn} onPress={handleSendOtpPress} disabled={isSubmitting}>
-                  <Text style={styles.btnText}>Continue</Text>
-                </Pressable>
+                {(() => {
+                  const isPhoneValid = phone.replace(/[^0-9]/g, '').length === 10;
+                  return (
+                    <Pressable 
+                      style={[styles.btn, (!isPhoneValid || isSubmitting) && styles.btnDisabled]} 
+                      onPress={handleSendOtpPress} 
+                      disabled={!isPhoneValid || isSubmitting}
+                    >
+                      <Text style={[styles.btnText, (!isPhoneValid || isSubmitting) && styles.btnTextDisabled]}>Continue</Text>
+                    </Pressable>
+                  );
+                })()}
               </View>
             ) : (
               /* PHASE 2: SMS OTP VERIFICATION */
@@ -299,13 +308,22 @@ export default function AuthScreen() {
                 {!!otpError && <Text style={styles.otpErrorText}>{otpError}</Text>}
 
                 {/* Verify OTP Button */}
-                <Pressable style={styles.btn} onPress={handleVerifyOtp} disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <Text style={styles.btnText}>Verify & Continue</Text>
-                  )}
-                </Pressable>
+                {(() => {
+                  const isOtpValid = otpInput.join('').length === 4;
+                  return (
+                    <Pressable 
+                      style={[styles.btn, (!isOtpValid || isSubmitting) && styles.btnDisabled]} 
+                      onPress={handleVerifyOtp} 
+                      disabled={!isOtpValid || isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      ) : (
+                        <Text style={[styles.btnText, (!isOtpValid || isSubmitting) && styles.btnTextDisabled]}>Verify & Continue</Text>
+                      )}
+                    </Pressable>
+                  );
+                })()}
 
                 <View style={styles.otpResendRow}>
                   <Text style={styles.otpResendLabel}>Didn't receive code? </Text>
@@ -504,10 +522,18 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  btnDisabled: {
+    backgroundColor: '#E2E8F0',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   btnText: {
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '700',
+  },
+  btnTextDisabled: {
+    color: '#94A3B8',
   },
   dividerRow: {
     flexDirection: 'row',

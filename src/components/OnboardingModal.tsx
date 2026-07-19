@@ -192,9 +192,18 @@ export default function OnboardingModal() {
               />
             </View>
 
-            <Pressable style={styles.primaryBtn} onPress={handleStep1Submit}>
-              <Text style={styles.primaryBtnText}>Continue</Text>
-            </Pressable>
+            {(() => {
+              const isStep1Valid = name.trim().length > 0;
+              return (
+                <Pressable 
+                  style={[styles.primaryBtn, !isStep1Valid && styles.primaryBtnDisabled]} 
+                  onPress={handleStep1Submit}
+                  disabled={!isStep1Valid}
+                >
+                  <Text style={[styles.primaryBtnText, !isStep1Valid && styles.primaryBtnTextDisabled]}>Continue</Text>
+                </Pressable>
+              );
+            })()}
           </View>
         )}
 
@@ -300,9 +309,18 @@ export default function OnboardingModal() {
                 </Pressable>
               </View>
 
-              <Pressable style={styles.primaryBtn} onPress={handleStep2Submit}>
-                <Text style={styles.primaryBtnText}>Save Address & Continue</Text>
-              </Pressable>
+              {(() => {
+                const isStep2Valid = street.trim().length > 0 && city.trim().length > 0 && state.trim().length > 0 && postalCode.trim().length === 6;
+                return (
+                  <Pressable 
+                    style={[styles.primaryBtn, !isStep2Valid && styles.primaryBtnDisabled]} 
+                    onPress={handleStep2Submit}
+                    disabled={!isStep2Valid}
+                  >
+                    <Text style={[styles.primaryBtnText, !isStep2Valid && styles.primaryBtnTextDisabled]}>Save Address & Continue</Text>
+                  </Pressable>
+                );
+              })()}
             </View>
           </ScrollView>
         )}
@@ -484,10 +502,18 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  primaryBtnDisabled: {
+    backgroundColor: '#E2E8F0',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   primaryBtnText: {
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '700',
+  },
+  primaryBtnTextDisabled: {
+    color: '#94A3B8',
   },
   secondaryBtn: {
     backgroundColor: '#F1F5F9',
