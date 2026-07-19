@@ -5,12 +5,14 @@ import {
   onSnapshot, 
   addDoc, 
   doc, 
+  setDoc,
   updateDoc, 
   arrayUnion, 
   increment,
   getDocs,
   deleteDoc,
-  query 
+  query,
+  where
 } from 'firebase/firestore';
 import { 
   signInWithPhoneNumber,
@@ -18,6 +20,29 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { Alert } from 'react-native';
+
+export interface UserDocument {
+  uid: string;
+  phoneNumber: string;
+  name?: string;
+  address?: string;
+  street?: string;
+  area?: string;
+  locality?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+  latitude?: number;
+  longitude?: number;
+  locationVerified: boolean;
+  notificationEnabled: boolean;
+  profileCompleted: boolean;
+  accountType: 'personal';
+  createdAt: string;
+  updatedAt: string;
+  lastLogin: string;
+}
 
 // Types
 export interface Group {
@@ -128,7 +153,21 @@ export interface JobVacancy {
 }
 
 export interface KnowAroundContextProps {
-  user: { name: string; email: string; phone?: string; avatar?: string } | null;
+  user: { name: string; email: string; phone?: string; avatar?: string; profileCompleted?: boolean } | null;
+  authenticatePhone: (phone: string) => Promise<{ isNewUser: boolean; profileCompleted: boolean }>;
+  completeOnboarding: (data: {
+    name: string;
+    street: string;
+    area: string;
+    locality: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+    latitude: number;
+    longitude: number;
+    notificationEnabled: boolean;
+  }) => Promise<void>;
   login: (phone: string) => Promise<boolean>;
   googleLogin: () => void;
   register: (name: string, phone: string) => Promise<boolean>;
@@ -1059,19 +1098,205 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const login = async (phone: string): Promise<boolean> => {
+  const authenticatePhone = async (phone: string): Promise<{ isNewUser: boolean; profileCompleted: boolean }> => {
+    const rawDigits = phone.replace(/[^0-9]/g, '');
+    const fullPhoneNumber = phone.startsWith('+') ? phone : `+91${rawDigits.slice(-10)}`;
+    const nowIso = new Date().toISOString();
+    const mockUid = `usr_${rawDigits.slice(-10)}`;
+
+    let userDoc: UserDocument | null = null;
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('phoneNumber', '==', fullPhoneNumber));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          const docSnap = snapshot.docs[0];
+          userDoc = docSnap.data() as UserDocument;
+          userDoc.uid = docSnap.id;
+
+          // Update lastLogin timestamp in Firestore
+          await updateDoc(doc(db, 'users', docSnap.id), {
+            lastLogin: nowIso,
+            updatedAt: nowIso
+          });
+        }
+      } catch (err) {
+        console.warn('Firestore fetch user error:', err);
+      }
+    } else {
+      const savedUser = getLocalStorageJSON('native_user_doc');
+      if (savedUser && savedUser.phoneNumber === fullPhoneNumber) {
+        userDoc = savedUser;
+      }
+    }
+
+    if (userDoc && userDoc.profileCompleted && userDoc.name && userDoc.address && userDoc.locationVerified) {
+      // Returning user with completed profile -> Login & Open Home!
+      const activeUser = {
+        name: userDoc.name,
+        email: userDoc.phoneNumber,
+        phone: userDoc.phoneNumber,
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+        profileCompleted: true
+      };
+      setUser(activeUser);
+      saveState('native_user', activeUser);
+
+      if (userDoc.street && userDoc.city) {
+        const addr = {
+          street: userDoc.street || '',
+          place: userDoc.locality || userDoc.area || '',
+          city: userDoc.city || '',
+          state: userDoc.state || '',
+          pin: userDoc.postalCode || '',
+          phone: userDoc.phoneNumber
+        };
+        setUserAddress(addr);
+        saveState('native_address', addr);
+      }
+
+      if (userDoc.city) {
+        setActiveLocation(`${userDoc.city}, ${userDoc.state?.slice(0, 2).toUpperCase() || ''}`);
+      }
+
+      setOnboardingCompleted(true);
+      saveState('native_onboarding', true);
+      setJustRegistered(false);
+
+      return { isNewUser: false, profileCompleted: true };
+    } else {
+      // New user or incomplete profile -> Create minimal doc & trigger Onboarding
+      const minimalDoc: UserDocument = userDoc || {
+        uid: mockUid,
+        phoneNumber: fullPhoneNumber,
+        accountType: 'personal',
+        locationVerified: false,
+        notificationEnabled: false,
+        profileCompleted: false,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        lastLogin: nowIso
+      };
+
+      if (isFirebaseConfigured && db && !userDoc) {
+        try {
+          await setDoc(doc(db, 'users', mockUid), minimalDoc);
+        } catch (e) {
+          console.warn('Firestore create minimal user error:', e);
+        }
+      }
+
+      const activeUser = {
+        name: minimalDoc.name || '',
+        email: fullPhoneNumber,
+        phone: fullPhoneNumber,
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+        profileCompleted: false
+      };
+      setUser(activeUser);
+      saveState('native_user', activeUser);
+      saveState('native_user_doc', minimalDoc);
+
+      setOnboardingCompleted(false);
+      saveState('native_onboarding', false);
+      setJustRegistered(true);
+
+      return { isNewUser: !userDoc, profileCompleted: false };
+    }
+  };
+
+  const completeOnboarding = async (data: {
+    name: string;
+    street: string;
+    area: string;
+    locality: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+    latitude: number;
+    longitude: number;
+    notificationEnabled: boolean;
+  }) => {
+    const nowIso = new Date().toISOString();
+    const fullAddress = [data.street, data.area, data.locality, data.city, data.state, data.postalCode].filter(Boolean).join(', ');
+
+    const updatedUser = {
+      name: data.name.trim(),
+      email: user?.phone || '',
+      phone: user?.phone || '',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+      profileCompleted: true
+    };
+    setUser(updatedUser);
+    saveState('native_user', updatedUser);
+
+    const addr = {
+      street: data.street,
+      place: data.locality || data.area || data.city,
+      city: data.city,
+      state: data.state,
+      pin: data.postalCode,
+      phone: user?.phone || ''
+    };
+    setUserAddress(addr);
+    saveState('native_address', addr);
+
+    if (data.city) {
+      const locStr = data.state ? `${data.city}, ${data.state.slice(0, 2).toUpperCase()}` : data.city;
+      setActiveLocation(locStr);
+      saveState('native_location', locStr);
+    }
+
+    if (data.latitude && data.longitude) {
+      setUserLocation({ latitude: data.latitude, longitude: data.longitude, accuracy: null });
+    }
+
+    // Save/Update full document in Firestore `users` collection
+    const uid = `usr_${(user?.phone || '').replace(/[^0-9]/g, '')}`;
+    const userDocData: UserDocument = {
+      uid,
+      phoneNumber: user?.phone || '',
+      name: data.name.trim(),
+      address: fullAddress,
+      street: data.street,
+      area: data.area,
+      locality: data.locality,
+      city: data.city,
+      state: data.state,
+      country: data.country || 'India',
+      postalCode: data.postalCode,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      locationVerified: true,
+      notificationEnabled: data.notificationEnabled,
+      profileCompleted: true,
+      accountType: 'personal',
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      lastLogin: nowIso
+    };
+
+    saveState('native_user_doc', userDocData);
+
+    if (isFirebaseConfigured && db) {
+      try {
+        await setDoc(doc(db, 'users', uid), userDocData, { merge: true });
+      } catch (err) {
+        console.warn('Firestore completeOnboarding error:', err);
+      }
+    }
+
     setOnboardingCompleted(true);
     saveState('native_onboarding', true);
     setJustRegistered(false);
+  };
 
-    // Try to restore previously registered user details by phone
-    const existingUser = getLocalStorageJSON('native_user');
-    const phoneDigits = phone.replace(/[^0-9]/g, '');
-    const newUser = existingUser && existingUser.phone === phone
-      ? existingUser
-      : { name: `User ${phoneDigits.slice(-10)}`, email: phone, phone };
-    setUser(newUser);
-    saveState('native_user', newUser);
+  const login = async (phone: string): Promise<boolean> => {
+    await authenticatePhone(phone);
     return true;
   };
 
@@ -1558,7 +1783,9 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         groupPosts,
         joinGroup,
         postToGroup,
-        clearUserCredentials
+        clearUserCredentials,
+        authenticatePhone,
+        completeOnboarding
       }}
     >
       {children}

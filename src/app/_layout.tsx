@@ -3,6 +3,7 @@ import { useColorScheme, Platform, StyleSheet, View, Pressable, Text, LogBox } f
 import { KnowAroundProvider, useKnowAround } from '@/context/KnowAroundContext';
 import { Colors } from '@/constants/theme';
 import MandatoryAddressModal from '@/components/MandatoryAddressModal';
+import OnboardingModal from '@/components/OnboardingModal';
 import AuthScreen from '@/components/AuthScreen';
 import PostComposerModal from '@/components/PostComposerModal';
 import { Ionicons } from '@expo/vector-icons';
@@ -96,7 +97,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 }
 
 function MainLayout() {
-  const { user } = useKnowAround();
+  const { user, onboardingCompleted } = useKnowAround();
 
   if (!user) {
     return <AuthScreen />;
@@ -117,6 +118,7 @@ function MainLayout() {
         <Tabs.Screen name="directory" />
       </Tabs>
       <MandatoryAddressModal />
+      {!onboardingCompleted && <OnboardingModal />}
       <PostComposerModal />
     </View>
   );

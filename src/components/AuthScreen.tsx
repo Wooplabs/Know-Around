@@ -43,14 +43,12 @@ const COUNTRIES = [
 ];
 
 export default function AuthScreen() {
-  const { login, register, googleLogin } = useKnowAround();
+  const { authenticatePhone } = useKnowAround();
   
-  // Auth flow states
-  const [isSignUp, setIsSignUp] = useState(false);
+  // Auth flow states: 'input' = enter phone number, 'otp' = 4-digit code verification
   const [authState, setAuthState] = useState<'input' | 'otp'>('input');
   
   // Input fields
-  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
@@ -59,8 +57,7 @@ export default function AuthScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Focus & Validation states
-  const [focusedField, setFocusedField] = useState<'name' | 'phone' | null>(null);
-  const [nameError, setNameError] = useState('');
+  const [focusedField, setFocusedField] = useState<'phone' | null>(null);
   const [phoneError, setPhoneError] = useState('');
 
   // OTP states
@@ -95,22 +92,9 @@ export default function AuthScreen() {
     ]).start();
   };
 
-  const toggleMode = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsSignUp(!isSignUp);
-    setNameError('');
-    setPhoneError('');
-  };
-
   const validateInput = (): boolean => {
     let isValid = true;
-    setNameError('');
     setPhoneError('');
-
-    if (isSignUp && !name.trim()) {
-      setNameError('Full Name is required.');
-      isValid = false;
-    }
 
     const rawPhone = phone.replace(/[^0-9]/g, '');
     if (!phone.trim()) {
@@ -135,7 +119,6 @@ export default function AuthScreen() {
     setResendTimer(30);
     setAuthState('otp');
 
-    // Simulate sending real OTP through Alert modal
     Alert.alert(
       '💬 SMS OTP Sent',
       `We sent a 4-digit verification code to ${selectedCountry.code} ${phone}.\n\nFor testing, your OTP is: ${code}`,
@@ -167,11 +150,7 @@ export default function AuthScreen() {
     const fullPhoneNumber = `${selectedCountry.code}${rawPhone}`;
 
     try {
-      if (isSignUp) {
-        await register(name.trim(), fullPhoneNumber);
-      } else {
-        await login(fullPhoneNumber);
-      }
+      await authenticatePhone(fullPhoneNumber);
     } catch (err: any) {
       triggerShake();
       setOtpError(err.message || 'Authentication failed. Please check connection.');
@@ -180,30 +159,24 @@ export default function AuthScreen() {
     }
   };
 
-
-
   // Back button functionality
   const handleBackPress = () => {
     if (authState === 'otp') {
       setAuthState('input');
-    } else {
-      toggleMode();
     }
   };
 
   // Header Title & Description text resolving
   const getHeaderTitle = () => {
     if (authState === 'otp') return 'Verify Mobile';
-    return isSignUp ? 'Create an account' : 'Welcome back';
+    return 'Welcome to KnowAround';
   };
 
   const getHeaderSubtitle = () => {
     if (authState === 'otp') {
       return `Enter the 4-digit code sent to ${selectedCountry.code} ${phone}.`;
     }
-    return isSignUp 
-      ? 'Enter your name and mobile number to sign up.' 
-      : 'Enter your mobile number to log in.';
+    return 'Enter your mobile number to discover everything local around you.';
   };
 
   return (
@@ -220,7 +193,7 @@ export default function AuthScreen() {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {/* TOP HEADER SECTION (Premium Cosmic Black Theme with Green Glow) */}
+          {/* TOP HEADER SECTION */}
           <View style={styles.headerSection}>
             <View style={styles.glowEffect} />
             
@@ -236,36 +209,11 @@ export default function AuthScreen() {
             <Text style={styles.subtitle}>{getHeaderSubtitle()}</Text>
           </View>
 
-          {/* BOTTOM WHITE CARD (Inputs, Buttons and OAuth) */}
+          {/* BOTTOM WHITE CARD */}
           <Animated.View style={[styles.formCard, { transform: [{ translateX: shakeAnim }] }]}>
             {authState === 'input' ? (
-              /* PHASE 1: ENTER PHONE & OPTIONAL NAME */
+              /* PHASE 1: ENTER PHONE NUMBER */
               <View>
-                {isSignUp && (
-                  <View style={styles.inputGroup}>
-                    <View style={styles.labelRow}>
-                      <Text style={styles.label}>Name</Text>
-                      {!!nameError && <Text style={styles.errorTextInline}>{nameError}</Text>}
-                    </View>
-                    <TextInput
-                      value={name}
-                      onChangeText={(text) => {
-                        setName(text);
-                        if (nameError) setNameError('');
-                      }}
-                      onFocus={() => setFocusedField('name')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Example name"
-                      placeholderTextColor="#A0A4AC"
-                      style={[
-                        styles.input,
-                        focusedField === 'name' && styles.inputFocused,
-                        !!nameError && styles.inputError
-                      ]}
-                    />
-                  </View>
-                )}
-
                 <View style={styles.inputGroup}>
                   <View style={styles.labelRow}>
                     <Text style={styles.label}>Mobile Number</Text>
@@ -306,19 +254,7 @@ export default function AuthScreen() {
 
                 {/* Main Action Button using Brand Green */}
                 <Pressable style={styles.btn} onPress={handleSendOtpPress} disabled={isSubmitting}>
-                  <Text style={styles.btnText}>{isSignUp ? 'Sign up' : 'Log in'}</Text>
-                </Pressable>
-
-
-
-                {/* Switch Mode Link */}
-                <Pressable style={styles.toggleLink} onPress={toggleMode}>
-                  <Text style={styles.toggleLinkNormalText}>
-                    {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-                    <Text style={styles.toggleLinkActiveText}>
-                      {isSignUp ? 'Sign in' : 'Sign up'}
-                    </Text>
-                  </Text>
+                  <Text style={styles.btnText}>Continue</Text>
                 </Pressable>
               </View>
             ) : (
@@ -367,7 +303,7 @@ export default function AuthScreen() {
                   {isSubmitting ? (
                     <ActivityIndicator size="small" color="#ffffff" />
                   ) : (
-                    <Text style={styles.btnText}>Verify & Login</Text>
+                    <Text style={styles.btnText}>Verify & Continue</Text>
                   )}
                 </Pressable>
 
