@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
+import { LocationIcon } from './CustomIcons';
 import * as Location from 'expo-location';
 
 export default function OnboardingModal() {
@@ -302,7 +303,7 @@ export default function OnboardingModal() {
                     <ActivityIndicator size="small" color="#1C873C" />
                   ) : (
                     <>
-                      <Ionicons name="navigate-outline" size={16} color="#1C873C" />
+                      <LocationIcon color="#1C873C" size={18} />
                       <Text style={styles.ghostGpsBtnText}>At home? Use your current location</Text>
                     </>
                   )}
