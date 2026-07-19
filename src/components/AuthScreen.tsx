@@ -437,8 +437,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
     paddingTop: 32,
-    paddingBottom: Platform.OS === 'ios' ? 44 : 32,
-    justifyContent: 'flex-end',
+    paddingBottom: Platform.OS === 'ios' ? 44 : 36,
+    flex: 1,
+    minHeight: screenHeight * 0.55,
   },
   inputGroup: {
     marginBottom: 20,
