@@ -479,9 +479,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 40,
-    minHeight: screenHeight * 0.65 + 30,
+    paddingTop: 28,
+    paddingBottom: 36,
   },
   inputGroup: {
     marginBottom: 20,
@@ -572,14 +571,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
   toggleLink: {
-    marginTop: 24,
+    marginTop: 20,
     alignItems: 'center',
+    marginBottom: 8,
   },
   toggleLinkNormalText: {
     fontSize: 14,
