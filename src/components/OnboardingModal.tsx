@@ -375,14 +375,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingTop: Platform.OS === 'ios' ? 54 : 28,
     paddingBottom: 24,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   progressRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 24,
+    marginTop: 4,
+    marginBottom: 28,
   },
   progressSegment: {
     flex: 1,
@@ -398,7 +399,7 @@ const styles = StyleSheet.create({
   },
   stepBox: {
     backgroundColor: '#ffffff',
-    justifyContent: 'center',
+    paddingTop: 8,
   },
   headerIconWrapper: {
     alignSelf: 'center',
