@@ -174,8 +174,8 @@ export default function MandatoryAddressModal() {
       setIsSubmitting(false);
       setVisible(false);
       showCustomDialog(
-        'Location Configured 🎉',
-        'Your home location has been set successfully!',
+        'You are all set! 🎉',
+        'Your home location has been set successfully and your neighborhood feed is live!',
         'success',
         () => {
           setJustRegistered(false);
