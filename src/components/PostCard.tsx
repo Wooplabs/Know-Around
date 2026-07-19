@@ -286,8 +286,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   badge_Alert: {
-    color: '#E53935',
-    backgroundColor: '#FFEBEE',
+    color: '#E11D48',
+    backgroundColor: '#FFE4E6',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   badge_News: {
     color: '#1E88E5',

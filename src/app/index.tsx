@@ -207,33 +207,42 @@ export default function HomeScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {/* Critical Announcement Banner */}
+        {/* Modern Critical Announcement Card */}
         {topDangerAlert && !ignoredAlerts.includes(topDangerAlert.id) && (
           <View style={[styles.alertBanner, darkMode && styles.alertBannerDark]}>
             <View style={styles.alertIndicatorBar} />
             <View style={styles.alertContentContainer}>
               <View style={styles.alertHeader}>
-                <View style={styles.alertBadge}>
-                  <Ionicons name="warning" size={14} color="#D32F2F" />
-                  <Text style={styles.alertBadgeText}>NEIGHBORHOOD ALERT</Text>
+                <View style={[styles.alertBadge, darkMode && styles.alertBadgeDark]}>
+                  <Ionicons name="shield-half" size={14} color={darkMode ? "#FF85A1" : "#E11D48"} />
+                  <Text style={[styles.alertBadgeText, darkMode && styles.alertBadgeTextDark]}>SAFETY ALERT</Text>
                 </View>
+                <Text style={[styles.alertTimeText, darkMode && styles.alertTimeTextDark]}>&middot; {topDangerAlert.time}</Text>
 
                 <View style={{ flex: 1 }} />
                 
                 <Pressable 
-                  style={styles.alertIgnoreButton} 
+                  style={[styles.alertIgnoreButton, darkMode && styles.alertIgnoreButtonDark]} 
                   onPress={() => {
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setIgnoredAlerts([...ignoredAlerts, topDangerAlert.id]);
                   }}
                 >
-                  <Text style={styles.alertIgnoreText}>Ignore</Text>
+                  <Ionicons name="close-circle-outline" size={14} color={darkMode ? "#FF85A1" : "#BE123C"} />
+                  <Text style={[styles.alertIgnoreText, darkMode && styles.alertIgnoreTextDark]}>Dismiss</Text>
                 </Pressable>
               </View>
 
               <View style={styles.alertBody}>
                 <Text style={[styles.alertTitleText, darkMode && styles.alertTitleTextDark]}>{topDangerAlert.title}</Text>
                 <Text style={[styles.alertBannerDesc, darkMode && styles.alertBannerDescDark]}>{topDangerAlert.description}</Text>
+              </View>
+
+              <View style={styles.alertFooterRow}>
+                <View style={[styles.alertFooterTag, darkMode && styles.alertFooterTagDark]}>
+                  <Ionicons name="checkmark-circle" size={13} color={darkMode ? "#FF85A1" : "#E11D48"} />
+                  <Text style={[styles.alertFooterTagText, darkMode && styles.alertFooterTagTextDark]}>Official Neighborhood Broadcast</Text>
+                </View>
               </View>
             </View>
           </View>
@@ -370,32 +379,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF5F5',
-    borderWidth: 1,
-    borderColor: '#FEE2E2',
-    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#FECDD3',
+    borderRadius: 22,
     marginHorizontal: 16,
     marginVertical: 14,
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 1,
+    shadowColor: '#E11D48',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
   },
   alertIndicatorBar: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: 4,
-    backgroundColor: '#EF4444',
+    width: 5,
+    backgroundColor: '#E11D48',
+    borderRadius: 3,
   },
   alertContentContainer: {
     flex: 1,
-    paddingLeft: 4,
+    paddingLeft: 6,
   },
   alertHeader: {
     flexDirection: 'row',
@@ -405,43 +415,77 @@ const styles = StyleSheet.create({
   alertBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 8,
+    gap: 6,
+    backgroundColor: '#FFE4E6',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
   },
   alertBadgeText: {
     fontSize: 10.5,
     fontWeight: '800',
+    color: '#E11D48',
+    letterSpacing: 0.6,
+  },
+  alertTimeText: {
+    fontSize: 11.5,
+    fontWeight: '600',
     color: '#9F1239',
-    letterSpacing: 0.5,
+    marginLeft: 6,
   },
   alertIgnoreButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    backgroundColor: '#FEE2E2',
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    backgroundColor: '#FFE4E6',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
   },
   alertIgnoreText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#B91C1C',
+    color: '#BE123C',
   },
   alertBody: {
     marginTop: 2,
+    marginBottom: 10,
   },
   alertTitleText: {
-    fontSize: 14,
+    fontSize: 15.5,
     fontWeight: '800',
-    color: '#9F1239',
+    color: '#881337',
     marginBottom: 4,
+    letterSpacing: -0.2,
   },
   alertBannerDesc: {
-    fontSize: 13,
+    fontSize: 13.5,
     color: '#4C0519',
-    fontWeight: '600',
-    lineHeight: 19,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  alertFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  alertFooterTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(225, 29, 72, 0.06)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  alertFooterTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#BE123C',
   },
   feedCardContainer: {
     position: 'relative',
@@ -687,20 +731,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#121212',
   },
   alertBannerDark: {
-    backgroundColor: '#2d1a1a',
-    borderColor: '#4a2424',
+    backgroundColor: '#1E0A0D',
+    borderColor: '#881337',
+    shadowColor: '#E11D48',
+    shadowOpacity: 0.2,
   },
-  alertAuthorNameDark: {
-    color: '#FFFFFF',
+  alertBadgeDark: {
+    backgroundColor: '#4C0519',
+    borderColor: '#881337',
   },
-  alertMetaTextDark: {
-    color: '#A0A4AC',
+  alertBadgeTextDark: {
+    color: '#FF85A1',
+  },
+  alertTimeTextDark: {
+    color: '#FDA4AF',
+  },
+  alertIgnoreButtonDark: {
+    backgroundColor: '#4C0519',
+    borderColor: '#881337',
+  },
+  alertIgnoreTextDark: {
+    color: '#FF85A1',
   },
   alertTitleTextDark: {
-    color: '#FCA5A5',
+    color: '#FFE4E6',
   },
   alertBannerDescDark: {
-    color: '#FECACA',
+    color: '#FECDD3',
+  },
+  alertFooterTagDark: {
+    backgroundColor: 'rgba(225, 29, 72, 0.2)',
+  },
+  alertFooterTagTextDark: {
+    color: '#FF85A1',
   },
   modalBackdrop: {
     flex: 1,
