@@ -213,19 +213,12 @@ export default function HomeScreen() {
             <View style={styles.alertIndicatorBar} />
             <View style={styles.alertContentContainer}>
               <View style={styles.alertHeader}>
-                <Image 
-                  source={{ uri: topDangerAlert.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200' }} 
-                  style={styles.alertAvatar} 
-                />
-                <View style={styles.alertAuthorInfo}>
-                  <View style={styles.alertAuthorRow}>
-                    <Text style={[styles.alertAuthorName, darkMode && styles.alertAuthorNameDark]}>{topDangerAlert.author || 'Municipal Guard'}</Text>
-                    {topDangerAlert.verified && (
-                      <RoundTickIcon color="#1C873C" size={13} style={{ marginLeft: 3 }} />
-                    )}
-                  </View>
-                  <Text style={[styles.alertMetaText, darkMode && styles.alertMetaTextDark]}>{topDangerAlert.location} &middot; {topDangerAlert.time}</Text>
+                <View style={styles.alertBadge}>
+                  <Ionicons name="warning" size={14} color="#D32F2F" />
+                  <Text style={styles.alertBadgeText}>NEIGHBORHOOD ALERT</Text>
                 </View>
+
+                <View style={{ flex: 1 }} />
                 
                 <Pressable 
                   style={styles.alertIgnoreButton} 
@@ -407,33 +400,22 @@ const styles = StyleSheet.create({
   alertHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  alertAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 10,
-    backgroundColor: '#E0E0E0',
-  },
-  alertAuthorInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  alertAuthorRow: {
+  alertBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  alertAuthorName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1A1C1E',
-  },
-  alertMetaText: {
-    fontSize: 11,
-    color: '#718096',
-    fontWeight: '500',
-    marginTop: 1,
+  alertBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#9F1239',
+    letterSpacing: 0.5,
   },
   alertIgnoreButton: {
     paddingVertical: 4,

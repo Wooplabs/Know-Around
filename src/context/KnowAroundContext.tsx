@@ -690,26 +690,20 @@ const SEED_ALERTS: AlertItem[] = [
     title: 'Scheduled Water Supply Interruption',
     description: 'RWA Notice: Water supply will be cut off on Tuesday (14th July) between 9:00 AM and 1:00 PM for overhead tank maintenance.',
     level: 'warning',
-    location: 'Heritage Town',
+    location: 'Neighborhood',
     time: '2h ago',
     lat: 11.9350,
     lng: 79.8275,
-    author: 'Heritage Town RWA',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
-    verified: true,
   },
   {
     id: 'alt2',
     title: 'Stray Dogs Spotted Near Play Area',
     description: 'Caution: A pack of aggressive stray dogs has been spotted near the Bharathi Park children play area. Please be careful in the evenings.',
     level: 'danger',
-    location: 'White Town',
+    location: 'Neighborhood',
     time: '5h ago',
     lat: 11.9325,
     lng: 79.8340,
-    author: 'Municipal Guard',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
-    verified: true,
   }
 ];
 
@@ -1284,9 +1278,6 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       time: 'Just now',
       lat,
       lng,
-      author: user?.name || 'Municipal Admin',
-      avatar: user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
-      verified: true
     };
 
     if (isFirebaseConfigured && db) {
