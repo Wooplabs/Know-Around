@@ -187,32 +187,32 @@ export default function AuthScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView 
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent} 
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          bounces={false}
-        >
-          {/* TOP HEADER SECTION */}
-          <View style={styles.headerSection}>
-            <View style={styles.glowEffect} />
-            
-            {/* Back Button (Only on OTP verification screen) */}
-            {authState === 'otp' && (
-              <Pressable style={styles.backBtn} onPress={handleBackPress}>
-                <Ionicons name="chevron-back" size={20} color="#ffffff" />
-              </Pressable>
-            )}
+        {/* TOP HEADER SECTION */}
+        <View style={styles.headerSection}>
+          <View style={styles.glowEffect} />
+          
+          {/* Back Button (Only on OTP verification screen) */}
+          {authState === 'otp' && (
+            <Pressable style={styles.backBtn} onPress={handleBackPress}>
+              <Ionicons name="chevron-back" size={20} color="#ffffff" />
+            </Pressable>
+          )}
 
-            {/* Title & Tagline inside Dark Section */}
-            <Text style={styles.title}>{getHeaderTitle()}</Text>
-            <Text style={styles.subtitle}>{getHeaderSubtitle()}</Text>
-          </View>
+          {/* Title & Tagline inside Dark Section */}
+          <Text style={styles.title}>{getHeaderTitle()}</Text>
+          <Text style={styles.subtitle}>{getHeaderSubtitle()}</Text>
+        </View>
 
-          {/* BOTTOM WHITE CARD */}
-          <View style={styles.formCardContainer}>
+        {/* BOTTOM WHITE CARD (Always fills 100% space down to screen bottom) */}
+        <View style={styles.formCardContainer}>
+          <ScrollView 
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            bounces={false}
+          >
             <Animated.View style={[styles.formCard, { transform: [{ translateX: shakeAnim }] }]}>
               {authState === 'input' ? (
                 /* PHASE 1: ENTER PHONE NUMBER */
@@ -345,8 +345,8 @@ export default function AuthScreen() {
                 </View>
               )}
             </Animated.View>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
 
       {/* Selectable Country Picker Bottom Sheet */}
@@ -385,18 +385,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 32,
     justifyContent: 'space-between',
   },
   headerSection: {
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 36,
-    paddingBottom: 24,
+    paddingTop: Platform.OS === 'ios' ? 60 : 44,
+    paddingBottom: 28,
     backgroundColor: '#121417',
     position: 'relative',
     overflow: 'hidden',
-    flex: 1,
-    minHeight: screenHeight * 0.22,
-    justifyContent: 'flex-end',
   },
   glowEffect: {
     position: 'absolute',
@@ -434,17 +434,15 @@ const styles = StyleSheet.create({
     paddingRight: 32,
   },
   formCardContainer: {
-    backgroundColor: '#ffffff',
     flex: 1,
-  },
-  formCard: {
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: Platform.OS === 'ios' ? 44 : 32,
+    overflow: 'hidden',
+  },
+  formCard: {
     flex: 1,
+    justifyContent: 'space-between',
   },
   inputGroup: {
     marginBottom: 20,
