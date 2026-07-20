@@ -25,6 +25,7 @@ export interface UserDocument {
   uid: string;
   phoneNumber: string;
   name?: string;
+  avatar?: string;
   address?: string;
   street?: string;
   area?: string;
@@ -1126,26 +1127,51 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       } catch (err) {
         console.warn('Firestore fetch user error:', err);
       }
-    } else {
-      const savedUser = getLocalStorageJSON('native_user_doc');
-      if (savedUser && savedUser.phoneNumber === fullPhoneNumber) {
-        userDoc = savedUser;
+    }
+
+    if (!userDoc) {
+      const registered = getLocalStorageJSON('native_registered_accounts') || {};
+      userDoc = registered[fullPhoneNumber] || registered[rawDigits.slice(-10)] || null;
+
+      if (!userDoc) {
+        const savedUserDoc = getLocalStorageJSON('native_user_doc');
+        if (savedUserDoc && (savedUserDoc.phoneNumber === fullPhoneNumber || savedUserDoc.phoneNumber?.includes(rawDigits.slice(-10)))) {
+          userDoc = savedUserDoc;
+        } else {
+          const savedUser = getLocalStorageJSON('native_user');
+          if (savedUser && (savedUser.phone === fullPhoneNumber || savedUser.phone?.includes(rawDigits.slice(-10)) || savedUser.email === fullPhoneNumber) && savedUser.name) {
+            userDoc = {
+              uid: mockUid,
+              phoneNumber: fullPhoneNumber,
+              name: savedUser.name,
+              address: 'Registered User Address',
+              profileCompleted: true,
+              locationVerified: true,
+              notificationEnabled: true,
+              accountType: 'personal',
+              createdAt: nowIso,
+              updatedAt: nowIso,
+              lastLogin: nowIso
+            };
+          }
+        }
       }
     }
 
-    if (userDoc && userDoc.profileCompleted && userDoc.name && userDoc.address && userDoc.locationVerified) {
-      // Returning user with completed profile -> Login & Open Home!
+    if (userDoc && userDoc.name && userDoc.name.trim().length > 0) {
+      // Returning registered user -> Sign In Process -> Open Home Straightaway!
       const activeUser = {
         name: userDoc.name,
         email: userDoc.phoneNumber,
         phone: userDoc.phoneNumber,
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+        avatar: userDoc.avatar || undefined,
         profileCompleted: true
       };
       setUser(activeUser);
       saveState('native_user', activeUser);
+      saveState('native_user_doc', userDoc);
 
-      if (userDoc.street && userDoc.city) {
+      if (userDoc.street || userDoc.city) {
         const addr = {
           street: userDoc.street || '',
           place: userDoc.locality || userDoc.area || '',
@@ -1159,7 +1185,9 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
 
       if (userDoc.city) {
-        setActiveLocation(`${userDoc.city}, ${userDoc.state?.slice(0, 2).toUpperCase() || ''}`);
+        const locStr = userDoc.state ? `${userDoc.city}, ${userDoc.state.slice(0, 2).toUpperCase()}` : userDoc.city;
+        setActiveLocation(locStr);
+        saveState('native_location', locStr);
       }
 
       setOnboardingCompleted(true);
@@ -1168,7 +1196,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       return { isNewUser: false, profileCompleted: true };
     } else {
-      // New user or incomplete profile -> Create minimal doc & trigger Onboarding
+      // New user or incomplete profile -> Sign Up Process -> Trigger Onboarding
       const minimalDoc: UserDocument = userDoc || {
         uid: mockUid,
         phoneNumber: fullPhoneNumber,
@@ -1193,7 +1221,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         name: minimalDoc.name || '',
         email: fullPhoneNumber,
         phone: fullPhoneNumber,
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+        avatar: undefined,
         profileCompleted: false
       };
       setUser(activeUser);
@@ -1256,7 +1284,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
 
     // Save/Update full document in Firestore `users` collection
-    const uid = `usr_${(user?.phone || '').replace(/[^0-9]/g, '')}`;
+    const rawDigits = (user?.phone || '').replace(/[^0-9]/g, '');
+    const uid = `usr_${rawDigits}`;
     const userDocData: UserDocument = {
       uid,
       phoneNumber: user?.phone || '',
@@ -1281,6 +1310,14 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     saveState('native_user_doc', userDocData);
+
+    // Persist in native_registered_accounts dictionary so future sign-in recognizes this mobile number instantly
+    const registered = getLocalStorageJSON('native_registered_accounts') || {};
+    if (userDocData.phoneNumber) {
+      registered[userDocData.phoneNumber] = userDocData;
+      registered[rawDigits.slice(-10)] = userDocData;
+      saveState('native_registered_accounts', registered);
+    }
 
     if (isFirebaseConfigured && db) {
       try {

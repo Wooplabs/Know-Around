@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import BottomSheet from './BottomSheet';
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -150,7 +151,10 @@ export default function AuthScreen() {
     const fullPhoneNumber = `${selectedCountry.code}${rawPhone}`;
 
     try {
-      await authenticatePhone(fullPhoneNumber);
+      const res = await authenticatePhone(fullPhoneNumber);
+      if (res && res.profileCompleted) {
+        router.replace('/');
+      }
     } catch (err: any) {
       triggerShake();
       setOtpError(err.message || 'Authentication failed. Please check connection.');

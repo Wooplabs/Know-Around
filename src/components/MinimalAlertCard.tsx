@@ -120,7 +120,7 @@ export default function MinimalAlertCard({ alert, onIgnore, darkMode }: MinimalA
 
 const styles = StyleSheet.create({
   cardContainer: {
-    marginHorizontal: 10,
+    marginHorizontal: 16,
     marginVertical: 10,
     position: 'relative',
     borderRadius: 14,

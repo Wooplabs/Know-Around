@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? 42 : 12,
     paddingBottom: 12,
     backgroundColor: '#ffffff',
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F2F5',
   },
   filterScroll: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
     gap: 8,
   },
   filterPill: {
