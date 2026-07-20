@@ -107,7 +107,7 @@ export default function HomeScreen() {
           <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
             {/* Profile mini-card */}
             <View style={[styles.dropdownProfileCard, darkMode && styles.dropdownProfileCardDark]}>
-              <UserAvatar name={currentUser.name} avatarUrl={currentUser.avatar} size={40} />
+              <UserAvatar name={currentUser.name} avatarUrl={currentUser.avatar} size={40} style={{ marginRight: 10 }} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.dropdownProfileName, darkMode && styles.dropdownProfileNameDark]} numberOfLines={1}>
                   {currentUser.name}

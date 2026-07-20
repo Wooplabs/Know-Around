@@ -39,7 +39,7 @@ export default function PostComposerModal() {
       <View style={styles.composerContainer}>
         {/* Header Row */}
         <View style={styles.composerHeader}>
-          <UserAvatar name={currentUser.name} avatarUrl={currentUser.avatar} size={44} />
+          <UserAvatar name={currentUser.name} avatarUrl={currentUser.avatar} size={44} style={{ marginRight: 10 }} />
           <View style={styles.composerHeaderMeta}>
             <Text style={styles.composerAuthorName}>{currentUser.name}</Text>
             
