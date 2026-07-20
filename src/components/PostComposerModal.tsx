@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Image, TextInput, Alert, Platform } 
 import { Ionicons } from '@expo/vector-icons';
 import { useKnowAround } from '../context/KnowAroundContext';
 import BottomSheet from './BottomSheet';
+import UserAvatar from './UserAvatar';
 
 export default function PostComposerModal() {
   const { currentUser, activeLocation, addPost, composerVisible, setComposerVisible } = useKnowAround();
@@ -38,7 +39,7 @@ export default function PostComposerModal() {
       <View style={styles.composerContainer}>
         {/* Header Row */}
         <View style={styles.composerHeader}>
-          <Image source={{ uri: currentUser.avatar }} style={styles.composerAvatar} />
+          <UserAvatar name={currentUser.name} avatarUrl={currentUser.avatar} size={44} />
           <View style={styles.composerHeaderMeta}>
             <Text style={styles.composerAuthorName}>{currentUser.name}</Text>
             

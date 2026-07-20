@@ -47,7 +47,7 @@ export default function PostCard({ post, darkMode }: PostCardProps) {
     <View style={[styles.card, darkMode && styles.cardDark]}>
       {/* Header */}
       <View style={styles.header}>
-        <UserAvatar name={post.author} avatar={post.avatar} size={42} style={styles.avatar} />
+        <UserAvatar name={post.author} avatarUrl={post.avatar} size={42} />
         <View style={styles.headerText}>
           <View style={styles.nameRow}>
             <Text style={[styles.name, darkMode && styles.nameDark]} numberOfLines={1}>{post.author}</Text>
@@ -159,7 +159,7 @@ export default function PostCard({ post, darkMode }: PostCardProps) {
                 
                 {/* Parent Comment */}
                 <View style={styles.commentRow}>
-                  <UserAvatar name={comment.author} avatar={comment.avatar} size={32} style={styles.commentAvatar} />
+                  <UserAvatar name={comment.author} avatarUrl={comment.avatar} size={32} />
                   <View style={[styles.commentContent, darkMode && styles.commentContentDark]}>
                     <View style={styles.commentHeader}>
                       <Text style={[styles.commentAuthor, darkMode && styles.commentAuthorDark]}>{comment.author}</Text>
@@ -172,7 +172,7 @@ export default function PostCard({ post, darkMode }: PostCardProps) {
                 {/* Threaded Replies */}
                 {comment.replies && comment.replies.map((reply) => (
                   <View key={reply.id} style={styles.replyRow}>
-                    <UserAvatar name={reply.author} avatar={reply.avatar} size={26} style={styles.replyAvatar} />
+                    <UserAvatar name={reply.author} avatarUrl={reply.avatar} size={28} />
                     <View style={[styles.replyContent, darkMode && styles.commentContentDark]}>
                       <View style={styles.commentHeader}>
                         <Text style={[styles.commentAuthor, darkMode && styles.commentAuthorDark]}>{reply.author}</Text>

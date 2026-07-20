@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useKnowAround } from '../context/KnowAroundContext';
 import { router } from 'expo-router';
 import Map from '../components/Map';
+import * as ImagePicker from 'expo-image-picker';
+import UserAvatar from '../components/UserAvatar';
 
 export default function SettingsScreen() {
   const { 
@@ -55,6 +57,31 @@ export default function SettingsScreen() {
   // App Toggles
   const [notifications, setNotifications] = useState(true);
   const [safetyAlerts, setSafetyAlerts] = useState(true);
+
+  const handlePickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'Gallery access permission is needed to pick a profile photo.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0].uri) {
+        const selectedUri = result.assets[0].uri;
+        updateProfileDetails(name, email, phone, selectedUri);
+        Alert.alert('Success 🎉', 'Profile picture updated successfully!');
+      }
+    } catch (e) {
+      console.error('Image picker error:', e);
+    }
+  };
 
   const handleMapClick = (lat: number, lng: number) => {
     setSelectedCoords({ latitude: lat, longitude: lng });
@@ -170,12 +197,12 @@ export default function SettingsScreen() {
         >
           {/* User Photo & Account Role Banner */}
           <View style={styles.avatarSection}>
-            <View style={styles.avatarWrapper}>
-              <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
-              <Pressable style={styles.cameraIconBadge}>
+            <Pressable style={styles.avatarWrapper} onPress={handlePickImage}>
+              <UserAvatar name={name || currentUser.name} avatarUrl={currentUser.avatar} size={76} fontSize={26} />
+              <View style={styles.cameraIconBadge}>
                 <Ionicons name="camera" size={16} color="#ffffff" />
-              </Pressable>
-            </View>
+              </View>
+            </Pressable>
             <Text style={[styles.profileName, darkMode && styles.profileNameDark]}>{name || 'Neighbor'}</Text>
             {(user?.phone) ? (
               <View style={styles.profileMetaRow}>

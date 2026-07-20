@@ -4,6 +4,7 @@ import { useKnowAround, Professional, DirectoryItem } from '../context/KnowAroun
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { RoundTickIcon, BellIcon, DownIcon, LocationIcon } from '@/components/CustomIcons';
+import UserAvatar from '@/components/UserAvatar';
 import BottomSheet from '@/components/BottomSheet';
 
 type ItemType = {
@@ -201,7 +202,7 @@ export default function DirectoryScreen() {
             <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
           </Pressable>
           <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
-            <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
+            <UserAvatar name={currentUser.name} avatarUrl={currentUser.avatar} size={34} />
             <View style={[styles.avatarBadge, darkMode && styles.avatarBadgeDark]}>
               <Ionicons name="menu-outline" size={8} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
             </View>
@@ -221,7 +222,7 @@ export default function DirectoryScreen() {
           <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
             {/* Profile mini-card */}
             <View style={[styles.dropdownProfileCard, darkMode && styles.dropdownProfileCardDark]}>
-              <Image source={{ uri: currentUser.avatar }} style={styles.dropdownAvatar} />
+              <UserAvatar name={currentUser.name} avatarUrl={currentUser.avatar} size={40} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.dropdownProfileName, darkMode && styles.dropdownProfileNameDark]} numberOfLines={1}>
                   {currentUser.name}

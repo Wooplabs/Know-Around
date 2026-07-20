@@ -25,7 +25,6 @@ export interface UserDocument {
   uid: string;
   phoneNumber: string;
   name?: string;
-  avatar?: string;
   address?: string;
   street?: string;
   area?: string;
@@ -1194,7 +1193,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         name: minimalDoc.name || '',
         email: fullPhoneNumber,
         phone: fullPhoneNumber,
-        avatar: minimalDoc.avatar || '',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
         profileCompleted: false
       };
       setUser(activeUser);
@@ -1229,7 +1228,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       name: data.name.trim(),
       email: user?.phone || '',
       phone: user?.phone || '',
-      avatar: user?.avatar || '',
+      avatar: user?.avatar || undefined,
       profileCompleted: true
     };
     setUser(updatedUser);
@@ -1320,7 +1319,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       name: name.trim() || 'Neighbor',
       email: phone,
       phone,
-      avatar: ''
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'
     };
     setUser(newUser);
     saveState('native_user', newUser);
@@ -1392,7 +1391,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addPost = async (content: string, category: 'News' | 'Alert' | 'Event' | 'Community Update', image?: string) => {
     const newPostData = {
       author: user?.name || 'You (Neighbor)',
-      avatar: user?.avatar || '',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
       location: activeLocation.split(',')[0],
       time: 'Just now',
       verified: true,
@@ -1718,7 +1717,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const currentUser = {
     name: user?.name || 'Neighbor',
-    avatar: user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+    avatar: user?.avatar || undefined,
     location: userAddress ? `${userAddress.place ? userAddress.place + ', ' : ''}${userAddress.city || activeLocation}` : activeLocation
   };
 

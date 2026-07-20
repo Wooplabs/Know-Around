@@ -1,90 +1,77 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, StyleProp, ViewStyle, TextStyle, ImageStyle } from 'react-native';
+import React from 'react';
+import { View, Text, Image, StyleSheet } from 'react-native';
 
-export interface UserAvatarProps {
+interface UserAvatarProps {
   name?: string;
-  avatar?: string;
+  avatarUrl?: string | null;
   size?: number;
   fontSize?: number;
-  style?: StyleProp<any>;
-  textStyle?: StyleProp<TextStyle>;
+  style?: any;
 }
 
-/**
- * Calculates initials from full name.
- * e.g., "Henry Edwards" -> "HE"
- *       "Victor" -> "V"
- *       "Ajay Kumar Sharma" -> "AK"
- */
-export function getUserInitials(name?: string): string {
-  if (!name || !name.trim()) return 'KA';
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 1) {
-    return parts[0].substring(0, 1).toUpperCase();
-  }
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-}
-
-/**
- * Curated list of rich dark background colors for DP avatars
- */
-export const DARK_AVATAR_COLORS = [
-  '#1C873C', // Brand Green
-  '#1E293B', // Dark Slate
-  '#311B92', // Deep Purple
-  '#0F4C81', // Classic Navy
-  '#701A75', // Fuchsia Dark
-  '#881337', // Rose Dark
-  '#064E3B', // Emerald Dark
-  '#164E63', // Cyan Dark
-  '#78350F', // Amber Dark
-  '#312E81', // Indigo Deep
-  '#854D0E', // Bronze Dark
-  '#3B0764', // Violet Dark
+// Curated palette of vibrant, dark-toned background colors for user initial DP circles
+const AVATAR_COLORS = [
+  '#E53935', // Coral Red (Matches screenshot AB DP)
+  '#3F51B5', // Indigo
+  '#00897B', // Emerald Teal
+  '#8E24AA', // Deep Purple
+  '#F4511E', // Deep Orange
+  '#1E88E5', // Royal Blue
+  '#D81B60', // Rose Pink
+  '#43A047', // Forest Green
+  '#FB8C00', // Dark Amber
+  '#546E7A', // Slate Blue
 ];
 
 /**
- * Deterministically generates a dark background color based on name string.
+ * Extract 1 or 2 letter initials from a full name string.
+ * Example: "Henry Edwards" => "HE", "Alex" => "AL", "John Paul Smith" => "JS"
+ */
+export function getInitials(name?: string): string {
+  if (!name || !name.trim()) return 'U';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) {
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  const firstInitial = parts[0].charAt(0).toUpperCase();
+  const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+  return `${firstInitial}${lastInitial}`;
+}
+
+/**
+ * Hash string to pick a consistent background color for a given name.
  */
 export function getAvatarColor(name?: string): string {
-  if (!name) return DARK_AVATAR_COLORS[0];
+  if (!name || !name.trim()) return AVATAR_COLORS[0];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const index = Math.abs(hash) % DARK_AVATAR_COLORS.length;
-  return DARK_AVATAR_COLORS[index];
+  const index = Math.abs(hash) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
 }
 
 export default function UserAvatar({
-  name = 'Neighbor',
-  avatar,
+  name = 'User',
+  avatarUrl,
   size = 40,
   fontSize,
   style,
-  textStyle,
 }: UserAvatarProps) {
-  const [imgError, setImgError] = useState(false);
+  const initials = getInitials(name);
+  const bgColor = getAvatarColor(name);
+  const calculatedFontSize = fontSize || Math.max(11, Math.round(size * 0.38));
 
-  const hasValidUri =
-    !!avatar &&
-    !imgError &&
-    (avatar.startsWith('http://') ||
-      avatar.startsWith('https://') ||
-      avatar.startsWith('file://') ||
-      avatar.startsWith('data:image'));
-
-  if (hasValidUri) {
+  // Render uploaded image if URL exists
+  if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim().length > 0) {
     return (
       <Image
-        source={{ uri: avatar }}
-        onError={() => setImgError(true)}
+        source={{ uri: avatarUrl }}
         style={[
           {
             width: size,
             height: size,
             borderRadius: size / 2,
-            backgroundColor: '#CBD5E1',
           },
           style,
         ]}
@@ -92,10 +79,7 @@ export default function UserAvatar({
     );
   }
 
-  const initials = getUserInitials(name);
-  const bgColor = getAvatarColor(name);
-  const calculatedFontSize = fontSize || Math.max(11, Math.round(size * 0.38));
-
+  // Fallback Initials Avatar Circle
   return (
     <View
       style={[
@@ -111,16 +95,12 @@ export default function UserAvatar({
       ]}
     >
       <Text
-        style={[
-          {
-            color: '#FFFFFF',
-            fontWeight: '800',
-            fontSize: calculatedFontSize,
-            letterSpacing: 0.5,
-            textAlign: 'center',
-          },
-          textStyle,
-        ]}
+        style={{
+          color: '#ffffff',
+          fontWeight: '800',
+          fontSize: calculatedFontSize,
+          letterSpacing: 0.5,
+        }}
       >
         {initials}
       </Text>
