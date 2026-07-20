@@ -62,14 +62,8 @@ export default function UserAvatar({
   const bgColor = getAvatarColor(name);
   const calculatedFontSize = fontSize || Math.max(11, Math.round(size * 0.38));
 
-  // Render uploaded image if URL exists AND is not a default mock/unsplash photo
-  if (
-    avatarUrl &&
-    typeof avatarUrl === 'string' &&
-    avatarUrl.trim().length > 0 &&
-    !avatarUrl.includes('unsplash.com') &&
-    !avatarUrl.includes('images.unsplash.com')
-  ) {
+  // Render photo if avatarUrl is provided
+  if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim().length > 0) {
     return (
       <Image
         source={{ uri: avatarUrl }}

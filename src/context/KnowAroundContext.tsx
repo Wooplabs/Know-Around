@@ -906,13 +906,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const savedGroups = window.localStorage.getItem('native_groups');
         const savedGPosts = window.localStorage.getItem('native_group_posts');
         
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
-          if (parsedUser && parsedUser.avatar && parsedUser.avatar.includes('unsplash.com')) {
-            delete parsedUser.avatar;
-          }
-          setUser(parsedUser);
-        }
+        if (savedUser) setUser(JSON.parse(savedUser));
         if (savedFeeds) setFeeds(JSON.parse(savedFeeds));
         if (savedAlerts) setAlerts(JSON.parse(savedAlerts));
         if (savedJobs) setJobs(JSON.parse(savedJobs));
