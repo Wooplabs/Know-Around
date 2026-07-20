@@ -172,7 +172,7 @@ export interface KnowAroundContextProps {
   googleLogin: () => void;
   register: (name: string, phone: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  currentUser: { name: string; avatar: string; location: string };
+  currentUser: { name: string; avatar?: string; location: string };
   updateProfileDetails: (name: string, email?: string, phone?: string, avatar?: string) => void;
   activeLocation: string;
   setActiveLocation: (loc: string) => void;
