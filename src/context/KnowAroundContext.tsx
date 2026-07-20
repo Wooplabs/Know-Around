@@ -25,6 +25,7 @@ export interface UserDocument {
   uid: string;
   phoneNumber: string;
   name?: string;
+  avatar?: string;
   address?: string;
   street?: string;
   area?: string;
@@ -1193,7 +1194,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         name: minimalDoc.name || '',
         email: fullPhoneNumber,
         phone: fullPhoneNumber,
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+        avatar: minimalDoc.avatar || '',
         profileCompleted: false
       };
       setUser(activeUser);
@@ -1228,7 +1229,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       name: data.name.trim(),
       email: user?.phone || '',
       phone: user?.phone || '',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+      avatar: user?.avatar || '',
       profileCompleted: true
     };
     setUser(updatedUser);
@@ -1319,7 +1320,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       name: name.trim() || 'Neighbor',
       email: phone,
       phone,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'
+      avatar: ''
     };
     setUser(newUser);
     saveState('native_user', newUser);
@@ -1391,7 +1392,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addPost = async (content: string, category: 'News' | 'Alert' | 'Event' | 'Community Update', image?: string) => {
     const newPostData = {
       author: user?.name || 'You (Neighbor)',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+      avatar: user?.avatar || '',
       location: activeLocation.split(',')[0],
       time: 'Just now',
       verified: true,

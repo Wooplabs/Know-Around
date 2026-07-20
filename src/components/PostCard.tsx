@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, Pressable, TextInput, LayoutAnimation, A
 import { Ionicons } from '@expo/vector-icons';
 import { Post, useKnowAround } from '../context/KnowAroundContext';
 import { RoundTickIcon, KebabMenuIcon, LikeIcon, CommentIcon, ShareIcon, BookmarkIcon } from './CustomIcons';
+import UserAvatar from './UserAvatar';
 
 interface PostCardProps {
   post: Post;
@@ -46,7 +47,7 @@ export default function PostCard({ post, darkMode }: PostCardProps) {
     <View style={[styles.card, darkMode && styles.cardDark]}>
       {/* Header */}
       <View style={styles.header}>
-        <Image source={{ uri: post.avatar }} style={styles.avatar} />
+        <UserAvatar name={post.author} avatar={post.avatar} size={42} style={styles.avatar} />
         <View style={styles.headerText}>
           <View style={styles.nameRow}>
             <Text style={[styles.name, darkMode && styles.nameDark]} numberOfLines={1}>{post.author}</Text>
@@ -158,7 +159,7 @@ export default function PostCard({ post, darkMode }: PostCardProps) {
                 
                 {/* Parent Comment */}
                 <View style={styles.commentRow}>
-                  <Image source={{ uri: comment.avatar }} style={styles.commentAvatar} />
+                  <UserAvatar name={comment.author} avatar={comment.avatar} size={32} style={styles.commentAvatar} />
                   <View style={[styles.commentContent, darkMode && styles.commentContentDark]}>
                     <View style={styles.commentHeader}>
                       <Text style={[styles.commentAuthor, darkMode && styles.commentAuthorDark]}>{comment.author}</Text>
@@ -171,7 +172,7 @@ export default function PostCard({ post, darkMode }: PostCardProps) {
                 {/* Threaded Replies */}
                 {comment.replies && comment.replies.map((reply) => (
                   <View key={reply.id} style={styles.replyRow}>
-                    <Image source={{ uri: reply.avatar }} style={styles.replyAvatar} />
+                    <UserAvatar name={reply.author} avatar={reply.avatar} size={26} style={styles.replyAvatar} />
                     <View style={[styles.replyContent, darkMode && styles.commentContentDark]}>
                       <View style={styles.commentHeader}>
                         <Text style={[styles.commentAuthor, darkMode && styles.commentAuthorDark]}>{reply.author}</Text>

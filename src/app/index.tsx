@@ -12,6 +12,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 import NewsTimeline from '@/components/NewsTimeline';
 import MinimalAlertCard from '@/components/MinimalAlertCard';
+import UserAvatar from '@/components/UserAvatar';
 
 export default function HomeScreen() {
   const { currentUser, activeLocation, feeds, alerts, logout, darkMode, setDarkMode, user, userAddress } = useKnowAround();
@@ -86,7 +87,7 @@ export default function HomeScreen() {
             <BellIcon color={darkMode ? "#FFFFFF" : "#1A1C1E"} size={25} />
           </Pressable>
           <Pressable onPress={() => setMenuVisible(true)} style={styles.avatarWrapper}>
-            <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
+            <UserAvatar name={currentUser.name} avatar={currentUser.avatar} size={40} style={styles.userAvatar} />
             <View style={[styles.avatarBadge, darkMode && styles.avatarBadgeDark]}>
               <Ionicons name="menu-outline" size={8} color={darkMode ? "#FFFFFF" : "#1A1C1E"} />
             </View>
@@ -106,7 +107,7 @@ export default function HomeScreen() {
           <View style={[styles.dropdownContainer, darkMode && styles.dropdownContainerDark]}>
             {/* Profile mini-card */}
             <View style={[styles.dropdownProfileCard, darkMode && styles.dropdownProfileCardDark]}>
-              <Image source={{ uri: currentUser.avatar }} style={styles.dropdownAvatar} />
+              <UserAvatar name={currentUser.name} avatar={currentUser.avatar} size={40} style={styles.dropdownAvatar} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.dropdownProfileName, darkMode && styles.dropdownProfileNameDark]} numberOfLines={1}>
                   {currentUser.name}
