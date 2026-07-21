@@ -1101,9 +1101,10 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const authenticatePhone = async (phone: string): Promise<{ isNewUser: boolean; profileCompleted: boolean }> => {
     const rawDigits = phone.replace(/[^0-9]/g, '');
-    const fullPhoneNumber = phone.startsWith('+') ? phone : `+91${rawDigits.slice(-10)}`;
+    const last10 = rawDigits.slice(-10);
+    const fullPhoneNumber = phone.startsWith('+') ? phone : `+91${last10}`;
     const nowIso = new Date().toISOString();
-    const mockUid = `usr_${rawDigits.slice(-10)}`;
+    const mockUid = `usr_${last10}`;
 
     let userDoc: UserDocument | null = null;
 
@@ -1131,15 +1132,15 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     if (!userDoc) {
       const registered = getLocalStorageJSON('native_registered_accounts') || {};
-      userDoc = registered[fullPhoneNumber] || registered[rawDigits.slice(-10)] || null;
+      userDoc = registered[fullPhoneNumber] || registered[last10] || registered[rawDigits] || null;
 
       if (!userDoc) {
         const savedUserDoc = getLocalStorageJSON('native_user_doc');
-        if (savedUserDoc && (savedUserDoc.phoneNumber === fullPhoneNumber || savedUserDoc.phoneNumber?.includes(rawDigits.slice(-10)))) {
+        if (savedUserDoc && (savedUserDoc.phoneNumber === fullPhoneNumber || savedUserDoc.phoneNumber?.includes(last10))) {
           userDoc = savedUserDoc;
         } else {
           const savedUser = getLocalStorageJSON('native_user');
-          if (savedUser && (savedUser.phone === fullPhoneNumber || savedUser.phone?.includes(rawDigits.slice(-10)) || savedUser.email === fullPhoneNumber) && savedUser.name) {
+          if (savedUser && (savedUser.phone === fullPhoneNumber || savedUser.phone?.includes(last10) || savedUser.email === fullPhoneNumber) && savedUser.name) {
             userDoc = {
               uid: mockUid,
               phoneNumber: fullPhoneNumber,
@@ -1170,6 +1171,13 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setUser(activeUser);
       saveState('native_user', activeUser);
       saveState('native_user_doc', userDoc);
+
+      // Save into registered accounts map
+      const registered = getLocalStorageJSON('native_registered_accounts') || {};
+      registered[fullPhoneNumber] = userDoc;
+      registered[last10] = userDoc;
+      registered[rawDigits] = userDoc;
+      saveState('native_registered_accounts', registered);
 
       if (userDoc.street || userDoc.city) {
         const addr = {
@@ -1252,10 +1260,15 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const nowIso = new Date().toISOString();
     const fullAddress = [data.street, data.area, data.locality, data.city, data.state, data.postalCode].filter(Boolean).join(', ');
 
+    const phoneToUse = user?.phone || getLocalStorageJSON('native_user')?.phone || '';
+    const rawDigits = phoneToUse.replace(/[^0-9]/g, '');
+    const last10 = rawDigits.slice(-10);
+    const fullPhoneNumber = phoneToUse.startsWith('+') ? phoneToUse : `+91${last10}`;
+
     const updatedUser = {
       name: data.name.trim(),
-      email: user?.phone || '',
-      phone: user?.phone || '',
+      email: fullPhoneNumber,
+      phone: fullPhoneNumber,
       avatar: user?.avatar || undefined,
       profileCompleted: true
     };
@@ -1268,7 +1281,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       city: data.city,
       state: data.state,
       pin: data.postalCode,
-      phone: user?.phone || ''
+      phone: fullPhoneNumber
     };
     setUserAddress(addr);
     saveState('native_address', addr);
@@ -1284,11 +1297,10 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
 
     // Save/Update full document in Firestore `users` collection
-    const rawDigits = (user?.phone || '').replace(/[^0-9]/g, '');
-    const uid = `usr_${rawDigits}`;
+    const uid = `usr_${last10}`;
     const userDocData: UserDocument = {
       uid,
-      phoneNumber: user?.phone || '',
+      phoneNumber: fullPhoneNumber,
       name: data.name.trim(),
       address: fullAddress,
       street: data.street,
@@ -1313,11 +1325,10 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     // Persist in native_registered_accounts dictionary so future sign-in recognizes this mobile number instantly
     const registered = getLocalStorageJSON('native_registered_accounts') || {};
-    if (userDocData.phoneNumber) {
-      registered[userDocData.phoneNumber] = userDocData;
-      registered[rawDigits.slice(-10)] = userDocData;
-      saveState('native_registered_accounts', registered);
-    }
+    registered[fullPhoneNumber] = userDocData;
+    registered[last10] = userDocData;
+    registered[rawDigits] = userDocData;
+    saveState('native_registered_accounts', registered);
 
     if (isFirebaseConfigured && db) {
       try {
@@ -1356,7 +1367,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       name: name.trim() || 'Neighbor',
       email: phone,
       phone,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'
+      avatar: undefined
     };
     setUser(newUser);
     saveState('native_user', newUser);
@@ -1371,6 +1382,25 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         console.warn('Sign out error:', err);
       }
     }
+
+    // Preserve registered account in native_registered_accounts before clearing active user state
+    if (user && (user.phone || user.email) && user.name) {
+      const phoneVal = user.phone || user.email;
+      const registered = getLocalStorageJSON('native_registered_accounts') || {};
+      const last10 = phoneVal.replace(/[^0-9]/g, '').slice(-10);
+      if (last10) {
+        const currentDoc = getLocalStorageJSON('native_user_doc') || {
+          uid: `usr_${last10}`,
+          phoneNumber: phoneVal,
+          name: user.name,
+          profileCompleted: true
+        };
+        registered[phoneVal] = currentDoc;
+        registered[last10] = currentDoc;
+        saveState('native_registered_accounts', registered);
+      }
+    }
+
     setUser(null);
     setOnboardingCompleted(false);
     setUserRole(null);
