@@ -1155,19 +1155,84 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
+const findRegisteredAccount = (phone: string): UserDocument | null => {
+  if (!phone) return null;
+  const rawDigits = phone.replace(/[^0-9]/g, '');
+  const last10 = rawDigits.slice(-10);
+  if (!last10 || last10.length < 10) return null;
+
+  // 1. Search in-memory GLOBAL_REGISTERED_ACCOUNTS
+  for (const key of Object.keys(GLOBAL_REGISTERED_ACCOUNTS)) {
+    const doc = GLOBAL_REGISTERED_ACCOUNTS[key];
+    if (!doc) continue;
+    const docDigits = (doc.phoneNumber || '').replace(/[^0-9]/g, '');
+    if (docDigits.endsWith(last10) && doc.name && doc.name.trim().length > 0) {
+      return doc;
+    }
+  }
+
+  // 2. Search in localStorage native_registered_accounts
+  const registeredMap = getLocalStorageJSON('native_registered_accounts') || {};
+  for (const key of Object.keys(registeredMap)) {
+    const doc = registeredMap[key];
+    if (!doc) continue;
+    const docDigits = (doc.phoneNumber || '').replace(/[^0-9]/g, '');
+    if (docDigits.endsWith(last10) && doc.name && doc.name.trim().length > 0) {
+      return doc;
+    }
+  }
+
+  // 3. Search in localStorage native_user_doc
+  const savedUserDoc = getLocalStorageJSON('native_user_doc');
+  if (savedUserDoc && savedUserDoc.name && savedUserDoc.name.trim().length > 0) {
+    const docDigits = (savedUserDoc.phoneNumber || '').replace(/[^0-9]/g, '');
+    if (docDigits.endsWith(last10)) {
+      return savedUserDoc;
+    }
+  }
+
+  // 4. Search in localStorage native_user
+  const savedUser = getLocalStorageJSON('native_user');
+  if (savedUser && savedUser.name && savedUser.name.trim().length > 0) {
+    const uPhoneDigits = (savedUser.phone || savedUser.email || '').replace(/[^0-9]/g, '');
+    if (uPhoneDigits.endsWith(last10)) {
+      return {
+        uid: `usr_${last10}`,
+        phoneNumber: savedUser.phone || `+91${last10}`,
+        name: savedUser.name,
+        address: 'Registered User Address',
+        profileCompleted: true,
+        locationVerified: true,
+        notificationEnabled: true,
+        accountType: 'personal',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+      };
+    }
+  }
+
+  return null;
+};
+
   const authenticatePhone = async (phone: string): Promise<{ isNewUser: boolean; profileCompleted: boolean }> => {
     const rawDigits = phone.replace(/[^0-9]/g, '');
-    const fullPhoneNumber = phone.startsWith('+') ? phone : `+91${rawDigits.slice(-10)}`;
+    const last10 = rawDigits.slice(-10);
+    const fullPhoneNumber = phone.startsWith('+') ? phone : `+91${last10}`;
     const nowIso = new Date().toISOString();
-    const mockUid = `usr_${rawDigits.slice(-10)}`;
+    const mockUid = `usr_${last10}`;
 
     let userDoc: UserDocument | null = null;
 
     if (isFirebaseConfigured && db) {
       try {
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('phoneNumber', '==', fullPhoneNumber));
-        const snapshot = await getDocs(q);
+        const q1 = query(usersRef, where('phoneNumber', '==', fullPhoneNumber));
+        let snapshot = await getDocs(q1);
+        if (snapshot.empty && last10) {
+          const q2 = query(usersRef, where('phoneNumber', '==', last10));
+          snapshot = await getDocs(q2);
+        }
 
         if (!snapshot.empty) {
           const docSnap = snapshot.docs[0];
@@ -1186,39 +1251,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
 
     if (!userDoc) {
-      userDoc = GLOBAL_REGISTERED_ACCOUNTS[fullPhoneNumber] || 
-                GLOBAL_REGISTERED_ACCOUNTS[rawDigits.slice(-10)] || 
-                GLOBAL_REGISTERED_ACCOUNTS[rawDigits] || 
-                null;
-
-      if (!userDoc) {
-        const registered = getLocalStorageJSON('native_registered_accounts') || {};
-        userDoc = registered[fullPhoneNumber] || registered[rawDigits.slice(-10)] || registered[rawDigits] || null;
-
-        if (!userDoc) {
-          const savedUserDoc = getLocalStorageJSON('native_user_doc');
-          if (savedUserDoc && (savedUserDoc.phoneNumber === fullPhoneNumber || savedUserDoc.phoneNumber?.includes(rawDigits.slice(-10)))) {
-            userDoc = savedUserDoc;
-          } else {
-            const savedUser = getLocalStorageJSON('native_user');
-            if (savedUser && (savedUser.phone === fullPhoneNumber || savedUser.phone?.includes(rawDigits.slice(-10)) || savedUser.email === fullPhoneNumber) && savedUser.name) {
-              userDoc = {
-                uid: mockUid,
-                phoneNumber: fullPhoneNumber,
-                name: savedUser.name,
-                address: 'Registered User Address',
-                profileCompleted: true,
-                locationVerified: true,
-                notificationEnabled: true,
-                accountType: 'personal',
-                createdAt: nowIso,
-                updatedAt: nowIso,
-                lastLogin: nowIso
-              };
-            }
-          }
-        }
-      }
+      userDoc = findRegisteredAccount(phone);
     }
 
     if (userDoc && userDoc.name && userDoc.name.trim().length > 0) {
