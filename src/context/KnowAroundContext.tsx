@@ -20,6 +20,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface UserDocument {
   uid: string;
@@ -880,12 +881,10 @@ const registerAccountInMemoryAndStorage = (docData: UserDocument) => {
   if (rawDigits) GLOBAL_REGISTERED_ACCOUNTS[rawDigits] = docData;
 
   try {
+    const jsonStr = JSON.stringify(GLOBAL_REGISTERED_ACCOUNTS);
+    AsyncStorage.setItem('native_registered_accounts', jsonStr).catch(() => {});
     if (typeof window !== 'undefined' && window.localStorage) {
-      const existing = getLocalStorageJSON('native_registered_accounts') || {};
-      if (fullPhone) existing[fullPhone] = docData;
-      if (last10) existing[last10] = docData;
-      if (rawDigits) existing[rawDigits] = docData;
-      window.localStorage.setItem('native_registered_accounts', JSON.stringify(existing));
+      window.localStorage.setItem('native_registered_accounts', jsonStr);
     }
   } catch (e) {}
 };
@@ -915,69 +914,75 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [distanceFilter, setDistanceFilter] = useState('5 km');
   const [ratingsFilter, setRatingsFilter] = useState('All');
 
-  // Load from localStorage on mount (Web support)
+  // Load from AsyncStorage & localStorage on mount
   useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const savedAccounts = window.localStorage.getItem('native_registered_accounts');
-        if (savedAccounts) {
+    const loadPersistedData = async () => {
+      try {
+        const savedAccountsStr = await AsyncStorage.getItem('native_registered_accounts').catch(() => null) || 
+                                 (typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('native_registered_accounts') : null);
+        if (savedAccountsStr) {
           try {
-            const parsed = JSON.parse(savedAccounts);
+            const parsed = JSON.parse(savedAccountsStr);
             Object.assign(GLOBAL_REGISTERED_ACCOUNTS, parsed);
           } catch (e) {}
         }
 
-        const savedUserDoc = window.localStorage.getItem('native_user_doc');
-        if (savedUserDoc) {
+        const savedUserDocStr = await AsyncStorage.getItem('native_user_doc').catch(() => null) || 
+                                (typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('native_user_doc') : null);
+        if (savedUserDocStr) {
           try {
-            registerAccountInMemoryAndStorage(JSON.parse(savedUserDoc));
+            registerAccountInMemoryAndStorage(JSON.parse(savedUserDocStr));
           } catch (e) {}
         }
 
-        const savedUser = window.localStorage.getItem('native_user');
-        const savedFeeds = window.localStorage.getItem('native_feeds');
-        const savedAlerts = window.localStorage.getItem('native_alerts');
-        const savedJobs = window.localStorage.getItem('native_jobs');
-        const savedOnboarding = window.localStorage.getItem('native_onboarding');
-        const savedRole = window.localStorage.getItem('native_role');
-        const savedLoc = window.localStorage.getItem('native_location');
-        const savedAddr = window.localStorage.getItem('native_address');
-        const savedPros = window.localStorage.getItem('native_professionals');
-        const savedGroups = window.localStorage.getItem('native_groups');
-        const savedGPosts = window.localStorage.getItem('native_group_posts');
-        
-        if (savedUser) {
-          const u = JSON.parse(savedUser);
-          if (u && u.phone && u.name) {
-            registerAccountInMemoryAndStorage({
-              uid: `usr_${u.phone.replace(/[^0-9]/g, '')}`,
-              phoneNumber: u.phone,
-              name: u.name,
-              profileCompleted: true,
-              locationVerified: true,
-              notificationEnabled: true,
-              accountType: 'personal',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              lastLogin: new Date().toISOString()
-            });
-          }
-          setUser(u);
+        const savedUserStr = await AsyncStorage.getItem('native_user').catch(() => null) || 
+                             (typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('native_user') : null);
+        if (savedUserStr) {
+          try {
+            const u = JSON.parse(savedUserStr);
+            if (u && u.phone && u.name) {
+              registerAccountInMemoryAndStorage({
+                uid: `usr_${u.phone.replace(/[^0-9]/g, '')}`,
+                phoneNumber: u.phone,
+                name: u.name,
+                profileCompleted: true,
+                locationVerified: true,
+                notificationEnabled: true,
+                accountType: 'personal',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString()
+              });
+            }
+            setUser(u);
+          } catch (e) {}
         }
-        if (savedFeeds) setFeeds(JSON.parse(savedFeeds));
-        if (savedAlerts) setAlerts(JSON.parse(savedAlerts));
-        if (savedJobs) setJobs(JSON.parse(savedJobs));
-        if (savedOnboarding) setOnboardingCompleted(JSON.parse(savedOnboarding));
-        if (savedRole) setUserRole(savedRole as any);
-        if (savedLoc) setActiveLocation(savedLoc);
-        if (savedAddr) setUserAddress(JSON.parse(savedAddr));
-        if (savedPros) setProfessionals(JSON.parse(savedPros));
-        if (savedGroups) setGroups(JSON.parse(savedGroups));
-        if (savedGPosts) setGroupPosts(JSON.parse(savedGPosts));
+
+        const savedOnboardingStr = await AsyncStorage.getItem('native_onboarding').catch(() => null) || 
+                                   (typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('native_onboarding') : null);
+        if (savedOnboardingStr) {
+          try {
+            setOnboardingCompleted(JSON.parse(savedOnboardingStr));
+          } catch (e) {}
+        }
+
+        const savedLocStr = await AsyncStorage.getItem('native_location').catch(() => null) || 
+                            (typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('native_location') : null);
+        if (savedLocStr) {
+          try { setActiveLocation(savedLocStr); } catch (e) {}
+        }
+
+        const savedAddrStr = await AsyncStorage.getItem('native_address').catch(() => null) || 
+                             (typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('native_address') : null);
+        if (savedAddrStr) {
+          try { setUserAddress(JSON.parse(savedAddrStr)); } catch (e) {}
+        }
+      } catch (err) {
+        console.warn('Persisted data load error:', err);
       }
-    } catch (e) {
-      // Ignore
-    }
+    };
+
+    loadPersistedData();
   }, []);
 
   const authInitialLoad = useRef(true);
@@ -1155,84 +1160,19 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-const findRegisteredAccount = (phone: string): UserDocument | null => {
-  if (!phone) return null;
-  const rawDigits = phone.replace(/[^0-9]/g, '');
-  const last10 = rawDigits.slice(-10);
-  if (!last10 || last10.length < 10) return null;
-
-  // 1. Search in-memory GLOBAL_REGISTERED_ACCOUNTS
-  for (const key of Object.keys(GLOBAL_REGISTERED_ACCOUNTS)) {
-    const doc = GLOBAL_REGISTERED_ACCOUNTS[key];
-    if (!doc) continue;
-    const docDigits = (doc.phoneNumber || '').replace(/[^0-9]/g, '');
-    if (docDigits.endsWith(last10) && doc.name && doc.name.trim().length > 0) {
-      return doc;
-    }
-  }
-
-  // 2. Search in localStorage native_registered_accounts
-  const registeredMap = getLocalStorageJSON('native_registered_accounts') || {};
-  for (const key of Object.keys(registeredMap)) {
-    const doc = registeredMap[key];
-    if (!doc) continue;
-    const docDigits = (doc.phoneNumber || '').replace(/[^0-9]/g, '');
-    if (docDigits.endsWith(last10) && doc.name && doc.name.trim().length > 0) {
-      return doc;
-    }
-  }
-
-  // 3. Search in localStorage native_user_doc
-  const savedUserDoc = getLocalStorageJSON('native_user_doc');
-  if (savedUserDoc && savedUserDoc.name && savedUserDoc.name.trim().length > 0) {
-    const docDigits = (savedUserDoc.phoneNumber || '').replace(/[^0-9]/g, '');
-    if (docDigits.endsWith(last10)) {
-      return savedUserDoc;
-    }
-  }
-
-  // 4. Search in localStorage native_user
-  const savedUser = getLocalStorageJSON('native_user');
-  if (savedUser && savedUser.name && savedUser.name.trim().length > 0) {
-    const uPhoneDigits = (savedUser.phone || savedUser.email || '').replace(/[^0-9]/g, '');
-    if (uPhoneDigits.endsWith(last10)) {
-      return {
-        uid: `usr_${last10}`,
-        phoneNumber: savedUser.phone || `+91${last10}`,
-        name: savedUser.name,
-        address: 'Registered User Address',
-        profileCompleted: true,
-        locationVerified: true,
-        notificationEnabled: true,
-        accountType: 'personal',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString()
-      };
-    }
-  }
-
-  return null;
-};
-
   const authenticatePhone = async (phone: string): Promise<{ isNewUser: boolean; profileCompleted: boolean }> => {
     const rawDigits = phone.replace(/[^0-9]/g, '');
-    const last10 = rawDigits.slice(-10);
-    const fullPhoneNumber = phone.startsWith('+') ? phone : `+91${last10}`;
+    const fullPhoneNumber = phone.startsWith('+') ? phone : `+91${rawDigits.slice(-10)}`;
     const nowIso = new Date().toISOString();
-    const mockUid = `usr_${last10}`;
+    const mockUid = `usr_${rawDigits.slice(-10)}`;
 
     let userDoc: UserDocument | null = null;
 
     if (isFirebaseConfigured && db) {
       try {
         const usersRef = collection(db, 'users');
-        const q1 = query(usersRef, where('phoneNumber', '==', fullPhoneNumber));
-        let snapshot = await getDocs(q1);
-        if (snapshot.empty && last10) {
-          const q2 = query(usersRef, where('phoneNumber', '==', last10));
-          snapshot = await getDocs(q2);
-        }
+        const q = query(usersRef, where('phoneNumber', '==', fullPhoneNumber));
+        const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
           const docSnap = snapshot.docs[0];
@@ -1251,7 +1191,47 @@ const findRegisteredAccount = (phone: string): UserDocument | null => {
     }
 
     if (!userDoc) {
-      userDoc = findRegisteredAccount(phone);
+      userDoc = GLOBAL_REGISTERED_ACCOUNTS[fullPhoneNumber] || 
+                GLOBAL_REGISTERED_ACCOUNTS[rawDigits.slice(-10)] || 
+                GLOBAL_REGISTERED_ACCOUNTS[rawDigits] || 
+                null;
+
+      if (!userDoc) {
+        try {
+          const asyncRegisteredStr = await AsyncStorage.getItem('native_registered_accounts').catch(() => null);
+          const asyncRegistered = asyncRegisteredStr ? JSON.parse(asyncRegisteredStr) : null;
+          const registered = asyncRegistered || getLocalStorageJSON('native_registered_accounts') || {};
+          userDoc = registered[fullPhoneNumber] || registered[rawDigits.slice(-10)] || registered[rawDigits] || null;
+        } catch (e) {}
+
+        if (!userDoc) {
+          try {
+            const asyncUserDocStr = await AsyncStorage.getItem('native_user_doc').catch(() => null);
+            const savedUserDoc = asyncUserDocStr ? JSON.parse(asyncUserDocStr) : getLocalStorageJSON('native_user_doc');
+            if (savedUserDoc && (savedUserDoc.phoneNumber === fullPhoneNumber || savedUserDoc.phoneNumber?.includes(rawDigits.slice(-10)))) {
+              userDoc = savedUserDoc;
+            } else {
+              const asyncUserStr = await AsyncStorage.getItem('native_user').catch(() => null);
+              const savedUser = asyncUserStr ? JSON.parse(asyncUserStr) : getLocalStorageJSON('native_user');
+              if (savedUser && (savedUser.phone === fullPhoneNumber || savedUser.phone?.includes(rawDigits.slice(-10)) || savedUser.email === fullPhoneNumber) && savedUser.name) {
+                userDoc = {
+                  uid: mockUid,
+                  phoneNumber: fullPhoneNumber,
+                  name: savedUser.name,
+                  address: 'Registered User Address',
+                  profileCompleted: true,
+                  locationVerified: true,
+                  notificationEnabled: true,
+                  accountType: 'personal',
+                  createdAt: nowIso,
+                  updatedAt: nowIso,
+                  lastLogin: nowIso
+                };
+              }
+            }
+          } catch (e) {}
+        }
+      }
     }
 
     if (userDoc && userDoc.name && userDoc.name.trim().length > 0) {
@@ -1470,6 +1450,10 @@ const findRegisteredAccount = (phone: string): UserDocument | null => {
     setUserRole(null);
     setUserAddress(null);
     try {
+      await AsyncStorage.removeItem('native_user').catch(() => {});
+      await AsyncStorage.removeItem('native_onboarding').catch(() => {});
+      await AsyncStorage.removeItem('native_role').catch(() => {});
+      await AsyncStorage.removeItem('native_address').catch(() => {});
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.removeItem('native_user');
         window.localStorage.removeItem('native_onboarding');
