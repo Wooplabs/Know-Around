@@ -10,6 +10,7 @@ import {
   arrayUnion, 
   increment,
   getDocs,
+  getDoc,
   deleteDoc,
   query,
   where
@@ -1170,17 +1171,38 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     if (isFirebaseConfigured && db) {
       try {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('phoneNumber', '==', fullPhoneNumber));
-        const snapshot = await getDocs(q);
-
-        if (!snapshot.empty) {
-          const docSnap = snapshot.docs[0];
+        // 1. Try directly fetching doc by ID first (very fast and robust)
+        const docRef = doc(db, 'users', `usr_${rawDigits}`);
+        let docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
           userDoc = docSnap.data() as UserDocument;
           userDoc.uid = docSnap.id;
+        } else {
+          const docRef2 = doc(db, 'users', `usr_${rawDigits.slice(-10)}`);
+          const docSnap2 = await getDoc(docRef2);
+          if (docSnap2.exists()) {
+            userDoc = docSnap2.data() as UserDocument;
+            userDoc.uid = docSnap2.id;
+          }
+        }
 
-          // Update lastLogin timestamp in Firestore
-          await updateDoc(doc(db, 'users', docSnap.id), {
+        // 2. Query fallback if doc ID fetch is empty
+        if (!userDoc) {
+          const usersRef = collection(db, 'users');
+          const formats = [fullPhoneNumber, rawDigits.slice(-10), rawDigits];
+          const q = query(usersRef, where('phoneNumber', 'in', formats));
+          const snapshot = await getDocs(q);
+
+          if (!snapshot.empty) {
+            const docSnap = snapshot.docs[0];
+            userDoc = docSnap.data() as UserDocument;
+            userDoc.uid = docSnap.id;
+          }
+        }
+
+        // 3. Update lastLogin timestamp in Firestore
+        if (userDoc) {
+          await updateDoc(doc(db, 'users', userDoc.uid), {
             lastLogin: nowIso,
             updatedAt: nowIso
           });
@@ -1234,12 +1256,12 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     }
 
-    if (userDoc && userDoc.name && userDoc.name.trim().length > 0) {
+    if (userDoc && (userDoc.profileCompleted || (userDoc.name && userDoc.name.trim().length > 0))) {
       // Returning registered user -> Sign In Process -> Open Home Straightaway!
       registerAccountInMemoryAndStorage(userDoc);
 
       const activeUser = {
-        name: userDoc.name,
+        name: userDoc.name || 'Neighbor',
         email: userDoc.phoneNumber,
         phone: userDoc.phoneNumber,
         avatar: userDoc.avatar || undefined,
