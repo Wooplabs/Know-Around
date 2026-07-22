@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useImperativeHandle, forwardRef, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { LEAFLET_CSS, LEAFLET_JS } from './leaflet-bundle';
 
 export interface MapRef {
   panTo: (lat: number, lng: number, zoom?: number) => void;
@@ -111,9 +112,7 @@ const Map = forwardRef<MapRef, MapProps>(({
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-        <!-- FontAwesome for Icons inside Webview -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>${LEAFLET_CSS}</style>
         <style>
           html, body, #map {
             width: 100%;
@@ -272,7 +271,7 @@ const Map = forwardRef<MapRef, MapProps>(({
       </head>
       <body>
         <div id="map"></div>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+        <script>${LEAFLET_JS}</script>
         <script>
           // Default map center (White Town)
           var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([11.9340, 79.8300], 14);
@@ -483,7 +482,20 @@ const Map = forwardRef<MapRef, MapProps>(({
           }
 
           // Notify React Native that the map is fully loaded and ready to receive messaging data
+          // Also send initial center so onRegionChangeComplete fires even before first pan
+          var initialCenter = map.getCenter();
+          var initialBounds = map.getBounds();
           window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
+          setTimeout(function() {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'MAP_MOVE_END',
+              payload: {
+                center: initialCenter,
+                bounds: initialBounds,
+                zoom: map.getZoom()
+              }
+            }));
+          }, 300);
         </script>
       </body>
     </html>
@@ -522,6 +534,10 @@ const Map = forwardRef<MapRef, MapProps>(({
         javaScriptEnabled={true}
         domStorageEnabled={true}
         startInLoadingState={true}
+        mixedContentMode="always"
+        allowFileAccess={true}
+        allowUniversalAccessFromFileURLs={true}
+        scalesPageToFit={false}
         renderLoading={() => (
           <View style={styles.loading}>
             <ActivityIndicator size="large" color="#1C873C" />
