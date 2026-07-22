@@ -897,6 +897,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [activeLocation, setActiveLocation] = useState('White Town, PY');
   const [feeds, setFeeds] = useState<Post[]>(SEED_POSTS);
   const [professionals, setProfessionals] = useState<Professional[]>(SEED_PROFESSIONALS);
+  const verifiedPhoneRef = useRef<string>('');
   const [directory, setDirectory] = useState<DirectoryItem[]>(SEED_DIRECTORY);
   const [alerts, setAlerts] = useState<AlertItem[]>(SEED_ALERTS);
   const [jobs, setJobs] = useState<JobVacancy[]>(SEED_JOBS);
@@ -1168,6 +1169,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const mockUid = `usr_${rawDigits.slice(-10)}`;
 
     let userDoc: UserDocument | null = null;
+    verifiedPhoneRef.current = fullPhoneNumber;
 
     if (isFirebaseConfigured && db) {
       try {
@@ -1353,12 +1355,13 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     notificationEnabled: boolean;
   }) => {
     const nowIso = new Date().toISOString();
+    const phoneStr = user?.phone || verifiedPhoneRef.current || '';
     const fullAddress = [data.street, data.area, data.locality, data.city, data.state, data.postalCode].filter(Boolean).join(', ');
 
     const updatedUser = {
       name: data.name.trim(),
-      email: user?.phone || '',
-      phone: user?.phone || '',
+      email: phoneStr,
+      phone: phoneStr,
       avatar: user?.avatar || undefined,
       profileCompleted: true
     };
@@ -1371,7 +1374,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       city: data.city,
       state: data.state,
       pin: data.postalCode,
-      phone: user?.phone || ''
+      phone: phoneStr
     };
     setUserAddress(addr);
     saveState('native_address', addr);
@@ -1387,11 +1390,12 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
 
     // Save/Update full document in Firestore `users` collection
-    const rawDigits = (user?.phone || '').replace(/[^0-9]/g, '');
-    const uid = `usr_${rawDigits}`;
+    const rawDigits = phoneStr.replace(/[^0-9]/g, '');
+    const last10 = rawDigits.slice(-10);
+    const uid = `usr_${last10}`;
     const userDocData: UserDocument = {
       uid,
-      phoneNumber: user?.phone || '',
+      phoneNumber: phoneStr,
       name: data.name.trim(),
       address: fullAddress,
       street: data.street,
