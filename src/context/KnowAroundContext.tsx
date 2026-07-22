@@ -29,6 +29,7 @@ export interface UserDocument {
   name?: string;
   avatar?: string;
   address?: string;
+  formattedAddress?: string;
   street?: string;
   area?: string;
   locality?: string;
@@ -38,6 +39,7 @@ export interface UserDocument {
   postalCode?: string;
   latitude?: number;
   longitude?: number;
+  locationPermissionGranted?: boolean;
   locationVerified: boolean;
   notificationEnabled: boolean;
   profileCompleted: boolean;
@@ -167,8 +169,11 @@ export interface KnowAroundContextProps {
     state: string;
     country: string;
     postalCode: string;
+    formattedAddress?: string;
     latitude: number;
     longitude: number;
+    locationPermissionGranted?: boolean;
+    locationVerified?: boolean;
     notificationEnabled: boolean;
   }) => Promise<void>;
   login: (phone: string) => Promise<boolean>;
@@ -1358,13 +1363,16 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     state: string;
     country: string;
     postalCode: string;
+    formattedAddress?: string;
     latitude: number;
     longitude: number;
+    locationPermissionGranted?: boolean;
+    locationVerified?: boolean;
     notificationEnabled: boolean;
   }) => {
     const nowIso = new Date().toISOString();
     const phoneStr = user?.phone || verifiedPhoneRef.current || '';
-    const fullAddress = [data.street, data.area, data.locality, data.city, data.state, data.postalCode].filter(Boolean).join(', ');
+    const fullAddress = data.formattedAddress || [data.street, data.area, data.locality, data.city, data.state, data.postalCode].filter(Boolean).join(', ');
 
     const updatedUser = {
       name: data.name.trim(),
@@ -1406,6 +1414,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       phoneNumber: phoneStr,
       name: data.name.trim(),
       address: fullAddress,
+      formattedAddress: fullAddress,
       street: data.street,
       area: data.area,
       locality: data.locality,
@@ -1415,6 +1424,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       postalCode: data.postalCode,
       latitude: data.latitude,
       longitude: data.longitude,
+      locationPermissionGranted: data.locationPermissionGranted ?? true,
       locationVerified: true,
       notificationEnabled: data.notificationEnabled,
       profileCompleted: true,

@@ -16,6 +16,7 @@ import {
 import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import Map from './Map';
 
 export interface AddressSuggestion {
   id: string;
@@ -39,7 +40,7 @@ export default function OnboardingModal() {
     logout
   } = useKnowAround();
 
-  // Wizard Step: 1 = Name, 2 = Mandatory Location & Address, 3 = Notifications, 4 = Success
+  // Wizard Step: 1 = Name, 2 = Address, 3 = Confirm Location on Map, 4 = Notifications, 5 = Guidelines, 6 = Success
   const [step, setStep] = useState(1);
 
   // Step 1 State
@@ -58,6 +59,12 @@ export default function OnboardingModal() {
 
   const [isLocating, setIsLocating] = useState(false);
   const [autoFilledBadge, setAutoFilledBadge] = useState<string | null>(null);
+
+  // Step 3 State (Confirm Location on Map)
+  const [mapCenter, setMapCenter] = useState<{ latitude: number; longitude: number }>({ latitude: 11.9340, longitude: 79.8300 });
+  const [formattedAddress, setFormattedAddress] = useState<string>('');
+  const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState<boolean>(false);
 
   // Real-time Address Suggestions State
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -202,6 +209,7 @@ export default function OnboardingModal() {
           if (autoPin) setPostalCode(autoPin);
 
           setAutoFilledBadge('✨ Location & Address auto-filled via GPS!');
+          setLocationPermissionGranted(true);
         }
       }
     } catch (err) {
@@ -212,6 +220,66 @@ export default function OnboardingModal() {
     }
   };
 
+  const initConfirmMapLocation = async () => {
+    const fullAddr = [street, area, locality, city, state, country, postalCode].filter(Boolean).join(', ');
+    setFormattedAddress(fullAddr);
+
+    if (latitude && longitude && (latitude !== 11.9340 || longitude !== 79.8300)) {
+      setMapCenter({ latitude, longitude });
+    } else {
+      setIsGeocoding(true);
+      try {
+        const queryStr = [street, area, city, state, country, postalCode].filter(Boolean).join(', ');
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}&limit=1`,
+          { headers: { 'User-Agent': 'KnowAroundApp/1.0' } }
+        );
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const latVal = parseFloat(data[0].lat);
+          const lonVal = parseFloat(data[0].lon);
+          if (!isNaN(latVal) && !isNaN(lonVal)) {
+            setLatitude(latVal);
+            setLongitude(lonVal);
+            setMapCenter({ latitude: latVal, longitude: lonVal });
+            if (data[0].display_name) {
+              setFormattedAddress(data[0].display_name);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Geocoding notice:', err);
+      } finally {
+        setIsGeocoding(false);
+      }
+    }
+  };
+
+  const handleMapRegionChangeComplete = (region: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }) => {
+    if (!region.latitude || !region.longitude) return;
+    setLatitude(region.latitude);
+    setLongitude(region.longitude);
+    setMapCenter({ latitude: region.latitude, longitude: region.longitude });
+
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${region.latitude}&lon=${region.longitude}`,
+          { headers: { 'User-Agent': 'KnowAroundApp/1.0' } }
+        );
+        const data = await res.json();
+        if (data && data.display_name) {
+          setFormattedAddress(data.display_name);
+        } else {
+          setFormattedAddress([street, area, city, state, postalCode].filter(Boolean).join(', '));
+        }
+      } catch (e) {
+        setFormattedAddress([street, area, city, state, postalCode].filter(Boolean).join(', '));
+      }
+    }, 400);
+  };
+
   const handleStep1Submit = () => {
     if (!name.trim()) {
       Alert.alert('Name Required', 'Please enter your full name so neighbors can recognize you.');
@@ -220,7 +288,7 @@ export default function OnboardingModal() {
     setStep(2);
   };
 
-  const handleStep2Submit = () => {
+  const handleStep2Submit = async () => {
     if (!street.trim() || !city.trim() || !state.trim() || !postalCode.trim()) {
       Alert.alert('Address Mandatory', 'Street address, city, state, and postal code are mandatory to explore your neighborhood feed.');
       return;
@@ -229,31 +297,35 @@ export default function OnboardingModal() {
       Alert.alert('Invalid Postal Code', 'Please enter a valid 6-digit postal code.');
       return;
     }
+    await initConfirmMapLocation();
     setStep(3);
   };
 
-  const handleStep3Finish = (enableNotifications: boolean) => {
+  const handleStep4Finish = (enableNotifications: boolean) => {
     setNotificationEnabled(enableNotifications);
-    setStep(4);
+    setStep(5);
   };
 
-  const handleStep4Finish = async () => {
+  const handleStep5Finish = async () => {
     setIsSubmitting(true);
     try {
       await completeOnboarding({
         name: name.trim(),
         street: street.trim(),
         area: area.trim(),
-        locality: '',
+        locality: locality.trim(),
         city: city.trim(),
         state: state.trim(),
         country: country.trim(),
         postalCode: postalCode.trim(),
+        formattedAddress: formattedAddress || [street, area, city, state, postalCode].filter(Boolean).join(', '),
         latitude,
         longitude,
+        locationPermissionGranted,
+        locationVerified: true,
         notificationEnabled,
       });
-      setStep(5);
+      setStep(6);
     } catch (e) {
       console.error('Onboarding completion error:', e);
     } finally {
@@ -266,7 +338,7 @@ export default function OnboardingModal() {
       <View style={styles.container}>
         
         {/* Step Indicator Bar with Back Button */}
-        {step <= 4 && (
+        {step <= 5 && (
           <View style={styles.topBarRow}>
             <Pressable 
               onPress={() => {
@@ -282,7 +354,7 @@ export default function OnboardingModal() {
             </Pressable>
 
             <View style={styles.progressRow}>
-              {[1, 2, 3, 4].map((s) => (
+              {[1, 2, 3, 4, 5].map((s) => (
                 <View 
                   key={s} 
                   style={[
@@ -505,8 +577,83 @@ export default function OnboardingModal() {
           </ScrollView>
         )}
 
-        {/* STEP 3: Turn on Notifications */}
+        {/* STEP 3: Confirm Location on Map */}
         {step === 3 && (
+          <View style={styles.confirmMapContainer}>
+            <View style={styles.confirmMapHeader}>
+              <Text style={styles.confirmMapTitle}>Confirm Location on Map</Text>
+              <Text style={styles.confirmMapSubtitle}>
+                Move the map underneath the center pin to set your exact home position.
+              </Text>
+            </View>
+
+            {/* Large Interactive Map Canvas */}
+            <View style={styles.mapCanvasWrapper}>
+              <Map
+                markers={[]}
+                userLocation={{ latitude: mapCenter.latitude, longitude: mapCenter.longitude, accuracy: null }}
+                userAvatar={user?.avatar}
+                userLabel="My House"
+                onRegionChangeComplete={handleMapRegionChangeComplete}
+              />
+              
+              {/* Fixed Center Pin Overlay */}
+              <View style={styles.fixedCenterPinOverlay} pointerEvents="none">
+                <View style={styles.centerPinTeardrop}>
+                  <Ionicons name="home" size={20} color="#FFFFFF" />
+                </View>
+                <View style={styles.centerPinDotShadow} />
+              </View>
+
+              {isGeocoding && (
+                <View style={styles.mapLoadingOverlay}>
+                  <ActivityIndicator size="small" color="#1C873C" />
+                  <Text style={styles.mapLoadingText}>Locating address on map...</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Bottom Address Details Card */}
+            <View style={styles.locationBottomCard}>
+              <View style={styles.bottomCardAddressHeader}>
+                <Ionicons name="location" size={22} color="#1C873C" style={{ marginTop: 2 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.bottomCardAddressTitle} numberOfLines={2}>
+                    {formattedAddress || [street, area, city, state, postalCode].filter(Boolean).join(', ') || 'Selected Location'}
+                  </Text>
+                  <Text style={styles.bottomCardCoordsText}>
+                    Lat: {latitude ? latitude.toFixed(5) : '--'}  •  Lng: {longitude ? longitude.toFixed(5) : '--'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Action Buttons Row */}
+              <View style={styles.bottomCardBtnRow}>
+                <Pressable style={styles.secondaryBackBtn} onPress={() => setStep(2)}>
+                  <Text style={styles.secondaryBackBtnText}>Back</Text>
+                </Pressable>
+
+                {(() => {
+                  const isValidCoords = typeof latitude === 'number' && typeof longitude === 'number' && !isNaN(latitude) && !isNaN(longitude) && latitude !== 0;
+                  return (
+                    <Pressable
+                      style={[styles.confirmContinueBtn, !isValidCoords && styles.confirmContinueBtnDisabled]}
+                      onPress={() => setStep(4)}
+                      disabled={!isValidCoords}
+                    >
+                      <Text style={[styles.confirmContinueBtnText, !isValidCoords && styles.confirmContinueBtnTextDisabled]}>
+                        Confirm Location & Continue
+                      </Text>
+                    </Pressable>
+                  );
+                })()}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* STEP 4: Turn on Notifications */}
+        {step === 4 && (
           <View style={styles.step3Container}>
             <Text style={styles.step3HeaderTitle}>
               Turn on notifications so you don't miss neighborhood updates!
@@ -549,7 +696,7 @@ export default function OnboardingModal() {
             {/* Action Buttons */}
             <Pressable 
               style={styles.primaryBtn} 
-              onPress={() => handleStep3Finish(true)} 
+              onPress={() => handleStep4Finish(true)} 
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -561,7 +708,7 @@ export default function OnboardingModal() {
 
             <Pressable 
               style={styles.textBtnLink} 
-              onPress={() => handleStep3Finish(false)} 
+              onPress={() => handleStep4Finish(false)} 
               disabled={isSubmitting}
             >
               <Text style={styles.textBtnLinkText}>Not now</Text>
@@ -569,8 +716,8 @@ export default function OnboardingModal() {
           </View>
         )}
 
-        {/* STEP 4: Community Guidelines */}
-        {step === 4 && (
+        {/* STEP 5: Community Guidelines */}
+        {step === 5 && (
           <View style={styles.step4Container}>
             <Text style={styles.step4HeaderTitle}>
               One last thing! Let's all do our part to keep KnowAround safe and fun.
@@ -635,7 +782,7 @@ export default function OnboardingModal() {
             {/* Bottom Button */}
             <Pressable 
               style={styles.primaryBtn} 
-              onPress={handleStep4Finish} 
+              onPress={handleStep5Finish} 
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -647,8 +794,8 @@ export default function OnboardingModal() {
           </View>
         )}
 
-        {/* STEP 5: Success Animation */}
-        {step === 5 && (
+        {/* STEP 6: Success Animation */}
+        {step === 6 && (
           <View style={styles.successBox}>
             <View style={styles.successIconCircle}>
               <Ionicons name="checkmark" size={54} color="#ffffff" />
@@ -1016,5 +1163,153 @@ const styles = StyleSheet.create({
     color: '#64748B',
     lineHeight: 20,
     fontWeight: '400',
+  },
+  confirmMapContainer: {
+    flex: 1,
+    paddingTop: 4,
+  },
+  confirmMapHeader: {
+    marginBottom: 10,
+  },
+  confirmMapTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.4,
+  },
+  confirmMapSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  mapCanvasWrapper: {
+    flex: 1,
+    minHeight: 260,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  fixedCenterPinOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -38,
+    marginLeft: -20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 99,
+  },
+  centerPinTeardrop: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1C873C',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  centerPinDotShadow: {
+    width: 8,
+    height: 4,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    marginTop: 2,
+  },
+  mapLoadingOverlay: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    zIndex: 100,
+  },
+  mapLoadingText: {
+    fontSize: 12,
+    color: '#1C873C',
+    fontWeight: '600',
+  },
+  locationBottomCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  bottomCardAddressHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 12,
+  },
+  bottomCardAddressTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    lineHeight: 19,
+  },
+  bottomCardCoordsText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 3,
+    fontWeight: '500',
+  },
+  bottomCardBtnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  secondaryBackBtn: {
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryBackBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  confirmContinueBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#1C873C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmContinueBtnDisabled: {
+    backgroundColor: '#E2E8F0',
+  },
+  confirmContinueBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  confirmContinueBtnTextDisabled: {
+    color: '#94A3B8',
   },
 });
