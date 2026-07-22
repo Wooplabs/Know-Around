@@ -57,6 +57,7 @@ const Map = forwardRef<MapRef, MapProps>(({
   }));
 
   // Synchronize markers to WebView when ready
+  const markersJson = JSON.stringify(markers);
   useEffect(() => {
     if (webViewRef.current && isReady) {
       const message = {
@@ -65,27 +66,33 @@ const Map = forwardRef<MapRef, MapProps>(({
       };
       webViewRef.current.postMessage(JSON.stringify(message));
     }
-  }, [markers, isReady]);
+  }, [markersJson, isReady]);
 
   // Synchronize user location, search center, search radius to WebView when ready
+  const userLat = userLocation?.latitude;
+  const userLng = userLocation?.longitude;
+  const userAcc = userLocation?.accuracy;
+  const searchLat = searchCenter?.latitude;
+  const searchLng = searchCenter?.longitude;
+
   useEffect(() => {
     if (webViewRef.current && isReady) {
       const message = {
         type: 'SET_MAP_METRICS',
         payload: {
-          userLat: userLocation?.latitude || null,
-          userLng: userLocation?.longitude || null,
-          accuracy: userLocation?.accuracy || null,
+          userLat: userLat || null,
+          userLng: userLng || null,
+          accuracy: userAcc || null,
           userAvatar: userAvatar || null,
           userLabel: userLabel || null,
-          searchLat: searchCenter?.latitude || userLocation?.latitude || null,
-          searchLng: searchCenter?.longitude || userLocation?.longitude || null,
+          searchLat: searchLat || userLat || null,
+          searchLng: searchLng || userLng || null,
           searchRadius: searchRadius || null
         }
       };
       webViewRef.current.postMessage(JSON.stringify(message));
     }
-  }, [userLocation, userAvatar, userLabel, searchCenter, searchRadius, isReady]);
+  }, [userLat, userLng, userAcc, userAvatar, userLabel, searchLat, searchLng, searchRadius, isReady]);
 
   // Synchronize style configurations to WebView
   useEffect(() => {

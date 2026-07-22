@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -61,6 +61,13 @@ export default function OnboardingModal() {
   // Step 3 State (Confirm Location on Map)
   const [mapCenterLat, setMapCenterLat] = useState<number>(11.9340);
   const [mapCenterLng, setMapCenterLng] = useState<number>(79.8300);
+
+  const emptyMarkers = useMemo(() => [], []);
+  const mapUserLocation = useMemo(() => ({
+    latitude: mapCenterLat,
+    longitude: mapCenterLng,
+    accuracy: null
+  }), [mapCenterLat, mapCenterLng]);
 
   const [isLocating, setIsLocating] = useState(false);
   const [autoFilledBadge, setAutoFilledBadge] = useState<string | null>(null);
@@ -563,8 +570,8 @@ export default function OnboardingModal() {
             {/* Large Interactive Map Box */}
             <View style={styles.mapContainerBox}>
               <Map
-                markers={[]}
-                userLocation={{ latitude: mapCenterLat, longitude: mapCenterLng, accuracy: null }}
+                markers={emptyMarkers}
+                userLocation={mapUserLocation}
                 userAvatar={user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'}
                 userLabel="My House"
                 onRegionChangeComplete={(region) => {
