@@ -1,5 +1,7 @@
+import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { useColorScheme, Platform, StyleSheet, View, Pressable, Text, LogBox } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { KnowAroundProvider, useKnowAround } from '@/context/KnowAroundContext';
 import { Colors } from '@/constants/theme';
 import OnboardingModal from '@/components/OnboardingModal';
@@ -122,6 +124,11 @@ function MainLayout() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    // Force hide the native splash screen on app mount
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
   return (
     <KnowAroundProvider>
       <MainLayout />

@@ -1068,16 +1068,18 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (!isFirebaseConfigured || !db) return;
 
     // Subscribe to feeds
-    const unsubFeeds = onSnapshot(collection(db, 'feeds'), async (snapshot) => {
+    const unsubFeeds = onSnapshot(collection(db, 'feeds'), (snapshot) => {
       const list: Post[] = [];
       snapshot.forEach((docSnap) => {
         list.push({ ...docSnap.data(), id: docSnap.id } as Post);
       });
       if (snapshot.empty) {
-        // Bootstrap seed data
-        for (const post of SEED_POSTS) {
-          await addDoc(collection(db, 'feeds'), post);
-        }
+        // Bootstrap seed data locally and push async
+        const seeds = SEED_POSTS.map((p, idx) => ({ ...p, id: `seed_feed_${idx}` }));
+        setFeeds(seeds);
+        SEED_POSTS.forEach((post) => {
+          addDoc(collection(db, 'feeds'), post).catch(() => {});
+        });
       } else {
         // Sort feeds by id/creation time desc
         list.sort((a, b) => b.id.localeCompare(a.id));
@@ -1087,15 +1089,17 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
 
     // Subscribe to alerts
-    const unsubAlerts = onSnapshot(collection(db, 'alerts'), async (snapshot) => {
+    const unsubAlerts = onSnapshot(collection(db, 'alerts'), (snapshot) => {
       const list: AlertItem[] = [];
       snapshot.forEach((docSnap) => {
         list.push({ ...docSnap.data(), id: docSnap.id } as AlertItem);
       });
       if (snapshot.empty) {
-        for (const alert of SEED_ALERTS) {
-          await addDoc(collection(db, 'alerts'), alert);
-        }
+        const seeds = SEED_ALERTS.map((a, idx) => ({ ...a, id: `seed_alert_${idx}` }));
+        setAlerts(seeds);
+        SEED_ALERTS.forEach((alert) => {
+          addDoc(collection(db, 'alerts'), alert).catch(() => {});
+        });
       } else {
         list.sort((a, b) => b.id.localeCompare(a.id));
         setAlerts(list);
@@ -1104,15 +1108,17 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
 
     // Subscribe to professionals
-    const unsubPros = onSnapshot(collection(db, 'professionals'), async (snapshot) => {
+    const unsubPros = onSnapshot(collection(db, 'professionals'), (snapshot) => {
       const list: Professional[] = [];
       snapshot.forEach((docSnap) => {
         list.push({ ...docSnap.data(), id: docSnap.id } as Professional);
       });
       if (snapshot.empty) {
-        for (const pro of SEED_PROFESSIONALS) {
-          await addDoc(collection(db, 'professionals'), pro);
-        }
+        const seeds = SEED_PROFESSIONALS.map((p, idx) => ({ ...p, id: `seed_pro_${idx}` }));
+        setProfessionals(seeds);
+        SEED_PROFESSIONALS.forEach((pro) => {
+          addDoc(collection(db, 'professionals'), pro).catch(() => {});
+        });
       } else {
         setProfessionals(list);
         saveState('native_professionals', list);
@@ -1120,15 +1126,17 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
 
     // Subscribe to groups
-    const unsubGroups = onSnapshot(collection(db, 'groups'), async (snapshot) => {
+    const unsubGroups = onSnapshot(collection(db, 'groups'), (snapshot) => {
       const list: Group[] = [];
       snapshot.forEach((docSnap) => {
         list.push({ ...docSnap.data(), id: docSnap.id } as Group);
       });
       if (snapshot.empty) {
-        for (const grp of SEED_GROUPS) {
-          await addDoc(collection(db, 'groups'), grp);
-        }
+        const seeds = SEED_GROUPS.map((g, idx) => ({ ...g, id: `seed_group_${idx}` }));
+        setGroups(seeds);
+        SEED_GROUPS.forEach((grp) => {
+          addDoc(collection(db, 'groups'), grp).catch(() => {});
+        });
       } else {
         setGroups(list);
         saveState('native_groups', list);
@@ -1136,15 +1144,17 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
 
     // Subscribe to group posts
-    const unsubGroupPosts = onSnapshot(collection(db, 'group_posts'), async (snapshot) => {
+    const unsubGroupPosts = onSnapshot(collection(db, 'group_posts'), (snapshot) => {
       const list: GroupPost[] = [];
       snapshot.forEach((docSnap) => {
         list.push({ ...docSnap.data(), id: docSnap.id } as GroupPost);
       });
       if (snapshot.empty) {
-        for (const gp of SEED_GROUP_POSTS) {
-          await addDoc(collection(db, 'group_posts'), gp);
-        }
+        const seeds = SEED_GROUP_POSTS.map((gp, idx) => ({ ...gp, id: `seed_gpost_${idx}` }));
+        setGroupPosts(seeds);
+        SEED_GROUP_POSTS.forEach((gp) => {
+          addDoc(collection(db, 'group_posts'), gp).catch(() => {});
+        });
       } else {
         list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         setGroupPosts(list);
