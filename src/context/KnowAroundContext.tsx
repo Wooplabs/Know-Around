@@ -223,6 +223,7 @@ export interface KnowAroundContextProps {
   joinGroup: (groupId: string) => Promise<void>;
   postToGroup: (groupId: string, content: string) => Promise<void>;
   clearUserCredentials: () => Promise<void>;
+  isAuthHydrated: boolean;
 }
 
 const KnowAroundContext = createContext<KnowAroundContextProps | undefined>(undefined);
@@ -907,6 +908,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [alerts, setAlerts] = useState<AlertItem[]>(SEED_ALERTS);
   const [jobs, setJobs] = useState<JobVacancy[]>(SEED_JOBS);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const [isAuthHydrated, setIsAuthHydrated] = useState(false);
   const [justRegistered, setJustRegistered] = useState(false);
   const [userRole, setUserRole] = useState<'user' | 'professional' | null>(null);
   const [userAddress, setUserAddress] = useState<{ street: string; place: string; city: string; state: string; pin: string; phone: string } | null>(null);
@@ -986,6 +988,9 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
       } catch (err) {
         console.warn('Persisted data load error:', err);
+      } finally {
+        // Mark auth hydration as complete so UI can safely decide which screen to show
+        setIsAuthHydrated(true);
       }
     };
 
@@ -1956,7 +1961,8 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         postToGroup,
         clearUserCredentials,
         authenticatePhone,
-        completeOnboarding
+        completeOnboarding,
+        isAuthHydrated,
       }}
     >
       {children}

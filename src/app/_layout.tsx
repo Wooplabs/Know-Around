@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import { useColorScheme, Platform, StyleSheet, View, Pressable, Text, LogBox } from 'react-native';
+import { useColorScheme, Platform, StyleSheet, View, Pressable, Text, LogBox, ActivityIndicator } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { KnowAroundProvider, useKnowAround } from '@/context/KnowAroundContext';
 import { Colors } from '@/constants/theme';
@@ -98,7 +98,18 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 }
 
 function MainLayout() {
-  const { user, onboardingCompleted } = useKnowAround();
+  const { user, onboardingCompleted, isAuthHydrated } = useKnowAround();
+
+  // Wait for AsyncStorage to finish loading before deciding which screen to show.
+  // This prevents the race condition where user is hydrated but onboardingCompleted
+  // hasn't been read yet, causing OnboardingModal to flash for returning users.
+  if (!isAuthHydrated) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#1C873C" />
+      </View>
+    );
+  }
 
   if (!user) {
     return <AuthScreen />;
