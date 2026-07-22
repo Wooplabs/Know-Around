@@ -16,7 +16,8 @@ import {
 import { useKnowAround } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import Map from './Map';
+
+const MapComponent = React.lazy(() => import('./Map'));
 
 export interface AddressSuggestion {
   id: string;
@@ -569,18 +570,20 @@ export default function OnboardingModal() {
 
             {/* Large Interactive Map Box */}
             <View style={styles.mapContainerBox}>
-              <Map
-                markers={emptyMarkers}
-                userLocation={mapUserLocation}
-                userAvatar={user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'}
-                userLabel="My House"
-                onRegionChangeComplete={(region) => {
-                  if (region && region.latitude && region.longitude) {
-                    setMapCenterLat(region.latitude);
-                    setMapCenterLng(region.longitude);
-                  }
-                }}
-              />
+              <React.Suspense fallback={<ActivityIndicator size="large" color="#16A34A" style={{ flex: 1, justifyContent: 'center' }} />}>
+                <MapComponent
+                  markers={emptyMarkers}
+                  userLocation={mapUserLocation}
+                  userAvatar={user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'}
+                  userLabel="My House"
+                  onRegionChangeComplete={(region) => {
+                    if (region && region.latitude && region.longitude) {
+                      setMapCenterLat(region.latitude);
+                      setMapCenterLng(region.longitude);
+                    }
+                  }}
+                />
+              </React.Suspense>
 
               {/* Fixed Center Pin Overlay */}
               <View style={styles.fixedCenterPinWrapper} pointerEvents="none">
