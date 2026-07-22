@@ -40,11 +40,11 @@ export default function Map({ markers, userAvatar, userLabel, onMapClick, onMark
 
     const cssLink = document.createElement('link');
     cssLink.rel = 'stylesheet';
-    cssLink.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    cssLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
     document.head.appendChild(cssLink);
 
     const jsScript = document.createElement('script');
-    jsScript.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    jsScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
     jsScript.onload = () => {
       setLeafletLoaded(true);
     };

@@ -111,7 +111,7 @@ const Map = forwardRef<MapRef, MapProps>(({
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
         <!-- FontAwesome for Icons inside Webview -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <style>
@@ -272,7 +272,7 @@ const Map = forwardRef<MapRef, MapProps>(({
       </head>
       <body>
         <div id="map"></div>
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
         <script>
           // Default map center (White Town)
           var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([11.9340, 79.8300], 14);
