@@ -1162,23 +1162,68 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const authenticatePhone = async (phone: string): Promise<{ isNewUser: boolean; profileCompleted: boolean }> => {
     const rawDigits = phone.replace(/[^0-9]/g, '');
-    const fullPhoneNumber = phone.startsWith('+') ? phone : `+91${rawDigits.slice(-10)}`;
+    const last10 = rawDigits.slice(-10);
+    const fullPhoneNumber = phone.startsWith('+') ? phone : `+91${last10}`;
     const nowIso = new Date().toISOString();
-    const mockUid = `usr_${rawDigits.slice(-10)}`;
+    const mockUid = `usr_${last10}`;
 
     let userDoc: UserDocument | null = null;
     verifiedPhoneRef.current = fullPhoneNumber;
 
-    if (isFirebaseConfigured && db) {
+    // 1. FAST LOCAL LOOKUP: Check in-memory global registry & AsyncStorage first (0ms, 100% offline safe)
+    userDoc = GLOBAL_REGISTERED_ACCOUNTS[fullPhoneNumber] || 
+              GLOBAL_REGISTERED_ACCOUNTS[last10] || 
+              GLOBAL_REGISTERED_ACCOUNTS[rawDigits] || 
+              null;
+
+    if (!userDoc) {
       try {
-        // 1. Try directly fetching doc by ID first (very fast and robust)
-        const docRef = doc(db, 'users', `usr_${rawDigits}`);
+        const asyncRegisteredStr = await AsyncStorage.getItem('native_registered_accounts').catch(() => null);
+        const asyncRegistered = asyncRegisteredStr ? JSON.parse(asyncRegisteredStr) : null;
+        const registered = asyncRegistered || getLocalStorageJSON('native_registered_accounts') || {};
+        userDoc = registered[fullPhoneNumber] || registered[last10] || registered[rawDigits] || null;
+      } catch (e) {}
+
+      if (!userDoc) {
+        try {
+          const asyncUserDocStr = await AsyncStorage.getItem('native_user_doc').catch(() => null);
+          const savedUserDoc = asyncUserDocStr ? JSON.parse(asyncUserDocStr) : getLocalStorageJSON('native_user_doc');
+          if (savedUserDoc && (savedUserDoc.phoneNumber === fullPhoneNumber || savedUserDoc.phoneNumber?.includes(last10))) {
+            userDoc = savedUserDoc;
+          } else {
+            const asyncUserStr = await AsyncStorage.getItem('native_user').catch(() => null);
+            const savedUser = asyncUserStr ? JSON.parse(asyncUserStr) : getLocalStorageJSON('native_user');
+            if (savedUser && (savedUser.phone === fullPhoneNumber || savedUser.phone?.includes(last10) || savedUser.email === fullPhoneNumber) && savedUser.name) {
+              userDoc = {
+                uid: mockUid,
+                phoneNumber: fullPhoneNumber,
+                name: savedUser.name,
+                address: 'Registered User Address',
+                profileCompleted: true,
+                locationVerified: true,
+                notificationEnabled: true,
+                accountType: 'personal',
+                createdAt: nowIso,
+                updatedAt: nowIso,
+                lastLogin: nowIso
+              };
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
+    // 2. FIRESTORE NETWORK LOOKUP: If not found locally, check Firestore DB
+    if (!userDoc && isFirebaseConfigured && db) {
+      try {
+        // Try directly fetching doc by ID first
+        const docRef = doc(db, 'users', `usr_${last10}`);
         let docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           userDoc = docSnap.data() as UserDocument;
           userDoc.uid = docSnap.id;
         } else {
-          const docRef2 = doc(db, 'users', `usr_${rawDigits.slice(-10)}`);
+          const docRef2 = doc(db, 'users', `usr_${rawDigits}`);
           const docSnap2 = await getDoc(docRef2);
           if (docSnap2.exists()) {
             userDoc = docSnap2.data() as UserDocument;
@@ -1186,10 +1231,10 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           }
         }
 
-        // 2. Query fallback if doc ID fetch is empty
+        // Query fallback with deduplicated formats array (prevents Firestore array duplicate crash)
         if (!userDoc) {
           const usersRef = collection(db, 'users');
-          const formats = [fullPhoneNumber, rawDigits.slice(-10), rawDigits];
+          const formats = Array.from(new Set([fullPhoneNumber, last10, rawDigits].filter(Boolean)));
           const q = query(usersRef, where('phoneNumber', 'in', formats));
           const snapshot = await getDocs(q);
 
@@ -1200,70 +1245,26 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           }
         }
 
-        // 3. Update lastLogin timestamp in Firestore
+        // Update lastLogin timestamp in Firestore
         if (userDoc) {
           await updateDoc(doc(db, 'users', userDoc.uid), {
             lastLogin: nowIso,
             updatedAt: nowIso
-          });
+          }).catch(() => {});
         }
       } catch (err) {
         console.warn('Firestore fetch user error:', err);
       }
     }
 
-    if (!userDoc) {
-      userDoc = GLOBAL_REGISTERED_ACCOUNTS[fullPhoneNumber] || 
-                GLOBAL_REGISTERED_ACCOUNTS[rawDigits.slice(-10)] || 
-                GLOBAL_REGISTERED_ACCOUNTS[rawDigits] || 
-                null;
-
-      if (!userDoc) {
-        try {
-          const asyncRegisteredStr = await AsyncStorage.getItem('native_registered_accounts').catch(() => null);
-          const asyncRegistered = asyncRegisteredStr ? JSON.parse(asyncRegisteredStr) : null;
-          const registered = asyncRegistered || getLocalStorageJSON('native_registered_accounts') || {};
-          userDoc = registered[fullPhoneNumber] || registered[rawDigits.slice(-10)] || registered[rawDigits] || null;
-        } catch (e) {}
-
-        if (!userDoc) {
-          try {
-            const asyncUserDocStr = await AsyncStorage.getItem('native_user_doc').catch(() => null);
-            const savedUserDoc = asyncUserDocStr ? JSON.parse(asyncUserDocStr) : getLocalStorageJSON('native_user_doc');
-            if (savedUserDoc && (savedUserDoc.phoneNumber === fullPhoneNumber || savedUserDoc.phoneNumber?.includes(rawDigits.slice(-10)))) {
-              userDoc = savedUserDoc;
-            } else {
-              const asyncUserStr = await AsyncStorage.getItem('native_user').catch(() => null);
-              const savedUser = asyncUserStr ? JSON.parse(asyncUserStr) : getLocalStorageJSON('native_user');
-              if (savedUser && (savedUser.phone === fullPhoneNumber || savedUser.phone?.includes(rawDigits.slice(-10)) || savedUser.email === fullPhoneNumber) && savedUser.name) {
-                userDoc = {
-                  uid: mockUid,
-                  phoneNumber: fullPhoneNumber,
-                  name: savedUser.name,
-                  address: 'Registered User Address',
-                  profileCompleted: true,
-                  locationVerified: true,
-                  notificationEnabled: true,
-                  accountType: 'personal',
-                  createdAt: nowIso,
-                  updatedAt: nowIso,
-                  lastLogin: nowIso
-                };
-              }
-            }
-          } catch (e) {}
-        }
-      }
-    }
-
     if (userDoc && (userDoc.profileCompleted || (userDoc.name && userDoc.name.trim().length > 0))) {
-      // Returning registered user -> Sign In Process -> Open Home Straightaway!
+      // Returning registered user -> Sign In Process -> Open Home Feed Straightaway!
       registerAccountInMemoryAndStorage(userDoc);
 
       const activeUser = {
         name: userDoc.name || 'Neighbor',
-        email: userDoc.phoneNumber,
-        phone: userDoc.phoneNumber,
+        email: userDoc.phoneNumber || fullPhoneNumber,
+        phone: userDoc.phoneNumber || fullPhoneNumber,
         avatar: userDoc.avatar || undefined,
         profileCompleted: true
       };
@@ -1275,7 +1276,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           city: userDoc.city || '',
           state: userDoc.state || '',
           pin: userDoc.postalCode || '',
-          phone: userDoc.phoneNumber
+          phone: userDoc.phoneNumber || fullPhoneNumber
         };
         setUserAddress(addr);
         saveState('native_address', addr);
