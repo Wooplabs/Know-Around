@@ -1307,51 +1307,45 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       return { isNewUser: false, profileCompleted: true };
     } else {
-      // Guaranteed fallback profile -> Sign In Process -> Open Home Feed Straightaway!
-      const defaultDoc: UserDocument = {
+      // New user / un-onboarded number -> Sign Up Process -> Direct to Onboarding Screens!
+      const minimalDoc: UserDocument = {
         uid: mockUid,
         phoneNumber: fullPhoneNumber,
-        name: 'Neighbor',
-        address: 'White Town, Puducherry',
-        city: 'Puducherry',
-        state: 'Puducherry',
-        postalCode: '605001',
-        profileCompleted: true,
-        locationVerified: true,
-        notificationEnabled: true,
         accountType: 'personal',
+        locationVerified: false,
+        notificationEnabled: false,
+        profileCompleted: false,
         createdAt: nowIso,
         updatedAt: nowIso,
         lastLogin: nowIso
       };
 
-      registerAccountInMemoryAndStorage(defaultDoc);
-
       if (isFirebaseConfigured && db) {
         try {
-          await setDoc(doc(db, 'users', mockUid), defaultDoc, { merge: true });
+          await setDoc(doc(db, 'users', mockUid), minimalDoc, { merge: true });
         } catch (e) {
-          console.warn('Firestore auto-register user error:', e);
+          console.warn('Firestore create minimal user error:', e);
         }
       }
 
       const activeUser = {
-        name: defaultDoc.name || 'Neighbor',
+        name: '',
         email: fullPhoneNumber,
         phone: fullPhoneNumber,
         avatar: undefined,
-        profileCompleted: true
+        profileCompleted: false
       };
 
-      setOnboardingCompleted(true);
-      saveState('native_onboarding', true);
-      setJustRegistered(false);
+      // Set onboardingCompleted to false so OnboardingModal renders for new users!
+      setOnboardingCompleted(false);
+      saveState('native_onboarding', false);
+      setJustRegistered(true);
 
       setUser(activeUser);
       saveState('native_user', activeUser);
-      saveState('native_user_doc', defaultDoc);
+      saveState('native_user_doc', minimalDoc);
 
-      return { isNewUser: true, profileCompleted: true };
+      return { isNewUser: true, profileCompleted: false };
     }
   };
 
