@@ -1040,6 +1040,13 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const deletePromises = snapshot.docs.map((docSnap) => deleteDoc(doc(db, 'feeds', docSnap.id)));
         await Promise.all(deletePromises);
         
+        // Wipe local memory registry & AsyncStorage registered accounts
+        for (const k in GLOBAL_REGISTERED_ACCOUNTS) {
+          delete GLOBAL_REGISTERED_ACCOUNTS[k];
+        }
+        AsyncStorage.removeItem('native_registered_accounts').catch(() => {});
+        AsyncStorage.removeItem('native_user_doc').catch(() => {});
+
         feedsResetDone = true;
         if (typeof window !== 'undefined' && window.localStorage) {
           window.localStorage.setItem('db_feeds_reset_v4', 'true');
