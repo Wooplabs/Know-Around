@@ -1149,11 +1149,13 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
   }, []);
 
-  // Save state helper
+  // Save state helper supporting native AsyncStorage & Web localStorage
   const saveState = (key: string, data: any) => {
     try {
+      const jsonStr = JSON.stringify(data);
+      AsyncStorage.setItem(key, jsonStr).catch((e) => {});
       if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem(key, JSON.stringify(data));
+        window.localStorage.setItem(key, jsonStr);
       }
     } catch (e) {
       // Ignore
@@ -1170,12 +1172,13 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     let userDoc: UserDocument | null = null;
     verifiedPhoneRef.current = fullPhoneNumber;
 
-    // 1. FAST LOCAL LOOKUP: Check in-memory global registry & AsyncStorage first (0ms, 100% offline safe)
+    // 1. Check in-memory global registry (instant)
     userDoc = GLOBAL_REGISTERED_ACCOUNTS[fullPhoneNumber] || 
               GLOBAL_REGISTERED_ACCOUNTS[last10] || 
               GLOBAL_REGISTERED_ACCOUNTS[rawDigits] || 
               null;
 
+    // 2. Check native AsyncStorage & local storage (instant disk load)
     if (!userDoc) {
       try {
         const asyncRegisteredStr = await AsyncStorage.getItem('native_registered_accounts').catch(() => null);
@@ -1213,11 +1216,10 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     }
 
-    // 2. FIRESTORE NETWORK LOOKUP: If not found locally, check Firestore DB
+    // 3. Check Firestore Cloud Database (if network connected)
     if (!userDoc && isFirebaseConfigured && db) {
       try {
-        // Try directly fetching doc by ID first
-        const docRef = doc(db, 'users', `usr_${last10}`);
+        const docRef = doc(db, 'users', mockUid);
         let docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           userDoc = docSnap.data() as UserDocument;
@@ -1231,10 +1233,9 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           }
         }
 
-        // Query fallback with deduplicated formats array (prevents Firestore array duplicate crash)
         if (!userDoc) {
           const usersRef = collection(db, 'users');
-          const formats = Array.from(new Set([fullPhoneNumber, last10, rawDigits].filter(Boolean)));
+          const formats = [fullPhoneNumber, last10, rawDigits];
           const q = query(usersRef, where('phoneNumber', 'in', formats));
           const snapshot = await getDocs(q);
 
@@ -1245,12 +1246,11 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           }
         }
 
-        // Update lastLogin timestamp in Firestore
         if (userDoc) {
           await updateDoc(doc(db, 'users', userDoc.uid), {
             lastLogin: nowIso,
             updatedAt: nowIso
-          }).catch(() => {});
+          });
         }
       } catch (err) {
         console.warn('Firestore fetch user error:', err);
@@ -1258,13 +1258,13 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
 
     if (userDoc && (userDoc.profileCompleted || (userDoc.name && userDoc.name.trim().length > 0))) {
-      // Returning registered user -> Sign In Process -> Open Home Feed Straightaway!
+      // Returning registered user -> Sign In Process -> Open Home Straightaway!
       registerAccountInMemoryAndStorage(userDoc);
 
       const activeUser = {
         name: userDoc.name || 'Neighbor',
-        email: userDoc.phoneNumber || fullPhoneNumber,
-        phone: userDoc.phoneNumber || fullPhoneNumber,
+        email: userDoc.phoneNumber,
+        phone: userDoc.phoneNumber,
         avatar: userDoc.avatar || undefined,
         profileCompleted: true
       };
@@ -1276,7 +1276,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           city: userDoc.city || '',
           state: userDoc.state || '',
           pin: userDoc.postalCode || '',
-          phone: userDoc.phoneNumber || fullPhoneNumber
+          phone: userDoc.phoneNumber
         };
         setUserAddress(addr);
         saveState('native_address', addr);
@@ -1300,43 +1300,51 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       return { isNewUser: false, profileCompleted: true };
     } else {
-      // New user or incomplete profile -> Sign Up Process -> Trigger Onboarding
-      const minimalDoc: UserDocument = userDoc || {
+      // Guaranteed fallback profile -> Sign In Process -> Open Home Feed Straightaway!
+      const defaultDoc: UserDocument = {
         uid: mockUid,
         phoneNumber: fullPhoneNumber,
+        name: 'Neighbor',
+        address: 'White Town, Puducherry',
+        city: 'Puducherry',
+        state: 'Puducherry',
+        postalCode: '605001',
+        profileCompleted: true,
+        locationVerified: true,
+        notificationEnabled: true,
         accountType: 'personal',
-        locationVerified: false,
-        notificationEnabled: false,
-        profileCompleted: false,
         createdAt: nowIso,
         updatedAt: nowIso,
         lastLogin: nowIso
       };
 
-      if (isFirebaseConfigured && db && !userDoc) {
+      registerAccountInMemoryAndStorage(defaultDoc);
+
+      if (isFirebaseConfigured && db) {
         try {
-          await setDoc(doc(db, 'users', mockUid), minimalDoc);
+          await setDoc(doc(db, 'users', mockUid), defaultDoc, { merge: true });
         } catch (e) {
-          console.warn('Firestore create minimal user error:', e);
+          console.warn('Firestore auto-register user error:', e);
         }
       }
 
       const activeUser = {
-        name: minimalDoc.name || '',
+        name: defaultDoc.name || 'Neighbor',
         email: fullPhoneNumber,
         phone: fullPhoneNumber,
         avatar: undefined,
-        profileCompleted: false
+        profileCompleted: true
       };
+
+      setOnboardingCompleted(true);
+      saveState('native_onboarding', true);
+      setJustRegistered(false);
+
       setUser(activeUser);
       saveState('native_user', activeUser);
-      saveState('native_user_doc', minimalDoc);
+      saveState('native_user_doc', defaultDoc);
 
-      setOnboardingCompleted(false);
-      saveState('native_onboarding', false);
-      setJustRegistered(true);
-
-      return { isNewUser: !userDoc, profileCompleted: false };
+      return { isNewUser: true, profileCompleted: true };
     }
   };
 

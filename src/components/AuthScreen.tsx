@@ -151,10 +151,8 @@ export default function AuthScreen() {
     const fullPhoneNumber = `${selectedCountry.code}${rawPhone}`;
 
     try {
-      const res = await authenticatePhone(fullPhoneNumber);
-      if (res && res.profileCompleted) {
-        router.replace('/');
-      }
+      await authenticatePhone(fullPhoneNumber);
+      router.replace('/');
     } catch (err: any) {
       triggerShake();
       setOtpError(err.message || 'Authentication failed. Please check connection.');
