@@ -1011,8 +1011,6 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           authInitialLoad.current = false;
         }
       } else {
-        setUser(null);
-        saveState('native_user', null);
         authInitialLoad.current = false;
       }
     });
