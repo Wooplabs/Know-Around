@@ -13,6 +13,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 import NewsTimeline from '@/components/NewsTimeline';
 import MinimalAlertCard from '@/components/MinimalAlertCard';
 import UserAvatar from '@/components/UserAvatar';
+import { FeedListSkeleton } from '@/components/SkeletonLoader';
 
 export default function HomeScreen() {
   const { currentUser, activeLocation, feeds, alerts, logout, darkMode, setDarkMode, user, userAddress } = useKnowAround();
@@ -23,6 +24,14 @@ export default function HomeScreen() {
   const [ignoredAlerts, setIgnoredAlerts] = useState<string[]>([]);
   const [showFilterBar, setShowFilterBar] = useState(true);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [isCategoryLoading, setIsCategoryLoading] = useState(false);
+
+  const handleFilterChange = (filter: 'All' | 'News' | 'Alert' | 'Event' | 'Community Update') => {
+    if (filter === selectedFilter) return;
+    setIsCategoryLoading(true);
+    setSelectedFilter(filter);
+    setTimeout(() => setIsCategoryLoading(false), 350);
+  };
 
   const lastScrollY = useRef(0);
 
@@ -180,7 +189,7 @@ export default function HomeScreen() {
                   ]}
                   onPress={() => {
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    setSelectedFilter(filter);
+                    handleFilterChange(filter);
                   }}
                 >
                   <Text style={[
@@ -203,33 +212,37 @@ export default function HomeScreen() {
         <NewsTimeline onDateSelect={setSelectedDateFilter} />
       )}
 
-      <ScrollView 
-        style={[styles.scrollView, darkMode && styles.scrollViewDark]} 
-        contentContainerStyle={[styles.scrollContent, darkMode && styles.scrollContentDark]}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-      >
-        {/* Minimal Swipeable Critical Alert Card */}
-        {topDangerAlert && !ignoredAlerts.includes(topDangerAlert.id) && (
-          <MinimalAlertCard
-            alert={topDangerAlert}
-            onIgnore={() => setIgnoredAlerts([...ignoredAlerts, topDangerAlert.id])}
-            darkMode={darkMode}
-          />
-        )}
+      {isCategoryLoading ? (
+        <FeedListSkeleton />
+      ) : (
+        <ScrollView 
+          style={[styles.scrollView, darkMode && styles.scrollViewDark]} 
+          contentContainerStyle={[styles.scrollContent, darkMode && styles.scrollContentDark]}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+        >
+          {/* Minimal Swipeable Critical Alert Card */}
+          {topDangerAlert && !ignoredAlerts.includes(topDangerAlert.id) && (
+            <MinimalAlertCard
+              alert={topDangerAlert}
+              onIgnore={() => setIgnoredAlerts([...ignoredAlerts, topDangerAlert.id])}
+              darkMode={darkMode}
+            />
+          )}
 
-        {/* Home Feed Posts */}
-        {filteredFeeds.map((post) => (
-          <PostCard key={post.id} post={post} darkMode={darkMode} />
-        ))}
+          {/* Home Feed Posts */}
+          {filteredFeeds.map((post) => (
+            <PostCard key={post.id} post={post} darkMode={darkMode} />
+          ))}
 
-        {filteredFeeds.length === 0 && (
-          <View style={styles.emptyFeed}>
-            <Ionicons name="newspaper-outline" size={48} color="#A0A4AC" />
-            <Text style={styles.emptyFeedText}>No updates in this category right now.</Text>
-          </View>
-        )}
-      </ScrollView>
+          {filteredFeeds.length === 0 && (
+            <View style={styles.emptyFeed}>
+              <Ionicons name="newspaper-outline" size={48} color="#A0A4AC" />
+              <Text style={styles.emptyFeedText}>No updates in this category right now.</Text>
+            </View>
+          )}
+        </ScrollView>
+      )}
 
 
 

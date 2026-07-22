@@ -4,6 +4,7 @@ import { useKnowAround, Group, GroupPost } from '../context/KnowAroundContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { BellIcon, DownIcon, LocationIcon } from '@/components/CustomIcons';
+import { GroupCardSkeleton } from '@/components/SkeletonLoader';
 
 export default function GroupsScreen() {
   const [menuVisible, setMenuVisible] = useState(false);

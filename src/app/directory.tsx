@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { RoundTickIcon, BellIcon, DownIcon, LocationIcon } from '@/components/CustomIcons';
 import UserAvatar from '@/components/UserAvatar';
 import BottomSheet from '@/components/BottomSheet';
+import { DirectoryListSkeleton } from '@/components/SkeletonLoader';
 
 type ItemType = {
   id: string;
@@ -123,6 +124,19 @@ export default function DirectoryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [distanceFilter, setDistanceFilter] = useState<number>(5);
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
+
+  const handleCategorySelect = (catName: string) => {
+    setIsFilterLoading(true);
+    setSelectedCategory(catName === 'All' ? null : catName);
+    setTimeout(() => setIsFilterLoading(false), 300);
+  };
+
+  const handleDistanceChange = (dist: number) => {
+    setIsFilterLoading(true);
+    setDistanceFilter(dist);
+    setTimeout(() => setIsFilterLoading(false), 300);
+  };
 
   const categories = [
     { name: 'All', icon: 'grid-outline' },
@@ -295,7 +309,7 @@ export default function DirectoryScreen() {
 
       {/* Horizontal Category Scroller */}
       <View style={styles.categoriesSection}>
-        <ScrollViewHorizontal categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
+        <ScrollViewHorizontal categories={categories} selected={selectedCategory} onSelect={handleCategorySelect} />
       </View>
 
       {/* Proximity / Distance Slider Filter */}
@@ -306,7 +320,7 @@ export default function DirectoryScreen() {
             <Pressable
               key={d}
               style={[styles.filterPill, distanceFilter === d && styles.activeFilterPill, darkMode && styles.filterPillDark]}
-              onPress={() => setDistanceFilter(d)}
+              onPress={() => handleDistanceChange(d)}
             >
               <Text style={[styles.filterPillText, distanceFilter === d && styles.activeFilterPillText]}>
                 {d} km
@@ -317,13 +331,17 @@ export default function DirectoryScreen() {
       </View>
 
       {/* List items */}
-      <FlatList
-        data={filteredList}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <DirectoryCard item={item} />}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {isFilterLoading ? (
+        <DirectoryListSkeleton />
+      ) : (
+        <FlatList
+          data={filteredList}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <DirectoryCard item={item} />}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 }

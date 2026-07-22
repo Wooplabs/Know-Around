@@ -5,6 +5,7 @@ import { useKnowAround, Professional, DirectoryItem, AlertItem, JobVacancy } fro
 import Map, { MapRef } from '../components/Map';
 import BottomSheet from '../components/BottomSheet';
 import { RoundTickIcon } from '@/components/CustomIcons';
+import { Skeleton } from '@/components/SkeletonLoader';
 import * as Location from 'expo-location';
 import { useIsFocused } from '@react-navigation/native';
 
