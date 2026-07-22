@@ -793,10 +793,6 @@ const styles = StyleSheet.create({
     borderColor: '#EAF0F6',
     zIndex: 20,
   },
-  myLocationButtonDark: {
-    backgroundColor: '#1E1E1E',
-    borderColor: '#2D2D2D',
-  },
   mapStyleButton: {
     position: 'absolute',
     bottom: 156,

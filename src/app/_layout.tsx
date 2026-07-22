@@ -108,7 +108,6 @@ function MainLayout() {
         tabBar={(props) => <CustomTabBar {...props} />}
         screenOptions={{
           headerShown: false,
-          tabBar: (props) => <CustomTabBar {...props} />,
         }}
       >
         <Tabs.Screen name="index" />
