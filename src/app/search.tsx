@@ -22,7 +22,10 @@ export default function SearchScreen() {
     setUserLocation,
     distanceFilter,
     setDistanceFilter,
-    darkMode
+    darkMode,
+    user,
+    userAddress,
+    currentUser
   } = useKnowAround();
 
   const mapRef = useRef<MapRef>(null);
@@ -396,6 +399,8 @@ export default function SearchScreen() {
           ref={mapRef}
           markers={getMarkers()}
           userLocation={userLocation}
+          userAvatar={user?.avatar || currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'}
+          userLabel="My House"
           searchCenter={searchCenter}
           searchRadius={parseFloat(distanceFilter)}
           darkMode={darkMode}

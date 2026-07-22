@@ -17,6 +17,8 @@ interface MapProps {
     details?: string;
   }>;
   userLocation?: { latitude: number; longitude: number; accuracy: number | null } | null;
+  userAvatar?: string;
+  userLabel?: string;
   searchCenter?: { latitude: number; longitude: number } | null;
   searchRadius?: number; // in km
   darkMode?: boolean;
@@ -29,6 +31,8 @@ interface MapProps {
 const Map = forwardRef<MapRef, MapProps>(({ 
   markers, 
   userLocation, 
+  userAvatar,
+  userLabel,
   searchCenter,
   searchRadius, 
   darkMode, 
@@ -72,6 +76,8 @@ const Map = forwardRef<MapRef, MapProps>(({
           userLat: userLocation?.latitude || null,
           userLng: userLocation?.longitude || null,
           accuracy: userLocation?.accuracy || null,
+          userAvatar: userAvatar || null,
+          userLabel: userLabel || null,
           searchLat: searchCenter?.latitude || userLocation?.latitude || null,
           searchLng: searchCenter?.longitude || userLocation?.longitude || null,
           searchRadius: searchRadius || null
@@ -79,7 +85,7 @@ const Map = forwardRef<MapRef, MapProps>(({
       };
       webViewRef.current.postMessage(JSON.stringify(message));
     }
-  }, [userLocation, searchCenter, searchRadius, isReady]);
+  }, [userLocation, userAvatar, userLabel, searchCenter, searchRadius, isReady]);
 
   // Synchronize style configurations to WebView
   useEffect(() => {
@@ -149,6 +155,72 @@ const Map = forwardRef<MapRef, MapProps>(({
             transform: rotate(-45deg) scale(1.2);
             box-shadow: 0 6px 16px rgba(0,0,0,0.35);
             border-color: #ffffff;
+          }
+          /* "My House" Teardrop Custom Pin */
+          .my-house-pin-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+          }
+          .my-house-teardrop {
+            width: 48px;
+            height: 48px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            background: #16A34A;
+            border: 3px solid #ffffff;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: transform 0.2s ease-out;
+          }
+          .my-house-avatar-box {
+            width: 38px;
+            height: 38px;
+            border-radius: 19px;
+            transform: rotate(45deg);
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #ffffff;
+            overflow: hidden;
+            background-color: #E2E8F0;
+          }
+          .my-house-badge {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 17px;
+            height: 17px;
+            border-radius: 9px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(45deg);
+            z-index: 10;
+          }
+          .my-house-badge i {
+            color: #334155;
+            font-size: 9.5px;
+          }
+          .my-house-label {
+            margin-top: 8px;
+            background: #ffffff;
+            padding: 5px 14px;
+            border-radius: 20px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1E293B;
+            white-space: nowrap;
+            border: 1px solid #F1F5F9;
           }
           /* Pulsing Ring for User Location */
           .user-puck-container {
@@ -292,18 +364,24 @@ const Map = forwardRef<MapRef, MapProps>(({
               }).addTo(map);
             }
 
-            // 2. Draw user pulsing puck dot
+            // 2. Draw user "My House" Teardrop pin
             if (payload.userLat && payload.userLng) {
-              var userIcon = L.divIcon({
+              var avatarUrl = payload.userAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200';
+              var labelText = payload.userLabel || 'My House';
+
+              var myHouseIcon = L.divIcon({
                 className: 'custom-leaflet-marker',
-                html: '<div class="user-puck-container">' +
-                      '<div class="user-puck-pulse"></div>' +
-                      '<div class="user-puck-dot"></div>' +
+                html: '<div class="my-house-pin-wrapper">' +
+                        '<div class="my-house-teardrop">' +
+                          '<div class="my-house-avatar-box" style="background-image: url(\'' + avatarUrl + '\');"></div>' +
+                          '<div class="my-house-badge"><i class="fa fa-home"></i></div>' +
+                        '</div>' +
+                        '<div class="my-house-label">' + labelText + '</div>' +
                       '</div>',
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
+                iconSize: [120, 95],
+                iconAnchor: [60, 48]
               });
-              userLocationMarker = L.marker([payload.userLat, payload.userLng], { icon: userIcon }).addTo(map);
+              userLocationMarker = L.marker([payload.userLat, payload.userLng], { icon: myHouseIcon }).addTo(map);
             }
 
             // 3. Draw dashed green search radius boundary centered on searchLat/searchLng

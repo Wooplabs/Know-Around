@@ -11,6 +11,8 @@ interface MapProps {
     color?: string;
     details?: string;
   }>;
+  userAvatar?: string;
+  userLabel?: string;
   onMapClick?: (lat: number, lng: number) => void;
   onMarkerClick?: (markerId: string) => void;
 }
@@ -21,7 +23,7 @@ declare global {
   }
 }
 
-export default function Map({ markers, onMapClick, onMarkerClick }: MapProps) {
+export default function Map({ markers, userAvatar, userLabel, onMapClick, onMarkerClick }: MapProps) {
   const mapRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersGroupRef = useRef<any>(null);
@@ -102,8 +104,74 @@ export default function Map({ markers, onMapClick, onMarkerClick }: MapProps) {
       let iconHtml = `<i class="fa fa-user" style="color: white; font-size: 14px;"></i>`;
 
       if (marker.type === 'user') {
-        markerColor = '#2196f3'; // User current location
-        iconHtml = `<div style="width: 12px; height: 12px; border-radius: 6px; background-color: white;"></div>`;
+        const avatarUrl = userAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200';
+        const labelText = userLabel || 'My House';
+
+        const myHouseIcon = L.divIcon({
+          className: 'custom-leaflet-marker',
+          html: `
+            <div style="display:flex; flex-direction:column; align-items:center; cursor:pointer;">
+              <div style="
+                width: 48px;
+                height: 48px;
+                border-radius: 50% 50% 50% 0;
+                transform: rotate(-45deg);
+                background-color: #16A34A;
+                border: 3px solid #ffffff;
+                box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+              ">
+                <div style="
+                  width: 38px;
+                  height: 38px;
+                  border-radius: 19px;
+                  transform: rotate(45deg);
+                  background-image: url('${avatarUrl}');
+                  background-size: cover;
+                  background-position: center;
+                  border: 2px solid white;
+                "></div>
+                <div style="
+                  position: absolute;
+                  bottom: 2px;
+                  right: 2px;
+                  width: 17px;
+                  height: 17px;
+                  border-radius: 9px;
+                  background-color: white;
+                  box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  transform: rotate(45deg);
+                ">
+                  <i class="fa fa-home" style="color: #334155; font-size: 9.5px;"></i>
+                </div>
+              </div>
+              <div style="
+                margin-top: 8px;
+                background: white;
+                padding: 5px 14px;
+                border-radius: 20px;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                font-size: 13px;
+                font-weight: 700;
+                color: #1E293B;
+                white-space: nowrap;
+                border: 1px solid #F1F5F9;
+              ">${labelText}</div>
+            </div>
+          `,
+          iconSize: [120, 95],
+          iconAnchor: [60, 48]
+        });
+
+        L.marker([marker.lat, marker.lng], { icon: myHouseIcon }).addTo(markersGroup);
+        return;
       } else if (marker.type === 'alerts') {
         markerColor = '#9c27b0'; // Purple
         iconHtml = `<i class="fa fa-exclamation-triangle" style="color: white; font-size: 13px;"></i>`;
