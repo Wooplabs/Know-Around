@@ -302,19 +302,22 @@ const Map = forwardRef<MapRef, MapProps>(({
             }
 
             var url = '';
+            var opts = { maxZoom: 19, crossOrigin: true };
+
             if (currentMapStyle === 'satellite') {
               url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+              opts.maxZoom = 18;
             } else if (currentMapStyle === 'terrain') {
-              url = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+              url = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+            } else if (currentDarkMode) {
+              // Carto dark — remove {r} retina suffix to avoid 404s in WebView
+              url = 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png';
             } else {
-              url = currentDarkMode 
-                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+              // OpenStreetMap — most reliable, no CORS/CDN issues, works everywhere
+              url = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
             }
             
-            tileLayer = L.tileLayer(url, {
-              maxZoom: currentMapStyle === 'satellite' ? 18 : 20,
-            }).addTo(map);
+            tileLayer = L.tileLayer(url, opts).addTo(map);
           }
           
           // Initialize map style
@@ -541,7 +544,7 @@ const Map = forwardRef<MapRef, MapProps>(({
       <WebView
         ref={webViewRef}
         originWhitelist={['*']}
-        source={{ html: htmlContent }}
+        source={{ html: htmlContent, baseUrl: 'https://tile.openstreetmap.org' }}
         style={styles.webview}
         onMessage={handleMessage}
         javaScriptEnabled={true}
@@ -551,6 +554,7 @@ const Map = forwardRef<MapRef, MapProps>(({
         allowFileAccess={true}
         allowUniversalAccessFromFileURLs={true}
         scalesPageToFit={false}
+        onError={(e) => console.warn('Map WebView error:', e.nativeEvent)}
         renderLoading={() => (
           <View style={styles.loading}>
             <ActivityIndicator size="large" color="#1C873C" />
