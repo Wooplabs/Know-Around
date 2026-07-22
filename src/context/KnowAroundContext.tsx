@@ -169,12 +169,12 @@ export interface KnowAroundContextProps {
     state: string;
     country: string;
     postalCode: string;
-    formattedAddress?: string;
     latitude: number;
     longitude: number;
+    formattedAddress?: string;
     locationPermissionGranted?: boolean;
-    locationVerified?: boolean;
     notificationEnabled: boolean;
+    keepOnboardingActive?: boolean;
   }) => Promise<void>;
   login: (phone: string) => Promise<boolean>;
   googleLogin: () => void;
@@ -1363,12 +1363,12 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     state: string;
     country: string;
     postalCode: string;
-    formattedAddress?: string;
     latitude: number;
     longitude: number;
+    formattedAddress?: string;
     locationPermissionGranted?: boolean;
-    locationVerified?: boolean;
     notificationEnabled: boolean;
+    keepOnboardingActive?: boolean;
   }) => {
     const nowIso = new Date().toISOString();
     const phoneStr = user?.phone || verifiedPhoneRef.current || '';
@@ -1445,9 +1445,11 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     }
 
-    setOnboardingCompleted(true);
-    saveState('native_onboarding', true);
-    setJustRegistered(false);
+    if (!data.keepOnboardingActive) {
+      setOnboardingCompleted(true);
+      saveState('native_onboarding', true);
+      setJustRegistered(false);
+    }
   };
 
   const login = async (phone: string): Promise<boolean> => {

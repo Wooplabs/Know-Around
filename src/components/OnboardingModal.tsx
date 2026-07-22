@@ -37,10 +37,11 @@ export default function OnboardingModal() {
     user, 
     onboardingCompleted, 
     completeOnboarding,
+    setOnboardingCompleted,
     logout
   } = useKnowAround();
 
-  // Wizard Step: 1 = Name, 2 = Address, 3 = Confirm Location on Map, 4 = Notifications, 5 = Guidelines, 6 = Success
+  // Wizard Step: 1 = Name, 2 = Mandatory Location & Address, 3 = Confirm Location on Map, 4 = Notifications, 5 = Guidelines, 6 = Success
   const [step, setStep] = useState(1);
 
   // Step 1 State
@@ -57,14 +58,12 @@ export default function OnboardingModal() {
   const [latitude, setLatitude] = useState<number>(11.9340);
   const [longitude, setLongitude] = useState<number>(79.8300);
 
+  // Step 3 State (Confirm Location on Map)
+  const [mapCenterLat, setMapCenterLat] = useState<number>(11.9340);
+  const [mapCenterLng, setMapCenterLng] = useState<number>(79.8300);
+
   const [isLocating, setIsLocating] = useState(false);
   const [autoFilledBadge, setAutoFilledBadge] = useState<string | null>(null);
-
-  // Step 3 State (Confirm Location on Map)
-  const [mapCenter, setMapCenter] = useState<{ latitude: number; longitude: number }>({ latitude: 11.9340, longitude: 79.8300 });
-  const [formattedAddress, setFormattedAddress] = useState<string>('');
-  const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
-  const [locationPermissionGranted, setLocationPermissionGranted] = useState<boolean>(false);
 
   // Real-time Address Suggestions State
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -209,7 +208,6 @@ export default function OnboardingModal() {
           if (autoPin) setPostalCode(autoPin);
 
           setAutoFilledBadge('✨ Location & Address auto-filled via GPS!');
-          setLocationPermissionGranted(true);
         }
       }
     } catch (err) {
@@ -218,66 +216,6 @@ export default function OnboardingModal() {
     } finally {
       setIsLocating(false);
     }
-  };
-
-  const initConfirmMapLocation = async () => {
-    const fullAddr = [street, area, locality, city, state, country, postalCode].filter(Boolean).join(', ');
-    setFormattedAddress(fullAddr);
-
-    if (latitude && longitude && (latitude !== 11.9340 || longitude !== 79.8300)) {
-      setMapCenter({ latitude, longitude });
-    } else {
-      setIsGeocoding(true);
-      try {
-        const queryStr = [street, area, city, state, country, postalCode].filter(Boolean).join(', ');
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}&limit=1`,
-          { headers: { 'User-Agent': 'KnowAroundApp/1.0' } }
-        );
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const latVal = parseFloat(data[0].lat);
-          const lonVal = parseFloat(data[0].lon);
-          if (!isNaN(latVal) && !isNaN(lonVal)) {
-            setLatitude(latVal);
-            setLongitude(lonVal);
-            setMapCenter({ latitude: latVal, longitude: lonVal });
-            if (data[0].display_name) {
-              setFormattedAddress(data[0].display_name);
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Geocoding notice:', err);
-      } finally {
-        setIsGeocoding(false);
-      }
-    }
-  };
-
-  const handleMapRegionChangeComplete = (region: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }) => {
-    if (!region.latitude || !region.longitude) return;
-    setLatitude(region.latitude);
-    setLongitude(region.longitude);
-    setMapCenter({ latitude: region.latitude, longitude: region.longitude });
-
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${region.latitude}&lon=${region.longitude}`,
-          { headers: { 'User-Agent': 'KnowAroundApp/1.0' } }
-        );
-        const data = await res.json();
-        if (data && data.display_name) {
-          setFormattedAddress(data.display_name);
-        } else {
-          setFormattedAddress([street, area, city, state, postalCode].filter(Boolean).join(', '));
-        }
-      } catch (e) {
-        setFormattedAddress([street, area, city, state, postalCode].filter(Boolean).join(', '));
-      }
-    }, 400);
   };
 
   const handleStep1Submit = () => {
@@ -297,8 +235,58 @@ export default function OnboardingModal() {
       Alert.alert('Invalid Postal Code', 'Please enter a valid 6-digit postal code.');
       return;
     }
-    await initConfirmMapLocation();
+
+    // Initial map centering: GPS if permission granted/autofilled, otherwise geocode address
+    if (autoFilledBadge && latitude && longitude) {
+      setMapCenterLat(latitude);
+      setMapCenterLng(longitude);
+    } else {
+      try {
+        const fullAddrStr = [street, area, city, state, postalCode, country || 'India'].filter(Boolean).join(', ');
+        const geocoded = await Location.geocodeAsync(fullAddrStr);
+        if (geocoded && geocoded.length > 0) {
+          setMapCenterLat(geocoded[0].latitude);
+          setMapCenterLng(geocoded[0].longitude);
+        } else {
+          setMapCenterLat(latitude || 11.9340);
+          setMapCenterLng(longitude || 79.8300);
+        }
+      } catch (e) {
+        setMapCenterLat(latitude || 11.9340);
+        setMapCenterLng(longitude || 79.8300);
+      }
+    }
+
     setStep(3);
+  };
+
+  const handleConfirmLocationOnMap = async () => {
+    if (!mapCenterLat || !mapCenterLng) return;
+    setIsSubmitting(true);
+    try {
+      const formattedAddress = [street, area, locality, city, state, postalCode].filter(Boolean).join(', ');
+      await completeOnboarding({
+        name: name.trim(),
+        street: street.trim(),
+        area: area.trim(),
+        locality: locality.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        country: country.trim(),
+        postalCode: postalCode.trim(),
+        formattedAddress,
+        latitude: mapCenterLat,
+        longitude: mapCenterLng,
+        locationPermissionGranted: !!autoFilledBadge,
+        notificationEnabled: false,
+        keepOnboardingActive: true,
+      });
+      setStep(4);
+    } catch (e) {
+      console.error('Confirm location error:', e);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleStep4Finish = (enableNotifications: boolean) => {
@@ -309,25 +297,10 @@ export default function OnboardingModal() {
   const handleStep5Finish = async () => {
     setIsSubmitting(true);
     try {
-      await completeOnboarding({
-        name: name.trim(),
-        street: street.trim(),
-        area: area.trim(),
-        locality: locality.trim(),
-        city: city.trim(),
-        state: state.trim(),
-        country: country.trim(),
-        postalCode: postalCode.trim(),
-        formattedAddress: formattedAddress || [street, area, city, state, postalCode].filter(Boolean).join(', '),
-        latitude,
-        longitude,
-        locationPermissionGranted,
-        locationVerified: true,
-        notificationEnabled,
-      });
+      setOnboardingCompleted(true);
       setStep(6);
     } catch (e) {
-      console.error('Onboarding completion error:', e);
+      console.error('Onboarding finish error:', e);
     } finally {
       setIsSubmitting(false);
     }
@@ -583,70 +556,71 @@ export default function OnboardingModal() {
             <View style={styles.confirmMapHeader}>
               <Text style={styles.confirmMapTitle}>Confirm Location on Map</Text>
               <Text style={styles.confirmMapSubtitle}>
-                Move the map underneath the center pin to set your exact home position.
+                Move the map under the fixed pin to set your exact home location.
               </Text>
             </View>
 
-            {/* Large Interactive Map Canvas */}
-            <View style={styles.mapCanvasWrapper}>
+            {/* Large Interactive Map Box */}
+            <View style={styles.mapContainerBox}>
               <Map
                 markers={[]}
-                userLocation={{ latitude: mapCenter.latitude, longitude: mapCenter.longitude, accuracy: null }}
-                userAvatar={user?.avatar}
+                userLocation={{ latitude: mapCenterLat, longitude: mapCenterLng, accuracy: null }}
+                userAvatar={user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'}
                 userLabel="My House"
-                onRegionChangeComplete={handleMapRegionChangeComplete}
+                onRegionChangeComplete={(region) => {
+                  if (region && region.latitude && region.longitude) {
+                    setMapCenterLat(region.latitude);
+                    setMapCenterLng(region.longitude);
+                  }
+                }}
               />
-              
-              {/* Fixed Center Pin Overlay */}
-              <View style={styles.fixedCenterPinOverlay} pointerEvents="none">
-                <View style={styles.centerPinTeardrop}>
-                  <Ionicons name="home" size={20} color="#FFFFFF" />
-                </View>
-                <View style={styles.centerPinDotShadow} />
-              </View>
 
-              {isGeocoding && (
-                <View style={styles.mapLoadingOverlay}>
-                  <ActivityIndicator size="small" color="#1C873C" />
-                  <Text style={styles.mapLoadingText}>Locating address on map...</Text>
+              {/* Fixed Center Pin Overlay */}
+              <View style={styles.fixedCenterPinWrapper} pointerEvents="none">
+                <View style={styles.centerPinTeardrop}>
+                  <View style={styles.centerPinAvatarBox}>
+                    <Ionicons name="home" size={16} color="#16A34A" />
+                  </View>
                 </View>
-              )}
+                <View style={styles.centerPinPointer} />
+                <View style={styles.centerPinShadow} />
+              </View>
             </View>
 
-            {/* Bottom Address Details Card */}
-            <View style={styles.locationBottomCard}>
-              <View style={styles.bottomCardAddressHeader}>
-                <Ionicons name="location" size={22} color="#1C873C" style={{ marginTop: 2 }} />
+            {/* Bottom Card displaying Formatted Address & Coordinates */}
+            <View style={styles.mapBottomCard}>
+              <View style={styles.mapBottomAddressRow}>
+                <Ionicons name="location" size={20} color="#16A34A" style={{ marginRight: 8, marginTop: 2 }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.bottomCardAddressTitle} numberOfLines={2}>
-                    {formattedAddress || [street, area, city, state, postalCode].filter(Boolean).join(', ') || 'Selected Location'}
+                  <Text style={styles.mapBottomAddressTitle} numberOfLines={2}>
+                    {[street, area, locality, city, state, postalCode].filter(Boolean).join(', ') || 'Selected Location'}
                   </Text>
-                  <Text style={styles.bottomCardCoordsText}>
-                    Lat: {latitude ? latitude.toFixed(5) : '--'}  •  Lng: {longitude ? longitude.toFixed(5) : '--'}
+                  <Text style={styles.mapBottomCoordsText}>
+                    Lat: {mapCenterLat ? mapCenterLat.toFixed(5) : '...'}, Lng: {mapCenterLng ? mapCenterLng.toFixed(5) : '...'}
                   </Text>
                 </View>
               </View>
 
               {/* Action Buttons Row */}
-              <View style={styles.bottomCardBtnRow}>
-                <Pressable style={styles.secondaryBackBtn} onPress={() => setStep(2)}>
-                  <Text style={styles.secondaryBackBtnText}>Back</Text>
+              <View style={styles.mapButtonsRow}>
+                <Pressable style={styles.mapBackBtn} onPress={() => setStep(2)}>
+                  <Text style={styles.mapBackBtnText}>Back</Text>
                 </Pressable>
 
-                {(() => {
-                  const isValidCoords = typeof latitude === 'number' && typeof longitude === 'number' && !isNaN(latitude) && !isNaN(longitude) && latitude !== 0;
-                  return (
-                    <Pressable
-                      style={[styles.confirmContinueBtn, !isValidCoords && styles.confirmContinueBtnDisabled]}
-                      onPress={() => setStep(4)}
-                      disabled={!isValidCoords}
-                    >
-                      <Text style={[styles.confirmContinueBtnText, !isValidCoords && styles.confirmContinueBtnTextDisabled]}>
-                        Confirm Location & Continue
-                      </Text>
-                    </Pressable>
-                  );
-                })()}
+                <Pressable 
+                  style={[
+                    styles.mapConfirmBtn, 
+                    (!mapCenterLat || !mapCenterLng || isSubmitting) && styles.mapConfirmBtnDisabled
+                  ]} 
+                  onPress={handleConfirmLocationOnMap}
+                  disabled={!mapCenterLat || !mapCenterLng || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.mapConfirmBtnText}>Confirm Location & Continue</Text>
+                  )}
+                </Pressable>
               </View>
             </View>
           </View>
@@ -1176,140 +1150,140 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.4,
+    marginBottom: 4,
   },
   confirmMapSubtitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     color: '#64748B',
-    marginTop: 4,
     lineHeight: 18,
   },
-  mapCanvasWrapper: {
+  mapContainerBox: {
     flex: 1,
-    minHeight: 260,
+    minHeight: 240,
     borderRadius: 16,
     overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
+    position: 'relative',
+    marginBottom: 10,
   },
-  fixedCenterPinOverlay: {
+  fixedCenterPinWrapper: {
     position: 'absolute',
     top: '50%',
     left: '50%',
-    marginTop: -38,
+    marginTop: -32,
     marginLeft: -20,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 99,
+    zIndex: 9999,
   },
   centerPinTeardrop: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1C873C',
+    backgroundColor: '#16A34A',
     borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 6,
   },
-  centerPinDotShadow: {
-    width: 8,
+  centerPinAvatarBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerPinPointer: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#16A34A',
+    marginTop: -2,
+  },
+  centerPinShadow: {
+    width: 10,
     height: 4,
-    borderRadius: 4,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 2,
+    backgroundColor: 'rgba(0,0,0,0.25)',
     marginTop: 2,
   },
-  mapLoadingOverlay: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    right: 12,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    zIndex: 100,
-  },
-  mapLoadingText: {
-    fontSize: 12,
-    color: '#1C873C',
-    fontWeight: '600',
-  },
-  locationBottomCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 14,
+  mapBottomCard: {
+    backgroundColor: '#F8FAFC',
     borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    marginTop: 10,
-    marginBottom: 6,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
-  bottomCardAddressHeader: {
+  mapBottomAddressRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  bottomCardAddressTitle: {
+  mapBottomAddressTitle: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: '#0F172A',
-    lineHeight: 19,
+    color: '#1E293B',
+    lineHeight: 18,
+    marginBottom: 2,
   },
-  bottomCardCoordsText: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 3,
-    fontWeight: '500',
+  mapBottomCoordsText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#16A34A',
   },
-  bottomCardBtnRow: {
+  mapButtonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  secondaryBackBtn: {
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryBackBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  confirmContinueBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#1C873C',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirmContinueBtnDisabled: {
+  mapBackBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  confirmContinueBtnText: {
+  mapBackBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#334155',
   },
-  confirmContinueBtnTextDisabled: {
-    color: '#94A3B8',
+  mapConfirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  mapConfirmBtnDisabled: {
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  mapConfirmBtnText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#ffffff',
   },
 });
