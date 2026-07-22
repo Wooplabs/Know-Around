@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useImperativeHandle, forwardRef, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { LEAFLET_CSS, LEAFLET_JS } from './leaflet-bundle';
+import { LEAFLET_CSS_B64, LEAFLET_JS_B64 } from './leaflet-bundle';
 
 export interface MapRef {
   panTo: (lat: number, lng: number, zoom?: number) => void;
@@ -112,7 +112,21 @@ const Map = forwardRef<MapRef, MapProps>(({
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <style>${LEAFLET_CSS}</style>
+        <script>
+          // Decode and inject Leaflet CSS + JS from base64 (no CDN needed)
+          (function() {
+            var cssB64 = '${LEAFLET_CSS_B64}';
+            var jsB64  = '${LEAFLET_JS_B64}';
+            var css = atob(cssB64);
+            var js  = atob(jsB64);
+            var styleEl = document.createElement('style');
+            styleEl.textContent = css;
+            document.head.appendChild(styleEl);
+            var scriptEl = document.createElement('script');
+            scriptEl.textContent = js;
+            document.head.appendChild(scriptEl);
+          })();
+        </script>
         <style>
           html, body, #map {
             width: 100%;
@@ -271,7 +285,6 @@ const Map = forwardRef<MapRef, MapProps>(({
       </head>
       <body>
         <div id="map"></div>
-        <script>${LEAFLET_JS}</script>
         <script>
           // Default map center (White Town)
           var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([11.9340, 79.8300], 14);
