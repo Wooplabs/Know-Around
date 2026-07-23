@@ -211,9 +211,10 @@ const HTML_CONTENT = `<!DOCTYPE html>
           url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
           opts.maxZoom = 18;
         } else if (currentDarkMode) {
-          url = 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png';
+          url = 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
         } else {
-          url = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+          // CartoDB Positron (Light Minimal) — hides commercial POIs (hotels, restaurants, hospitals) for clean styled look
+          url = 'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
         }
 
         tileLayer = L.tileLayer(url, opts).addTo(map);
