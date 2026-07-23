@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -34,7 +34,8 @@ export default function SettingsScreen() {
     setDarkMode, 
     logout,
     clearUserCredentials,
-    userLocation
+    userLocation,
+    savedHouseLocation
   } = useKnowAround();
 
   // Profile fields
@@ -51,8 +52,26 @@ export default function SettingsScreen() {
 
   // Map coordinates
   const [selectedCoords, setSelectedCoords] = useState<{ latitude: number; longitude: number } | null>(
-    userAddress ? { latitude: userLocation?.latitude || 11.9344, longitude: userLocation?.longitude || 79.8302 } : null
+    savedHouseLocation || userLocation ? { 
+      latitude: savedHouseLocation?.latitude || userLocation?.latitude || 11.9344, 
+      longitude: savedHouseLocation?.longitude || userLocation?.longitude || 79.8302 
+    } : null
   );
+
+  // Sync state coordinates when updated from the edit location subscreen
+  useEffect(() => {
+    if (savedHouseLocation) {
+      setSelectedCoords({
+        latitude: savedHouseLocation.latitude,
+        longitude: savedHouseLocation.longitude
+      });
+    } else if (userLocation) {
+      setSelectedCoords({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
+      });
+    }
+  }, [savedHouseLocation, userLocation]);
 
   // App Toggles
   const [notifications, setNotifications] = useState(true);
@@ -325,12 +344,25 @@ export default function SettingsScreen() {
             </View>
 
 
-            <Text style={styles.fieldLabel}>Interactive Pinpoint Map</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <Text style={styles.fieldLabel}>Interactive Pinpoint Map</Text>
+              <Pressable 
+                onPress={() => router.push('/edit-location')}
+                style={({ pressed }) => [
+                  styles.editLocationLink,
+                  pressed && { opacity: 0.7 }
+                ]}
+              >
+                <Ionicons name="create-outline" size={14} color="#1C873C" style={{ marginRight: 4 }} />
+                <Text style={styles.editLocationLinkText}>Edit on Map</Text>
+              </Pressable>
+            </View>
             <Text style={styles.mapHelpText}>Tap to set your exact house marker on the map.</Text>
             <View style={styles.mapWrapper}>
               <Map 
                 markers={mapMarkers}
                 userLocation={userLocation || (selectedCoords ? { latitude: selectedCoords.latitude, longitude: selectedCoords.longitude, accuracy: null } : null)}
+                houseLocation={savedHouseLocation}
                 onMapClick={handleMapClick}
               />
             </View>
@@ -645,5 +677,18 @@ const styles = StyleSheet.create({
   },
   destructiveText: {
     color: '#E53935',
+  },
+  editLocationLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E6F4EA',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  editLocationLinkText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1C873C',
   },
 });

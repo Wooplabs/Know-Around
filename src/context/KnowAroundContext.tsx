@@ -225,6 +225,7 @@ export interface KnowAroundContextProps {
   postToGroup: (groupId: string, content: string) => Promise<void>;
   clearUserCredentials: () => Promise<void>;
   isAuthHydrated: boolean;
+  updateUserLocationCoordinates: (lat: number, lng: number) => Promise<void>;
 }
 
 const KnowAroundContext = createContext<KnowAroundContextProps | undefined>(undefined);
@@ -1480,6 +1481,39 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
+  const updateUserLocationCoordinates = async (lat: number, lng: number) => {
+    // 1. Update memory states
+    setUserLocation({ latitude: lat, longitude: lng, accuracy: null });
+    setSavedHouseLocation({ latitude: lat, longitude: lng });
+
+    // 2. Update local native_user_doc cache
+    const savedUserDocStr = await AsyncStorage.getItem('native_user_doc').catch(() => null);
+    if (savedUserDocStr) {
+      try {
+        const docData = JSON.parse(savedUserDocStr);
+        docData.latitude = lat;
+        docData.longitude = lng;
+        docData.updatedAt = new Date().toISOString();
+        
+        await AsyncStorage.setItem('native_user_doc', JSON.stringify(docData));
+        
+        // Update in registered accounts too
+        registerAccountInMemoryAndStorage(docData);
+
+        // 3. Write to Firestore if connected
+        if (isFirebaseConfigured && db && docData.uid) {
+          await updateDoc(doc(db, 'users', docData.uid), {
+            latitude: lat,
+            longitude: lng,
+            updatedAt: docData.updatedAt
+          });
+        }
+      } catch (e) {
+        console.warn('Error updating coordinates cache/Firestore:', e);
+      }
+    }
+  };
+
   const login = async (phone: string): Promise<boolean> => {
     await authenticatePhone(phone);
     return true;
@@ -1977,6 +2011,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         authenticatePhone,
         completeOnboarding,
         isAuthHydrated,
+        updateUserLocationCoordinates,
       }}
     >
       {children}
