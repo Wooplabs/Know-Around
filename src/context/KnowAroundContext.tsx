@@ -940,7 +940,11 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                                 (typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('native_user_doc') : null);
         if (savedUserDocStr) {
           try {
-            registerAccountInMemoryAndStorage(JSON.parse(savedUserDocStr));
+            const docData = JSON.parse(savedUserDocStr);
+            registerAccountInMemoryAndStorage(docData);
+            if (docData && docData.latitude && docData.longitude) {
+              setUserLocation({ latitude: docData.latitude, longitude: docData.longitude, accuracy: null });
+            }
           } catch (e) {}
         }
 
@@ -1313,6 +1317,10 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const locStr = userDoc.state ? `${userDoc.city}, ${userDoc.state.slice(0, 2).toUpperCase()}` : userDoc.city;
         setActiveLocation(locStr);
         saveState('native_location', locStr);
+      }
+
+      if (userDoc.latitude && userDoc.longitude) {
+        setUserLocation({ latitude: userDoc.latitude, longitude: userDoc.longitude, accuracy: null });
       }
 
       // FIRST set onboardingCompleted to true so OnboardingModal NEVER renders
