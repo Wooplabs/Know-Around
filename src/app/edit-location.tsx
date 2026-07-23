@@ -59,9 +59,11 @@ export default function EditLocationScreen() {
       {/* Header */}
       <View style={[styles.header, darkMode && styles.headerDark]}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={darkMode ? '#FFFFFF' : '#1E293B'} />
+          <Ionicons name="arrow-back" size={24} color={darkMode ? '#ffffff' : '#1A1C1E'} />
         </Pressable>
-        <Text style={[styles.headerTitle, darkMode && styles.headerTitleDark]}>Edit House Location</Text>
+        <Text style={[styles.headerTitle, darkMode && styles.headerTitleDark]} numberOfLines={1}>
+          Edit House Location
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -147,8 +149,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   headerDark: {
-    backgroundColor: '#1E293B',
-    borderBottomColor: '#334155',
+    backgroundColor: '#1E1E1E',
+    borderBottomColor: '#2D2D2D',
   },
   backButton: {
     width: 40,
@@ -158,11 +160,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
+    fontWeight: '900',
+    color: '#1A1C1E',
+    textAlign: 'center',
+    flex: 1,
   },
   headerTitleDark: {
-    color: '#FFFFFF',
+    color: '#ffffff',
   },
   mapContainer: {
     flex: 1,

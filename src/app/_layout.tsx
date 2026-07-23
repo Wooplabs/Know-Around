@@ -24,9 +24,9 @@ LogBox.ignoreLogs([
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const { setComposerVisible, darkMode } = useKnowAround();
 
-  // Hide the floating tab bar when settings is open
-  const isSettingsActive = state.routes[state.index]?.name === 'settings';
-  if (isSettingsActive) return null;
+  // Hide the floating tab bar when settings or edit-location is open
+  const activeRouteName = state.routes[state.index]?.name;
+  if (activeRouteName === 'settings' || activeRouteName === 'edit-location') return null;
 
   return (
     <View style={styles.tabBarWrapper} pointerEvents="box-none">
