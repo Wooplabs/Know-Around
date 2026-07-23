@@ -278,7 +278,7 @@ export default function AuthScreen() {
                     {otpInput.map((digit, idx) => (
                       <TextInput
                         key={idx}
-                        ref={(el) => (otpRefs.current[idx] = el)}
+                        ref={(el) => { otpRefs.current[idx] = el; }}
                         value={digit}
                         onChangeText={(text) => {
                           const cleanedText = text.replace(/[^0-9]/g, '');

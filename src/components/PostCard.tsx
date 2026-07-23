@@ -24,13 +24,13 @@ export default function PostCard({ post, darkMode }: PostCardProps) {
       Animated.timing(likeScale, {
         toValue: 1.3,
         duration: 90,
-        useKnowAroundDriver: true,
+        useNativeDriver: true,
       }),
       Animated.spring(likeScale, {
         toValue: 1.0,
         friction: 3,
         tension: 40,
-        useKnowAroundDriver: true,
+        useNativeDriver: true,
       })
     ]).start();
 
