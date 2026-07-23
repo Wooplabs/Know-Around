@@ -6,7 +6,9 @@ import {
   Pressable, 
   SafeAreaView, 
   ActivityIndicator,
-  Alert
+  Alert,
+  Platform,
+  StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -134,6 +136,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 30) : 0,
   },
   containerDark: {
     backgroundColor: '#0F172A',
