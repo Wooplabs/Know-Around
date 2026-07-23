@@ -19,6 +19,7 @@ interface MapProps {
     details?: string;
   }>;
   userLocation?: { latitude: number; longitude: number; accuracy: number | null } | null;
+  houseLocation?: { latitude: number; longitude: number } | null;
   userAvatar?: string;
   userLabel?: string;
   searchCenter?: { latitude: number; longitude: number } | null;
@@ -224,6 +225,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
 
       var markersLayer = L.layerGroup().addTo(map);
       var userLocationMarker = null;
+      var houseMarker = null;
       var userAccuracyCircle = null;
       var searchRadiusCircle = null;
       var hasCentered = false;
@@ -265,9 +267,11 @@ const HTML_CONTENT = `<!DOCTYPE html>
 
       function updateMapMetrics(payload) {
         if (userLocationMarker) map.removeLayer(userLocationMarker);
+        if (houseMarker) map.removeLayer(houseMarker);
         if (userAccuracyCircle) map.removeLayer(userAccuracyCircle);
         if (searchRadiusCircle) map.removeLayer(searchRadiusCircle);
 
+        // 1. Draw subtle blue accuracy circle for live GPS
         if (payload.userLat && payload.userLng && payload.accuracy) {
           userAccuracyCircle = L.circle([payload.userLat, payload.userLng], {
             radius: payload.accuracy,
@@ -276,7 +280,30 @@ const HTML_CONTENT = `<!DOCTYPE html>
           }).addTo(map);
         }
 
-        if (payload.userLat && payload.userLng) {
+        // Determine if we should show both live puck and house marker
+        var showLivePuck = payload.userLat && payload.userLng && payload.houseLat && payload.houseLng;
+
+        // 2. Draw live user puck (blue dot) if separate house coordinates exist
+        if (showLivePuck) {
+          var userPuckIcon = L.divIcon({
+            className: 'custom-leaflet-marker',
+            html: '<div class="user-puck-container">' +
+                    '<div class="user-puck-dot"></div>' +
+                    '<div class="user-puck-pulse"></div>' +
+                  '</div>',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          });
+          userLocationMarker = L.marker([payload.userLat, payload.userLng], { icon: userPuckIcon }).addTo(map);
+        }
+
+        // 3. Draw "My House" pin (green teardrop)
+        // If we have separate house coordinates, draw it there.
+        // Otherwise fall back to userLat/userLng (onboarding screen map behavior)
+        var houseLat = payload.houseLat || payload.userLat;
+        var houseLng = payload.houseLng || payload.userLng;
+
+        if (houseLat && houseLng) {
           var avatarUrl = payload.userAvatar || '';
           var labelText = payload.userLabel || 'My House';
           var myHouseIcon = L.divIcon({
@@ -291,7 +318,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
             iconSize: [120, 95],
             iconAnchor: [60, 48]
           });
-          userLocationMarker = L.marker([payload.userLat, payload.userLng], { icon: myHouseIcon }).addTo(map);
+          houseMarker = L.marker([houseLat, houseLng], { icon: myHouseIcon }).addTo(map);
         }
 
         if (payload.searchLat && payload.searchLng && payload.searchRadius) {
@@ -302,8 +329,11 @@ const HTML_CONTENT = `<!DOCTYPE html>
           }).addTo(map);
         }
 
-        if (!hasCentered && payload.userLat && payload.userLng) {
-          map.setView([payload.userLat, payload.userLng], 14);
+        // Center on house location or user location initially
+        var centerLat = payload.houseLat || payload.userLat;
+        var centerLng = payload.houseLng || payload.userLng;
+        if (!hasCentered && centerLat && centerLng) {
+          map.setView([centerLat, centerLng], 14);
           hasCentered = true;
         }
       }
@@ -376,18 +406,19 @@ const HTML_CONTENT = `<!DOCTYPE html>
 // ---------------------------------------------------------------------------
 // Map Component
 // ---------------------------------------------------------------------------
-const Map = forwardRef<MapRef, MapProps>(({
-  markers,
-  userLocation,
+const Map = forwardRef<MapRef, MapProps>(({ 
+  markers, 
+  userLocation, 
+  houseLocation,
   userAvatar,
   userLabel,
   searchCenter,
-  searchRadius,
-  darkMode,
+  searchRadius, 
+  darkMode, 
   mapStyle = 'standard',
-  onMapClick,
+  onMapClick, 
   onMarkerClick,
-  onRegionChangeComplete,
+  onRegionChangeComplete 
 }, ref) => {
   const webViewRef = useRef<WebView>(null);
   const [isReady, setIsReady] = useState(false);
@@ -433,6 +464,8 @@ const Map = forwardRef<MapRef, MapProps>(({
   const userLat = userLocation?.latitude;
   const userLng = userLocation?.longitude;
   const userAcc = userLocation?.accuracy;
+  const houseLat = houseLocation?.latitude;
+  const houseLng = houseLocation?.longitude;
   const searchLat = searchCenter?.latitude;
   const searchLng = searchCenter?.longitude;
 
@@ -444,15 +477,17 @@ const Map = forwardRef<MapRef, MapProps>(({
           userLat: userLat || null,
           userLng: userLng || null,
           accuracy: userAcc || null,
+          houseLat: houseLat || null,
+          houseLng: houseLng || null,
           userAvatar: userAvatar || null,
           userLabel: userLabel || null,
-          searchLat: searchLat || userLat || null,
-          searchLng: searchLng || userLng || null,
+          searchLat: searchLat || userLat || houseLat || null,
+          searchLng: searchLng || userLng || houseLng || null,
           searchRadius: searchRadius || null,
         },
       }));
     }
-  }, [userLat, userLng, userAcc, userAvatar, userLabel, searchLat, searchLng, searchRadius, isReady]);
+  }, [userLat, userLng, userAcc, houseLat, houseLng, userAvatar, userLabel, searchLat, searchLng, searchRadius, isReady]);
 
   // Sync style
   useEffect(() => {

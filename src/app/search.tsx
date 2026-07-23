@@ -20,6 +20,7 @@ export default function SearchScreen() {
     applyJob,
     userLocation,
     setUserLocation,
+    savedHouseLocation,
     distanceFilter,
     setDistanceFilter,
     darkMode,
@@ -399,6 +400,7 @@ export default function SearchScreen() {
           ref={mapRef}
           markers={getMarkers()}
           userLocation={userLocation}
+          houseLocation={savedHouseLocation}
           userAvatar={user?.avatar || currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'}
           userLabel="My House"
           searchCenter={searchCenter}

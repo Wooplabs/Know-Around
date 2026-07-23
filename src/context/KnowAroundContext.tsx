@@ -216,6 +216,7 @@ export interface KnowAroundContextProps {
   setComposerVisible: (val: boolean) => void;
   userLocation: { latitude: number; longitude: number; accuracy: number | null } | null;
   setUserLocation: (loc: { latitude: number; longitude: number; accuracy: number | null } | null) => void;
+  savedHouseLocation: { latitude: number; longitude: number } | null;
   darkMode: boolean;
   setDarkMode: (val: boolean) => void;
   groups: Group[];
@@ -914,6 +915,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [userAddress, setUserAddress] = useState<{ street: string; place: string; city: string; state: string; pin: string; phone: string } | null>(null);
   const [composerVisible, setComposerVisible] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number; accuracy: number | null } | null>(null);
+  const [savedHouseLocation, setSavedHouseLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [groups, setGroups] = useState<Group[]>(SEED_GROUPS);
   const [groupPosts, setGroupPosts] = useState<GroupPost[]>(SEED_GROUP_POSTS);
@@ -944,6 +946,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             registerAccountInMemoryAndStorage(docData);
             if (docData && docData.latitude && docData.longitude) {
               setUserLocation({ latitude: docData.latitude, longitude: docData.longitude, accuracy: null });
+              setSavedHouseLocation({ latitude: docData.latitude, longitude: docData.longitude });
             }
           } catch (e) {}
         }
@@ -1321,6 +1324,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       if (userDoc.latitude && userDoc.longitude) {
         setUserLocation({ latitude: userDoc.latitude, longitude: userDoc.longitude, accuracy: null });
+        setSavedHouseLocation({ latitude: userDoc.latitude, longitude: userDoc.longitude });
       }
 
       // FIRST set onboardingCompleted to true so OnboardingModal NEVER renders
@@ -1426,6 +1430,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     if (data.latitude && data.longitude) {
       setUserLocation({ latitude: data.latitude, longitude: data.longitude, accuracy: null });
+      setSavedHouseLocation({ latitude: data.latitude, longitude: data.longitude });
     }
 
     // Save/Update full document in Firestore `users` collection
@@ -1961,6 +1966,7 @@ export const KnowAroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setComposerVisible,
         userLocation,
         setUserLocation,
+        savedHouseLocation,
         darkMode,
         setDarkMode,
         groups,
