@@ -33,7 +33,6 @@ export default function EditLocationScreen() {
     longitude: initialLng
   });
   const [saving, setSaving] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleRegionChangeComplete = (region: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }) => {
     setMapCenter({
@@ -42,19 +41,11 @@ export default function EditLocationScreen() {
     });
   };
 
-  const triggerToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-      router.back();
-    }, 2000);
-  };
-
   const handleSave = async () => {
     setSaving(true);
     try {
       await updateUserLocationCoordinates(mapCenter.latitude, mapCenter.longitude);
-      triggerToast('House location has Updated!');
+      router.replace({ pathname: '/settings', params: { showToast: 'true' } });
     } catch (e) {
       console.error(e);
       Alert.alert('Error', 'Unable to update location. Please try again.');
@@ -135,16 +126,6 @@ export default function EditLocationScreen() {
           )}
         </Pressable>
       </View>
-
-      {/* Toast Alert overlay */}
-      {toastMessage && (
-        <View style={styles.toastContainer} pointerEvents="none">
-          <View style={styles.toastCard}>
-            <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-            <Text style={styles.toastText}>{toastMessage}</Text>
-          </View>
-        </View>
-      )}
     </SafeAreaView>
   );
 }
@@ -329,32 +310,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
-  },
-  toastContainer: {
-    position: 'absolute',
-    bottom: 50,
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-    zIndex: 999,
-  },
-  toastCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E293B',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  toastText: {
-    color: '#FFFFFF',
-    fontSize: 14,
     fontWeight: '700',
   },
 });

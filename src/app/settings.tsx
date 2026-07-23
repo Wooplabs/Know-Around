@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useKnowAround } from '../context/KnowAroundContext';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Map from '../components/Map';
 import * as ImagePicker from 'expo-image-picker';
 import UserAvatar from '../components/UserAvatar';
@@ -72,6 +72,18 @@ export default function SettingsScreen() {
       });
     }
   }, [savedHouseLocation, userLocation]);
+
+  // Toast status bar alert
+  const { showToast } = useLocalSearchParams<{ showToast?: string }>();
+  const [toastVisible, setToastVisible] = useState(false);
+
+  useEffect(() => {
+    if (showToast === 'true') {
+      setToastVisible(true);
+      const timer = setTimeout(() => setToastVisible(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
 
   // App Toggles
   const [notifications, setNotifications] = useState(true);
@@ -439,6 +451,16 @@ export default function SettingsScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Premium Toast Notification Overlay */}
+      {toastVisible && (
+        <View style={styles.toastContainer}>
+          <View style={styles.toastCard}>
+            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+            <Text style={styles.toastText}>House location has Updated!</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -690,5 +712,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#1C873C',
+  },
+  toastContainer: {
+    position: 'absolute',
+    bottom: 50,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  toastCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+    gap: 8,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
