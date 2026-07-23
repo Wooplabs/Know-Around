@@ -3,17 +3,45 @@ import { getAuth } from 'firebase/auth';
 import { initializeFirestore } from 'firebase/firestore';
 
 // Polyfill for crypto.getRandomValues on React Native / Expo Go JS engines
-if (typeof global.crypto !== 'object') {
-  global.crypto = {} as any;
-}
-if (typeof global.crypto.getRandomValues !== 'function') {
-  global.crypto.getRandomValues = ((array: any) => {
-    for (let i = 0; i < array.length; i++) {
-      array[i] = Math.floor(Math.random() * 256);
+(function polyfillCrypto() {
+  if (typeof global.crypto === 'undefined') {
+    try {
+      Object.defineProperty(global, 'crypto', {
+        value: {},
+        writable: true,
+        configurable: true
+      });
+    } catch (e) {
+      try {
+        (global as any).crypto = {};
+      } catch (err) {}
     }
-    return array;
-  }) as any;
-}
+  }
+
+  if (global.crypto && typeof global.crypto.getRandomValues !== 'function') {
+    try {
+      Object.defineProperty(global.crypto, 'getRandomValues', {
+        value: function (array: any) {
+          for (let i = 0; i < array.length; i++) {
+            array[i] = Math.floor(Math.random() * 256);
+          }
+          return array;
+        },
+        writable: true,
+        configurable: true
+      });
+    } catch (e) {
+      try {
+        (global.crypto as any).getRandomValues = (array: any) => {
+          for (let i = 0; i < array.length; i++) {
+            array[i] = Math.floor(Math.random() * 256);
+          }
+          return array;
+        };
+      } catch (err) {}
+    }
+  }
+})();
 
 // Helper to sanitize environment variables from Windows CRLF carriage returns (\r)
 const sanitizeEnv = (val?: string): string => {
