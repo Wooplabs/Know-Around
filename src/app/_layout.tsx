@@ -36,7 +36,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         {/* Left White Tabs Capsule */}
         <View style={[styles.floatingTabBar, { backgroundColor: darkMode ? '#1C1C1E' : '#ffffff' }]}>
           {state.routes.map((route: any, index: number) => {
-            if (route.name === 'settings') return null;
+            if (route.name === 'settings' || route.name === 'edit-location') return null;
             const { options } = descriptors[route.key];
             
             let label = 'Home';
