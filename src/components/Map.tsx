@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useImperativeHandle, forwardRef, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
-import * as FileSystem from 'expo-file-system';
+import { cacheDirectory, writeAsStringAsync } from 'expo-file-system/legacy';
 import { LEAFLET_CSS_B64, LEAFLET_JS_B64 } from './leaflet-bundle';
 
 export interface MapRef {
@@ -400,9 +400,9 @@ const Map = forwardRef<MapRef, MapProps>(({
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
-    const filePath = (FileSystem.cacheDirectory ?? '') + 'knowaround_map.html';
-    FileSystem.writeAsStringAsync(filePath, HTML_CONTENT, {
-      encoding: FileSystem.EncodingType.UTF8,
+    const filePath = (cacheDirectory ?? '') + 'knowaround_map.html';
+    writeAsStringAsync(filePath, HTML_CONTENT, {
+      encoding: 'utf8',
     })
       .then(() => setMapFileUri(filePath))
       .catch((e) => {
